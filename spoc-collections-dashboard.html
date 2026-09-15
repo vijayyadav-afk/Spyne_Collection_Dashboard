@@ -1,0 +1,1897 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spyne Collection Dashboard</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#fff; --ink:#14181f; --ink2:#5b6472; --ink3:#8a93a1;
+    --line:#e3e6ec; --line2:#eef0f4;
+    --b1:#3d7dd6; --b2:#e9a33a; --b3:#e3722f; --b4:#cf3f4a;
+    --g1:#2f9e6f; --p1:#8a6fd1; --t1:#2aa4b5;
+    --ok:#2f9e6f; --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.04);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#10131a;--card:#171b23;--ink:#e9edf4;--ink2:#a4adbb;--ink3:#7b8494;
+      --line:#262c37;--line2:#1e242d;--shadow:none;
+      --b1:#5b93e0;--b2:#e2ab55;--b3:#e08356;--b4:#e05c68;--g1:#48b085;--p1:#9d86dd;--t1:#45b7c7;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1560px;margin:0 auto;padding:18px}
+  h1{font-size:19px;margin:0 0 3px;letter-spacing:-.01em}
+  .sub{color:var(--ink2);font-size:12.5px}
+  .sub b{color:var(--ink);font-weight:600}
+  .note{margin:11px 0 0;padding:9px 12px;border-left:3px solid var(--b2);background:var(--card);
+    border-radius:0 6px 6px 0;color:var(--ink2);font-size:12px;box-shadow:var(--shadow)}
+  .note.blue{border-left-color:var(--b1)}
+  .refresh{margin:11px 0 0;padding:10px 13px;background:var(--card);border:1px solid var(--line);
+    border-radius:9px;box-shadow:var(--shadow);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .refresh .txt{font-size:12px;color:var(--ink2);flex:1;min-width:260px}
+  .refresh .txt b{color:var(--ink)}
+
+  /* page tabs */
+  nav.pages{display:flex;gap:4px;margin:14px 0 0;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+  nav.pages button{font:inherit;font-size:12.5px;font-weight:600;padding:9px 14px;border:1px solid transparent;
+    border-bottom:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2);cursor:pointer;
+    margin-bottom:-1px}
+  nav.pages button:hover{color:var(--ink)}
+  nav.pages button[aria-selected=true]{background:var(--card);border-color:var(--line);color:var(--ink)}
+  section.page{display:none;padding-top:14px}
+  section.page.on{display:block}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:9px;margin:0 0 14px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 13px;box-shadow:var(--shadow)}
+  .kpi .lab{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);font-weight:600}
+  .kpi .val{font-size:21px;font-weight:650;margin-top:4px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .kpi .hint{font-size:11.5px;color:var(--ink2);margin-top:3px;font-variant-numeric:tabular-nums}
+  .kpi.warn .val{color:var(--b3)} .kpi.crit .val{color:var(--b4)}
+  .kpi.good .val{color:var(--g1)} .kpi.teal .val{color:var(--t1)} .kpi.purp .val{color:var(--p1)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1.4fr;gap:13px;align-items:start}
+  .grid2b{display:grid;grid-template-columns:1fr 1fr;gap:13px;align-items:start}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px;align-items:start}
+  @media (max-width:1080px){.grid2,.grid2b,.grid3{grid-template-columns:1fr}}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);
+    overflow:hidden;margin-bottom:13px}
+  .card>header{padding:10px 13px;border-bottom:1px solid var(--line2);display:flex;
+    justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .card h2{font-size:12.5px;margin:0;font-weight:650}
+  .card .cap{font-size:11.5px;color:var(--ink3)}
+  .pad{padding:11px 13px}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:right;padding:6px 9px;border-bottom:1px solid var(--line2);white-space:nowrap;
+    font-variant-numeric:tabular-nums}
+  th:first-child,td:first-child{text-align:left}
+  th{position:sticky;top:0;background:var(--card);color:var(--ink3);font-size:10px;
+    text-transform:uppercase;letter-spacing:.05em;font-weight:650;cursor:pointer;user-select:none;z-index:2}
+  th:hover{color:var(--ink)}
+  table.static th{cursor:default} table.static th:hover{color:var(--ink3)}
+  th.sorted::after{content:" ▾";color:var(--b1)} th.sorted.asc::after{content:" ▴"}
+  tbody tr:hover{background:var(--line2)}
+  tfoot td{font-weight:650;border-top:2px solid var(--line);border-bottom:none;background:var(--card)}
+  .scroll{max-height:540px;overflow:auto}
+  .name{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .clickrow{cursor:pointer}
+  .clickrow.active{background:color-mix(in srgb,var(--b1) 12%,transparent)}
+  .stack{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--line2);min-width:100px}
+  .stack i{display:block;height:100%}
+  .chip{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10.5px;font-weight:600;
+    border:1px solid var(--line);color:var(--ink2)}
+  .chip.live,.chip.yes{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,var(--line))}
+  .chip.churn,.chip.no{color:var(--b4);border-color:color-mix(in srgb,var(--b4) 35%,var(--line))}
+  .chip.fut{color:var(--b2);border-color:color-mix(in srgb,var(--b2) 40%,var(--line))}
+
+  .bars{display:flex;flex-direction:column;gap:8px}
+  .bar{display:grid;grid-template-columns:120px 1fr 92px;gap:9px;align-items:center;font-size:12px}
+  .bar .t{color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bar .track{background:var(--line2);border-radius:4px;height:14px;overflow:hidden}
+  .bar .fill{height:100%;border-radius:4px;background:var(--b1)}
+  .bar .v{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+
+  .cols{display:flex;align-items:flex-end;gap:5px;height:190px;padding-top:18px;overflow-x:auto}
+  .col{flex:1;min-width:26px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;
+    height:100%;position:relative}
+  .col .cb{width:100%;background:var(--p1);border-radius:3px 3px 0 0;min-height:2px}
+  .col .cv{font-size:9.5px;color:var(--ink2);position:absolute;top:-15px;white-space:nowrap;
+    font-variant-numeric:tabular-nums}
+  .col .cl{font-size:9.5px;color:var(--ink3);margin-top:5px;white-space:nowrap}
+
+  .tools{display:flex;gap:7px;flex-wrap:wrap;align-items:center;padding:10px 13px;border-bottom:1px solid var(--line2)}
+  input[type=search],select{font:inherit;font-size:12.5px;padding:6px 9px;border:1px solid var(--line);
+    border-radius:7px;background:var(--bg);color:var(--ink);max-width:215px}
+  input[type=search]{min-width:185px}
+  button.btn,label.btn{font:inherit;font-size:12px;padding:6px 11px;border:1px solid var(--line);border-radius:7px;
+    background:var(--bg);color:var(--ink);cursor:pointer;font-weight:600;display:inline-block}
+  button.btn:hover,label.btn:hover{border-color:var(--b1);color:var(--b1)}
+  .btn.primary{border-color:var(--b1);color:var(--b1)}
+  button.btn:disabled{opacity:.5;cursor:default}
+  input[type=file]{display:none}
+  td.notecell{padding:3px 6px}
+  input.noteIn{font:inherit;font-size:12px;width:190px;min-width:150px;padding:4px 7px;
+    border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ink)}
+  input.noteIn::placeholder{color:var(--ink3);opacity:.7}
+  input.noteIn:hover{border-color:var(--line)}
+  input.noteIn:focus{outline:none;border-color:var(--b1);background:var(--bg);width:260px}
+  input.noteIn.filled{background:color-mix(in srgb,var(--b2) 13%,transparent);
+    border-color:color-mix(in srgb,var(--b2) 40%,var(--line))}
+  .legend{display:flex;gap:11px;flex-wrap:wrap;font-size:11.5px;color:var(--ink2)}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .sw{width:9px;height:9px;border-radius:2px;display:inline-block}
+  .muted{color:var(--ink3)}
+  .status{font-size:12px;font-weight:600}
+  .status.err{color:var(--b4)} .status.good{color:var(--ok)}
+  footer{color:var(--ink3);font-size:11.5px;margin:16px 0 6px;line-height:1.6}
+  .aging-strip{display:flex;gap:2px;margin-top:9px}
+  .aging-strip div{padding:8px 10px;border-radius:6px;color:#fff;font-size:11.5px;font-weight:600;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Spyne Collection Dashboard</h1>
+<div class="sub" id="prov"></div>
+
+<div class="refresh">
+  <div class="txt">
+    <b>Live data.</b> This page reads the sheet directly when it loads — the <i>SPOC wise invoice amount</i> and
+    <i>Collection</i> tabs — so the figures are whatever the sheet says right now, not when the file was built.
+    It works while the sheet stays link-viewable. If it can't be reached, the embedded snapshot below is shown
+    instead and nothing breaks.
+  </div>
+  <button class="btn primary" id="liveBtn">Refresh live data</button>
+  <span class="status" id="liveMsg"></span>
+</div>
+
+<div class="refresh">
+  <div class="txt">
+    <b>Or load a CSV by hand.</b>
+    From <i>Collection Projections - Working</i>: download the <b>SPOC wise invoice amount</b> tab (gid 1780682586)
+    for the pending/recurring pages, and the <b>Collection</b> tab for the collected-amount page —
+    <b>File → Download → CSV</b>, then load them here. Columns are matched by header name.
+    Nothing leaves your machine.
+  </div>
+  <label class="btn primary" for="csvPend">Load pending CSV…</label>
+  <input type="file" id="csvPend" accept=".csv,text/csv">
+  <label class="btn primary" for="csvColl">Load Collection CSV…</label>
+  <input type="file" id="csvColl" accept=".csv,text/csv">
+  <button class="btn" id="snapBack">Snapshot</button>
+  <span class="status" id="loadMsg"></span>
+</div>
+
+<div class="refresh">
+  <div class="txt">
+    <b>Manual remarks.</b> Type straight into the <i>Manual remark</i> column of any details table — it saves as you
+    type and is keyed to the customer, so it survives sorting, filtering, switching pages and loading a fresh CSV,
+    and it rides along in every <i>Export CSV</i>. It is stored in this browser only: keep your own copy with
+    <b>Save remarks</b>, and use <b>Load remarks</b> to restore them on another machine or after site data is cleared.
+  </div>
+  <span class="status" id="noteCount"></span>
+  <button class="btn" id="noteSave">Save remarks</button>
+  <label class="btn" for="noteLoad">Load remarks…</label>
+  <input type="file" id="noteLoad" accept=".json,application/json">
+  <button class="btn" id="noteClear">Clear all</button>
+  <span class="status" id="noteMsg"></span>
+</div>
+
+<nav class="pages" id="pageNav">
+  <button data-p="pend" aria-selected="true">Collections Pending</button>
+  <button data-p="nopay" aria-selected="false">Never Received Payment</button>
+  <button data-p="recur" aria-selected="false">Payment Recurring</button>
+  <button data-p="coll" aria-selected="false">Collected Amount</button>
+  <button data-p="aging" aria-selected="false">SPOC Aging (full book)</button>
+</nav>
+
+<!-- ============ PAGE 1 ============ -->
+<section class="page on" id="p-pend">
+  <div class="note">
+    <b>Collections pending without auto pay.</b> Accounts with a balance whose recurring mapping is <b>not Active</b> —
+    the book somebody has to actually go and collect. Day buckets are on <b>TAT</b> (days outstanding): ≤30 / 31-60 / &gt;60,
+    which is how the Looker report splits them. Amounts in <b>INR</b>.
+  </div>
+  <div class="kpis" id="k-pend"></div>
+  <div class="grid2">
+    <div class="card">
+      <header><h2>Pending by Account Manager</h2><span class="cap">click to filter</span></header>
+      <div class="pad"><div class="bars" id="b-pend-am"></div></div>
+    </div>
+    <div class="card">
+      <header><h2>Pending by AE / SPOC</h2><span class="cap">click to filter</span></header>
+      <div class="pad"><div class="bars" id="b-pend-ae"></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <header><h2>Details table view</h2><span class="cap" id="cap-pend"></span></header>
+    <div class="tools">
+      <input type="search" id="q-pend" placeholder="Search customer…">
+      <select id="f-pend-am"></select>
+      <select id="f-pend-ae"></select>
+      <select id="f-pend-st"></select>
+      <select id="f-pend-band">
+        <option value="">Any TAT</option>
+        <option value="a">≤ 30 days</option>
+        <option value="b">31 - 60 days</option>
+        <option value="c">&gt; 60 days</option>
+      </select>
+      <button class="btn" data-reset="pend">Reset</button>
+      <button class="btn" data-export="pend">Export CSV</button>
+    </div>
+    <div class="scroll"><table id="t-pend"><thead><tr>
+      <th data-k="cust">Customer name</th>
+      <th data-k="last">Last collection date</th>
+      <th data-k="am">Account manager</th>
+      <th data-k="spoc">SPOC</th>
+      <th data-k="st">Status</th>
+      <th data-k="due">Due days</th>
+      <th data-k="inv">Invoice count</th>
+      <th data-k="pend" class="sorted">Pending amount</th>
+      <th data-k="accy">Actual currency</th>
+      <th data-k="note">Manual remark</th>
+    </tr></thead><tbody></tbody><tfoot></tfoot></table></div>
+  </div>
+</section>
+
+<!-- ============ PAGE 2 ============ -->
+<section class="page" id="p-nopay">
+  <div class="note">
+    <b>Never received any payment from this customer.</b> Accounts with a balance and <b>Payment Received Status = No</b>
+    — every one of these also has a blank last-collection date, so nothing has ever landed. These are onboarding
+    failures, not late payers, and they need a different conversation.
+  </div>
+  <div class="kpis" id="k-nopay"></div>
+  <div class="grid2">
+    <div class="card">
+      <header><h2>Pending by Account Manager</h2></header>
+      <div class="pad"><div class="bars" id="b-nopay-am"></div></div>
+    </div>
+    <div class="card">
+      <header><h2>Pending by AE / SPOC</h2></header>
+      <div class="pad"><div class="bars" id="b-nopay-ae"></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <header><h2>Details table view</h2><span class="cap" id="cap-nopay"></span></header>
+    <div class="tools">
+      <input type="search" id="q-nopay" placeholder="Search customer…">
+      <select id="f-nopay-am"></select>
+      <select id="f-nopay-ae"></select>
+      <button class="btn" data-reset="nopay">Reset</button>
+      <button class="btn" data-export="nopay">Export CSV</button>
+    </div>
+    <div class="scroll"><table id="t-nopay"><thead><tr>
+      <th data-k="cust">Customer name</th>
+      <th data-k="am">Account manager</th>
+      <th data-k="spoc">SPOC</th>
+      <th data-k="ms">Account status</th>
+      <th data-k="due">Due days</th>
+      <th data-k="inv">Invoice count</th>
+      <th data-k="studio">Studio</th>
+      <th data-k="vini">Vini</th>
+      <th data-k="pend" class="sorted">Pending amount</th>
+      <th data-k="note">Manual remark</th>
+    </tr></thead><tbody></tbody><tfoot></tfoot></table></div>
+  </div>
+</section>
+
+<!-- ============ PAGE 3 ============ -->
+<section class="page" id="p-recur">
+  <div class="note blue">
+    <b>Payment recurring status — all numbers in USD.</b> Subscription-based accounts only. "Activated" means the
+    recurring mapping is Active, i.e. the money collects itself. Everything in the <b>without recurring</b> column is
+    ARR that somebody has to chase by hand every cycle — that is the cost this page exists to remove.
+  </div>
+  <div class="kpis" id="k-recur"></div>
+  <div class="grid2b">
+    <div class="card">
+      <header><h2>ARR by Account Manager</h2><span class="cap">active vs without recurring</span></header>
+      <div class="pad"><div class="bars" id="b-recur-am"></div></div>
+    </div>
+    <div class="card">
+      <header><h2>ARR by AE / SPOC</h2><span class="cap">top 15</span></header>
+      <div class="pad"><div class="bars" id="b-recur-ae"></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <header><h2>Details table view</h2><span class="cap" id="cap-recur"></span></header>
+    <div class="tools">
+      <input type="search" id="q-recur" placeholder="Search customer…">
+      <select id="f-recur-am"></select>
+      <select id="f-recur-ae"></select>
+      <select id="f-recur-st">
+        <option value="">Any recurring status</option>
+        <option value="1">Active</option>
+        <option value="0">Not Active</option>
+      </select>
+      <button class="btn" data-reset="recur">Reset</button>
+      <button class="btn" data-export="recur">Export CSV</button>
+    </div>
+    <div class="scroll"><table id="t-recur"><thead><tr>
+      <th data-k="cust">Customer name</th>
+      <th data-k="am">Account manager</th>
+      <th data-k="spoc">SPOC</th>
+      <th data-k="act">Recurring status</th>
+      <th data-k="arr" class="sorted">ARR (USD)</th>
+      <th data-k="note">Manual remark</th>
+    </tr></thead><tbody></tbody><tfoot></tfoot></table></div>
+  </div>
+</section>
+
+<!-- ============ PAGE 4 ============ -->
+<section class="page" id="p-coll">
+  <div class="note">
+    <b>Collected amount — cash that actually landed.</b> Built from the <i>Collection</i> tab: one row per receipt,
+    converted to INR. Period metrics are anchored to the snapshot date.
+    <span id="coll-caveat"></span>
+  </div>
+  <div class="kpis" id="k-coll"></div>
+  <div class="card">
+    <header><h2>Monthly collections</h2><span class="cap" id="cap-coll-series"></span></header>
+    <div class="pad"><div class="cols" id="c-coll-series"></div></div>
+  </div>
+  <div class="grid3">
+    <div class="card">
+      <header><h2>MTD by AE</h2><span class="cap">current month</span></header>
+      <div class="pad"><div class="bars" id="b-coll-mtdae"></div></div>
+    </div>
+    <div class="card">
+      <header><h2>All-time by AE</h2></header>
+      <div class="pad"><div class="bars" id="b-coll-ae"></div></div>
+    </div>
+    <div class="card">
+      <header><h2>All-time by account type</h2></header>
+      <div class="pad"><div class="bars" id="b-coll-acct"></div></div>
+    </div>
+  </div>
+  <div class="grid3">
+    <div class="card">
+      <header><h2>By currency</h2><span class="cap">INR equivalent</span></header>
+      <div class="pad"><div class="bars" id="b-coll-ccy"></div></div>
+    </div>
+    <div class="card">
+      <header><h2>By deposit account</h2></header>
+      <div class="pad"><div class="bars" id="b-coll-dep"></div></div>
+    </div>
+    <div class="card">
+      <header><h2>By entity</h2></header>
+      <div class="pad"><div class="bars" id="b-coll-ent"></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <header><h2>Top customers collected</h2><span class="cap" id="cap-coll-top"></span></header>
+    <div class="scroll"><table id="t-coll" class="static"><thead><tr>
+      <th>Customer name</th><th>Collected (INR)</th><th>Share</th>
+    </tr></thead><tbody></tbody></table></div>
+  </div>
+</section>
+
+<!-- ============ PAGE 5 ============ -->
+<section class="page" id="p-aging">
+  <div class="note">
+    <b>Full book, aged by the sheet's own buckets.</b> Every account with a balance — auto-pay included, so this total
+    is larger than the Collections Pending page. Buckets here are the sheet's <i>0-30 / 30-60 / 60-90 / &gt;90</i>
+    columns, not the TAT split.
+  </div>
+  <div class="kpis" id="k-aging"></div>
+  <div class="card">
+    <header><h2>Aging profile</h2>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--b1)"></i>0-30</span>
+        <span><i class="sw" style="background:var(--b2)"></i>30-60</span>
+        <span><i class="sw" style="background:var(--b3)"></i>60-90</span>
+        <span><i class="sw" style="background:var(--b4)"></i>&gt;90</span>
+      </div>
+    </header>
+    <div class="pad"><div class="aging-strip" id="strip"></div></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <header><h2>By SPOC</h2><span class="cap">click a row to filter · click headers to sort</span></header>
+      <div class="scroll"><table id="t-spoc"><thead><tr>
+        <th data-k="spoc">SPOC</th><th data-k="n">Accts</th>
+        <th data-k="b0">0-30</th><th data-k="b1">30-60</th><th data-k="b2">60-90</th><th data-k="b3">&gt;90</th>
+        <th data-k="over">Overdue 30+</th><th data-k="total" class="sorted">Total</th><th data-k="share">Mix</th>
+      </tr></thead><tbody></tbody></table></div>
+    </div>
+    <div style="display:flex;flex-direction:column">
+      <div class="card">
+        <header><h2>Top 12 SPOCs by exposure</h2><span class="cap">stacked by bucket</span></header>
+        <div class="pad"><div class="bars" id="b-aging-spoc"></div></div>
+      </div>
+      <div class="card">
+        <header><h2>Worst 12 accounts &gt;90 days</h2><span class="cap">escalation list</span></header>
+        <div class="pad"><div class="bars" id="b-aging-crit"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <header><h2>Accounts — pending &amp; overdue</h2><span class="cap" id="cap-aging"></span></header>
+    <div class="tools">
+      <input type="search" id="q-aging" placeholder="Search customer…">
+      <select id="f-aging-spoc"></select>
+      <select id="f-aging-ms"></select>
+      <select id="f-aging-ent"></select>
+      <select id="f-aging-bucket">
+        <option value="">Any aging</option>
+        <option value="over">Has overdue 30+</option>
+        <option value="b3">Has &gt;90 days</option>
+        <option value="b2">Has 60-90 days</option>
+        <option value="b1">Has 30-60 days</option>
+        <option value="clean">Only 0-30</option>
+      </select>
+      <button class="btn" data-reset="aging">Reset</button>
+      <button class="btn" data-export="aging">Export CSV</button>
+    </div>
+    <div class="scroll"><table id="t-aging"><thead><tr>
+      <th data-k="cust">Customer</th><th data-k="spoc">SPOC</th><th data-k="am">Owner</th>
+      <th data-k="ms">Status</th><th data-k="ent">Entity</th><th data-k="inv">Inv</th>
+      <th data-k="b0">0-30</th><th data-k="b1">30-60</th><th data-k="b2">60-90</th><th data-k="b3">&gt;90</th>
+      <th data-k="pend" class="sorted">Total</th><th data-k="due">Days</th>
+      <th data-k="last">Last collection</th><th data-k="rem">Sheet remarks</th>
+      <th data-k="note">Manual remark</th>
+    </tr></thead><tbody></tbody><tfoot></tfoot></table></div>
+  </div>
+</section>
+
+<footer id="foot"></footer>
+</div>
+
+<script>
+/* =====================================================================
+   Spyne Collection Dashboard — offline rebuild of the Looker Studio
+   report "Collection Dashboard" (report cfc68bd0-f29c-48f6-a5a1-2c4bc29e7093).
+
+   Snapshot pulled 16 Sep 2026 from "Collection Projections - Working":
+     · pages 1, 2, 3, 5  <- tab "SPOC wise invoice amount" (gid 1780682586)
+     · page 4            <- tab "Collection" (receipt-level, aggregated here)
+
+   PEND row fields:
+   0 cust  1 spoc  2 am  3 st(1=active)  4 ms  5 ent  6 map(1=auto-pay active)
+   7 last  8 tat  9 due  10 inv  11 pend  12 accy
+   13 b0_30  14 b30_60  15 b60_90  16 b90p  17 studio  18 vini  19 pay(1=yes)  20 rem
+
+   RECUR row fields: 0 cust  1 am  2 spoc  3 act(1=Active)  4 arr(USD)
+   ===================================================================== */
+const SNAP = '16 Sep 2026';
+
+const PEND_RAW = [
+["Adloid Technologies Private limited","Akash","Partner",1,"Live","India",0,"18-Jun-2026",89,90,1,3168000,3738240,0,0,3168000,0,3168000,0,1,"Need to duscuss with Yash"],
+["World Car Auto Group","Ankur","Sales",1,"Live","Unknown",0,"31-Jul-2026",138,47,9,2539885,29881,718505,718505,367625,735250,2539885,0,1,""],
+["Mohammed Yousuf Naghi Motors","Aman","CS",1,"Live","Unknown",0,"31-May-2027",107,-257,1,2268422,23828,0,0,0,2268422,2268422,0,1,""],
+["Think Direct Consulting LLC","Akash","Partner",1,"Live","Unknown",0,"20-Jul-2026",57,58,1,1262795,13200,0,1262795,0,0,1262795,0,1,""],
+["Swiggy Limited","Aman","CS",1,"Live","India",0,"30-Jun-2026",77,78,1,1207157,1424445,0,0,1207157,0,1207157,0,1,""],
+["TVS CERTIFIED PRIVATE LIMITED","Anuj","CS",1,"Live","Unknown",0,"09-Sep-2026",6,7,1,1009800,1191564,1009800,0,0,0,1009800,0,1,""],
+["Asbury Automotive Management L.L.C","Ankur Batra","CS",1,"Live","US",0,"31-Aug-2026",15,16,1,964155,11343,964155,0,0,0,964155,0,1,"No"],
+["Sports Durst Automotive Group","Pallav Pandey","Sales",1,"Live","US",0,"27-Aug-2026",80,20,3,956250,11250,446250,255000,255000,0,956250,0,1,""],
+["Pointe Buick Gmc","Vanshit","Sales",1,"Churned","US",0,"30-Apr-2026",290,139,3,701250,8250,255000,255000,191250,0,803250,0,1,"Yes"],
+["Teton Solutions Group","Abhijeet","CS",1,"Live","Unknown",0,"31-Jul-2026",46,47,2,696150,8190,348075,348075,0,0,696150,0,1,"Yes 15-May"],
+["Jones Chrysler Dodge Jeep Ram","Jatin Arora","Sales",1,"Churned","US",0,"",115,0,4,679320,7992,169830,169830,169830,169830,679320,0,0,""],
+["Giant Auto Warehouse","Archit","Sales",1,"Live","India",0,"",55,0,2,667628,7000,334960,332668,0,0,667628,0,0,""],
+["Mega Dealer","Vedant","Partner",1,"Live","Unknown",0,"31-Aug-2026",442,16,5,652696,7123,284657,0,0,368039,652696,0,1,""],
+["AUTOLOAD IT LIMITED","Akash","Partner",1,"Live","Unknown",0,"20-Aug-2026",26,27,1,616570,4800,616570,0,0,0,616570,0,1,"Payment will receive on 27-May"],
+["Dealcar Software S.L.","Akash","Partner",1,"Live","India",0,"31-Aug-2026",15,16,1,594059,5400,594059,0,0,0,594059,0,1,""],
+["Grand Motorcars","Shivam Ahuja","Sales",1,"Live","US",0,"",46,0,4,573750,6750,221000,352750,0,0,573750,0,0,""],
+["Kolon Mobility Group","Anuj","CS",1,"Live","Unknown",0,"30-Jun-2026",77,78,1,571048,6000,0,0,571048,0,571048,0,1,""],
+["Bill Wright Toyota","Liam Fallon","Sales",1,"Live","India",0,"",20,0,1,570939,6000,570939,0,0,0,0,0,0,""],
+["AL MASAOOD AUTOMOBILES COMPANY L.L.C.","Anuj","CS",1,"Live","Unknown",0,"31-May-2027",107,-257,1,566749,6000,0,0,0,566749,0,0,1,""],
+["Carvago s.r.o.","Aman","CS",1,"Unknown","India",0,"31-Aug-2026",15,16,1,560727,5000,560727,0,0,0,560727,0,1,""],
+["Jenkins Auto Group","Ankur Batra","CS",1,"Live","US",0,"14-Sep-2026",1,2,1,537625,0,537625,0,0,0,537625,0,1,"No"],
+["Dream Automotive","Jaspreet","CS",1,"Live","Unknown",1,"31-Aug-2026",17,16,4,531420,6252,531420,0,0,0,531420,0,1,""],
+["Ramstien Used Cars","Anuj","CS",1,"Live","Unknown",0,"07-Sep-2026",8,9,1,526733,4788,526733,0,0,0,526733,0,1,""],
+["Dorsett Automotive","Archit","Sales",1,"Future Churn","US",0,"",118,0,4,510000,6000,127500,127500,127500,127500,510000,0,0,""],
+["Bridgeton Auto Mall","Jaspreet","CS",1,"Live","Unknown",0,"26-Sep-2026",46,-10,3,509660,5996,297330,212330,0,0,509660,0,1,"Need to send invoice Saarthak"],
+["Taylor BMW","Vishal","CS",1,"Live","Unknown",0,"15-Aug-2026",31,32,1,504900,5940,0,504900,0,0,504900,0,1,""],
+["Gettel Automotive Group","Jaspreet","CS",1,"Live","US",0,"31-Aug-2026",15,16,1,484500,5700,484500,0,0,0,484500,0,1,"No"],
+["Auto Depot Of Navarre","Shivam Ahuja","Sales",1,"Live","US",0,"",65,0,5,425000,5000,170000,170000,85000,0,425000,0,0,""],
+["Victory Toyota of Midtown","Ankur Batra","CS",1,"Live","US",0,"30-Sep-2026",138,-14,5,424575,4995,84915,84915,84915,169830,424575,0,1,""],
+["Off Lease Motors","Vishal","CS",0,"Churned","Unknown",0,"17-Oct-2025",333,334,3,382500,4500,0,0,0,382500,382500,0,1,"Yes 15-May"],
+["Car Revolution Avenel","Jace Larsen","Sales",1,"Live","US",0,"",68,0,3,382500,4500,127500,127500,127500,0,382500,0,0,""],
+["Bravo Automotive Group, LLC","Jaspreet","CS",1,"Live","US",0,"30-Jun-2026",77,78,3,381225,4485,127075,127075,127075,0,381225,0,1,"No"],
+["Bush Trucks Leasing","Sanyam","CS",1,"Live","US",0,"27-Jul-2026",50,51,2,362950,4270,181475,181475,0,0,362950,0,1,"No"],
+["Brandon Steven Motors","Arun Divya","Sales",1,"Live","US",0,"17-Sep-2026",77,-1,6,361250,4250,157250,102000,102000,0,361250,0,1,""],
+["Lamacchia Honda","Vishal","CS",0,"Live","Unknown",0,"28-Feb-2026",199,200,6,356490,4194,0,59415,59415,237660,356490,0,1,"Yes 15-May"],
+["Sosoumaf LLC","Saarthak","Sales",0,"Churned","Unknown",0,"30-Sep-2025",350,351,9,344250,4050,0,0,0,344250,344250,0,1,"Yes"],
+["C.A.R. Automotive LLC","Pallav Pandey","Sales",1,"Unknown","US",0,"07-Sep-2026",39,9,2,339660,3996,169830,169830,0,0,0,0,1,""],
+["Starling Auto Group","Abhijeet","CS",1,"Live","Unknown",1,"30-Sep-2026",107,-14,2,331500,3900,165750,0,0,165750,331500,0,1,"Yes 15-May"],
+["Rick Weaver Chevrolet","Archit","Sales",1,"Live","US",0,"31-Aug-2026",46,16,4,331500,3900,289000,42500,0,0,331500,0,1,""],
+["Si Vallett Auto Sales-DBA Vaughns Classic Cars","Vanshit","Sales",1,"Live","US",0,"10-Sep-2026",89,6,4,323000,3800,119000,102000,102000,0,425000,0,1,"Yes 15-May"],
+["Eddie Gilstrap Motors","Vishal","CS",1,"Live","Unknown",0,"28-Feb-2026",199,200,3,318750,3750,106250,0,0,212500,318750,0,1,"Yes 15-May"],
+["Ultimate Motor Cars LLC","Archit","Sales",1,"Live","US",0,"08-Aug-2026",99,39,3,306000,3600,102000,102000,0,102000,306000,0,1,""],
+["Charlie Clark Auto Group","Abhijeet","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,301750,3550,301750,0,0,0,301750,0,1,""],
+["First Motors W.L.L","Anuj","CS",1,"Live","Unknown",0,"14-Jun-2026",93,94,2,294305,1542,146676,0,0,147629,294305,0,1,""],
+["Preston Management Group, LLC","Ishika","CS",1,"Live","US",0,"31-Aug-2026",15,16,1,289000,3400,289000,0,0,0,289000,0,1,"No"],
+["PalmEasy Motors PA LLC","Ankur","Sales",0,"Churned","US",0,"31-Jul-2026",107,47,2,289000,3400,0,0,144500,144500,289000,0,1,""],
+["Horne Mazda","Ritika","CS",1,"Live","US",0,"10-Aug-2026",36,37,2,289000,3400,144500,144500,0,0,289000,0,1,""],
+["S A C USED CAR TRADING L.L.C","Aman","CS",1,"Live","India",0,"10-Jul-2026",67,68,1,286156,3000,0,0,286156,0,286156,0,1,"Yes 15-May"],
+["Hammond Cars","Liam Fallon","Sales",1,"Unknown","Unknown",0,"",14,0,1,283607,3000,283607,0,0,0,0,0,0,""],
+["Roanoke Motors Inc","Abhijeet","CS",1,"Live","Unknown",1,"31-Jul-2026",46,47,2,283475,3335,0,283475,0,0,283475,0,1,""],
+["Moses Auto Group","Ishika","CS",1,"Live","US",0,"09-Sep-2026",6,7,1,280500,3300,280500,0,0,0,280500,0,1,""],
+["Russ Darrow Group, Inc.","Avinash","CS",1,"Live","US",0,"31-Aug-2026",15,16,1,279565,3289,279565,0,0,0,279565,0,1,"Yes"],
+["Inmersiva","Akash","Partner",0,"Live","Unknown",0,"19-Jul-2026",58,59,2,279345,2550,140335,139010,0,0,279345,0,1,"Need to discount for 50%"],
+["Mobials Inc.","Vedant","Partner",1,"Live","Unknown",0,"31-Jul-2026",46,47,1,274484,3229,0,274484,0,0,274484,0,1,""],
+["Automax Atlanta","Shivam Ahuja","Sales",0,"Future Churn","US",0,"",97,0,2,272000,3200,0,0,136000,136000,272000,0,0,""],
+["Quantrell Auto Group","Ankur Batra","CS",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,271830,3198,271830,0,0,0,271830,0,1,"Follow up 22-May'26 Reminder send"],
+["Wharton Ford","Liam Fallon","Sales",1,"Live","India",0,"",25,0,1,265604,2800,265604,0,0,0,0,0,0,""],
+["CARS24 Services Private Limited","Aman","CS",1,"Churned","Unknown",0,"31-Jan-2026",380,228,4,258552,305092,0,0,0,258552,258552,0,1,"No"],
+["Greenville Automotive Group","Abhijeet","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,255000,3000,255000,0,0,0,255000,0,1,""],
+["Murgado Automotive Group","Prabha","CS",1,"Live","US",0,"27-Jun-2026",80,81,3,255000,3000,85000,85000,85000,0,255000,0,1,"Yes"],
+["Habberstad Kia","Arun Divya","Sales",1,"Churned","US",0,"",67,0,3,255000,3000,85000,85000,85000,0,255000,0,0,""],
+["DeNooyer Chevrolet Kalamazoo","Liam Fallon","Sales",1,"Churned","US",0,"",83,0,3,254745,2997,84915,84915,84915,0,254745,0,0,""],
+["JDMotorline LTD","Anuj","CS",1,"Live","India",0,"31-May-2026",107,108,1,249875,2000,0,0,0,249875,249875,0,1,""],
+["Landers CDJR Toyota","Ankur Batra","CS",1,"Live","US",0,"28-Aug-2026",37,19,3,246500,2900,212500,34000,0,0,246500,0,1,""],
+["AGAM B.V.","Anuj","CS",1,"Live","India",0,"31-Jul-2026",46,47,1,245975,2200,0,245975,0,0,245975,0,1,""],
+["I-40 Autos, LLC","Sudansh","CS",1,"Unknown","Unknown",1,"",107,0,4,237660,2796,59415,59415,59415,59415,237660,0,0,"No"],
+["Worldwide Motors LTD dba Paragon Acura","Ankur Batra","CS",1,"Live","Unknown",0,"31-Aug-2026",22,16,2,233750,2750,233750,0,0,0,233750,0,1,"Jay and Saarthak working on this 18-May'26"],
+["SUBARU OF GWINNETT","Sanyam","CS",1,"Live","Unknown",0,"31-Dec-2026",77,-106,1,229500,2700,0,0,229500,0,229500,0,1,""],
+["Lumos Automotive Group","Liam Fallon","Sales",1,"Live","India",0,"27-Aug-2026",19,20,1,229314,2400,229314,0,0,0,229314,0,1,""],
+["Riley Subaru","Vishal","CS",1,"Live","Unknown",0,"21-May-2026",117,118,1,227380,2400,0,0,0,227380,227380,0,1,""],
+["Beechmont Ford Inc","Jaspreet","CS",1,"Live","Unknown",1,"10-Sep-2026",5,6,1,226844,2669,226844,0,0,0,226844,0,1,""],
+["Nissan of Boone","Ashley","Sales",0,"Churned","US",0,"19-Feb-2026",208,209,2,220660,2596,0,0,0,220660,220660,0,1,""],
+["Impex Auto Sales","Vanshit","Sales",1,"Live","Unknown",1,"14-Jul-2027",102,-301,4,204000,2400,51000,51000,51000,51000,204000,0,1,""],
+["Heiser Chevrolet Inc","Liam Fallon","Sales",1,"Live","US",0,"26-Jun-2026",81,82,3,204000,2400,68000,68000,68000,0,204000,0,1,""],
+["Rons Automotive","Prathamesh","CS",1,"Live","US",0,"18-Jul-2026",240,60,8,204000,2400,25500,25500,25500,127500,229500,0,1,""],
+["ROTANA STAR RENT A CAR","Anuj","CS",0,"Churned","Unknown",0,"04-Apr-2026",164,165,1,199867,2100,0,0,0,199867,199867,0,1,""],
+["Roswell Honda","Ankur","Sales",1,"Unknown","India",0,"",28,0,1,191162,2000,191162,0,0,0,0,0,0,""],
+["Planet Honda, Planet Hyundai, Leo Payne Honda & Genesis of Golden","Ishika","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,187000,2200,187000,0,0,0,187000,0,1,""],
+["Harper Chevrolet GMC","Vishal","CS",1,"Live","Unknown",0,"21-Aug-2026",25,26,1,173400,2040,173400,0,0,0,173400,0,1,""],
+["Qatar Living","Anuj","CS",1,"Live","Unknown",0,"31-Dec-2026",46,-106,2,171536,1800,85673,85862,0,0,171536,0,1,"Yes 15-May"],
+["Automotive Marketing Solutions","Vedant","Partner",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,170000,2000,170000,0,0,0,170000,0,1,""],
+["Amigo Auto Group, Inc.","Jaspreet","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,170000,2000,170000,0,0,0,170000,0,1,""],
+["Scaleo SAS","Akash","Partner",1,"Live","US",0,"31-Jul-2026",46,47,1,170000,2000,0,170000,0,0,170000,0,1,"Payment will receive on 27-May"],
+["Koons Automotive Inc","Prathamesh","CS",0,"Live","US",0,"08-Apr-2026",160,161,4,170000,2000,0,0,42500,127500,170000,0,1,""],
+["Autorola Gulf LLC","Anuj","CS",1,"Live","Unknown",0,"14-Mar-2026",185,186,3,169853,1200,57072,0,0,112781,169853,0,1,"Yes 15-May"],
+["ASN EXKLUSIV GmbH","Anuj","CS",1,"Live","Unknown",0,"19-Oct-2025",333,332,4,166021,1680,0,40797,0,125224,166021,0,1,"Yes 15-May"],
+["5 Star Imports","Prathamesh","CS",1,"Live","Unknown",0,"31-May-2026",107,108,4,163200,1920,40800,40800,40800,40800,163200,0,1,"Yes 15-May"],
+["Autopix AS","Akash","Partner",1,"Live","Unknown",0,"31-Jul-2026",46,47,1,158068,15497,0,158068,0,0,158068,0,1,"Payment will receive on 27-May"],
+["DIOGO MANUEL DA COSTA SANTOS UNIPESSOAL LDA","Anuj","CS",1,"Live","Unknown",0,"30-Jun-2026",77,78,1,157791,1440,0,0,157791,0,157791,0,1,""],
+["Main Street Motors","Garvit","CS",1,"Live","Unknown",1,"06-Aug-2026",53,41,3,153000,1800,68000,85000,0,0,153000,0,1,""],
+["RC Hill Powersports Orlando","Jace Larsen","Sales",1,"Live","US",0,"",111,0,4,153000,1800,38250,38250,38250,38250,153000,0,0,""],
+["Butler Lexus South Atlanta","Abhijeet","CS",1,"Live","US",0,"30-Jun-2026",77,78,3,152745,1797,50915,50915,50915,0,152745,0,1,"Yes"],
+["Asa Auto Plaza Of Austin","Ishika","CS",1,"Live","US",1,"31-Jul-2026",46,47,1,152745,1797,0,152745,0,0,152745,0,1,""],
+["Dealer Specialties, LLC","Vedant","Partner",1,"Live","US",0,"30-Sep-2026",199,-14,2,145053,1707,0,0,0,145053,145053,0,1,""],
+["Covert Ford Lincoln","Abhijeet","CS",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,144500,1700,144500,0,0,0,144500,0,1,"Yes 15-May"],
+["Stillwell Ford","Jatin Arora","Sales",1,"Live","India",0,"22-Sep-2026",24,-6,1,143554,1500,143554,0,0,0,143554,0,1,""],
+["Elite Auto Marketing Solutions","Vedant","Partner",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,138125,1625,138125,0,0,0,138125,0,1,""],
+["Eagers Automotive","Anuj","CS",1,"Live","India",0,"17-Jul-2026",60,61,1,136455,1425,0,136455,0,0,136455,0,1,""],
+["Arora Holdings LLC dba Hyundai of Milledgeville","Garvit","CS",1,"Live","US",0,"19-Sep-2026",54,-3,2,136000,1600,68000,68000,0,0,199750,0,1,""],
+["MST Trading, LLC DBA Always Motors","Jatin Arora","Sales",1,"Live","India",0,"",47,0,2,133712,1400,67172,66540,0,0,133712,0,0,""],
+["Feldmann Imports, Inc.","Tushar","CS",1,"Live","US",0,"20-Sep-2026",15,-4,1,127500,1500,127500,0,0,0,127500,0,1,""],
+["Toronto Honda","Abhijeet","CS",1,"Live","US",1,"17-Sep-2026",7,-1,3,127500,1500,127500,0,0,0,263500,0,1,"Yes 15-May"],
+["Advantage Toyota","Vishal","CS",1,"Live","US",0,"30-Jun-2026",77,78,3,127500,1500,42500,42500,42500,0,127500,0,1,"No"],
+["MEI Inc","Vishal","CS",1,"Live","US",0,"12-Sep-2026",3,4,1,127500,1500,127500,0,0,0,127500,0,1,"No"],
+["Midwest Auto Group","Archit","Sales",1,"Live","US",0,"",97,0,2,127500,1500,63750,0,0,63750,127500,0,0,""],
+["Graff Chevrolet of Chesterton","Ankur Batra","CS",1,"Live","US",0,"28-Aug-2026",18,19,1,127500,1500,127500,0,0,0,127500,0,1,""],
+["Superior Auto, INC","Vishal","CS",1,"Live","US",0,"31-Oct-2026",30,-45,1,127415,1499,127415,0,0,0,127415,0,1,""],
+["Keffer Inc.","Aman","CS",1,"Live","Unknown",0,"30-Sep-2026",77,-14,3,127245,1497,42415,42415,42415,0,127245,0,1,"No"],
+["NJ Auto Haus","Garvit","CS",1,"Live","US",0,"24-Jun-2026",83,84,3,127245,1497,42415,42415,42415,0,127245,0,1,"Yes"],
+["Mazda","Jaspreet","CS",1,"Live","US",0,"30-Sep-2026",138,-14,5,127075,1495,25415,25415,25415,50830,127075,0,1,""],
+["Bob Johnson Lexus","Jaspreet","CS",1,"Live","US",0,"30-Sep-2026",138,-14,5,127075,1495,25415,25415,25415,50830,127075,0,1,""],
+["Nelson Automotive Inc","Garvit","CS",1,"Live","Unknown",0,"31-Mar-2026",168,169,1,122400,1440,0,0,0,122400,122400,0,1,"Yes 15-May"],
+["IMPOSTA MON. IKE","Anuj","CS",1,"Live","Unknown",0,"31-Jan-2026",227,228,2,119034,1100,0,0,59121,59913,119034,0,1,"Yes 15-May"],
+["Car Castle","Garvit","CS",1,"Live","US",0,"30-Apr-2026",138,139,5,116875,1375,23375,23375,23375,46750,116875,0,1,"No"],
+["Primasnab auto","Anuj","CS",1,"Live","India",0,"30-Jun-2026",77,78,1,115652,1200,0,0,115652,0,115652,0,1,""],
+["Seth Wadley Ford of Pauls Valley","Vanshit","Sales",1,"Live","India",0,"",47,0,2,114659,1200,57576,57083,0,0,114659,0,0,""],
+["Carify Auto Corp","Prathamesh","CS",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,113863,1200,113863,0,0,0,113863,0,1,""],
+["Motorline Auto Group_CAD","Prathamesh","CS",0,"Churned","India",0,"16-May-2026",122,123,1,113341,1700,0,0,0,113341,113341,0,1,""],
+["Duffy's Auto Brokerage, LLC","Garvit","CS",1,"Live","Unknown",0,"31-Jul-2026",46,47,1,112608,1325,0,112608,0,0,112608,0,1,""],
+["Magnum Car Sales","Anuj","CS",1,"Live","Unknown",0,"12-Jan-2026",246,247,3,111659,900,0,0,38241,73418,111659,0,1,"Yes 15-May"],
+["Bentley Greensboro & Greensboro Ineos Grenadier","Ankur Batra","CS",0,"Churned","Unknown",0,"28-Feb-2026",199,200,2,110330,1298,0,0,0,110330,110330,0,1,""],
+["Elway Powersport","Arun Divya","Sales",1,"Live","US",0,"",35,0,2,110330,1298,55165,55165,0,0,0,0,0,""],
+["Baracar","Anuj","CS",1,"Live","Unknown",0,"30-Jun-2026",77,78,1,109589,1000,0,0,109589,0,109589,0,1,""],
+["Jason Pilger Chrysler Dodge Jeep RAM","Ankur","Sales",1,"Future Churn","India",0,"",92,0,3,107025,1125,0,35889,35782,35354,142607,0,0,""],
+["Capital Chevrolet Inc.","Abhijeet","CS",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,106335,1251,106335,0,0,0,106335,0,1,"Yes 15-May"],
+["Ron Carter GM (Alvin)","Saarthak","Sales",1,"Live","US",0,"27-Sep-2026",54,-11,3,106250,1250,25500,80750,0,0,106250,0,1,""],
+["BP AUTO FINDERS","Garvit","CS",1,"Live","Unknown",0,"31-May-2026",107,108,4,102000,1200,25500,25500,25500,25500,102000,0,1,""],
+["MSM Autohandel","Anuj","CS",0,"Churned","US",0,"",533,0,1,102000,1200,0,0,0,102000,102000,0,0,"Yes 15-May"],
+["iDeal Auto Imports, LLC","Prathamesh","CS",1,"Live","US",1,"11-Sep-2026",4,5,1,102000,1200,102000,0,0,0,102000,0,1,""],
+["Quality Assurance Autos LLC","Saarthak","Sales",0,"Churned","Unknown",0,"28-Feb-2026",199,200,4,101660,1196,0,0,0,101660,101660,0,1,"No"],
+["Bob John Toyota","Jaspreet","CS",1,"Live","US",0,"30-Sep-2026",107,-14,4,101660,1196,25415,25415,25415,25415,101660,0,1,""],
+["Nyle Maxwell CDJR Taylor","Prince","Sales",1,"Live","India",0,"",33,0,1,100000,1050,0,100000,0,0,0,0,0,""],
+["TRD Motors LLC","Pallav Pandey","Sales",1,"Unknown","Unknown",0,"",13,0,1,99517,1050,99517,0,0,0,0,0,0,""],
+["AC Sportwagen","Anuj","CS",1,"Live","India",0,"30-Apr-2026",138,139,2,99263,900,0,49589,0,49674,99263,0,1,"Sed reminder 20-May-26"],
+["DJS AUTOS LTD","Anuj","CS",1,"Live","Unknown",0,"31-Jan-2026",227,228,3,98855,900,0,33059,0,65796,98855,0,1,"Yes 15-May"],
+["Median Media LLC","Vedant","Partner",1,"Live","Unknown",0,"31-Aug-2026",46,16,2,94690,1114,42500,52190,0,0,94690,0,1,""],
+["Sansone Jr's Auto Group","Abhijeet","CS",1,"Live","US",0,"25-Aug-2026",21,22,2,93500,1100,93500,0,0,0,93500,0,1,""],
+["Lee Group","Avinash","CS",1,"Live","Unknown",0,"31-Aug-2026",38,16,3,92565,1089,61710,30855,0,0,92565,0,1,"Yes"],
+["MOJSIUK Sp","Anuj","CS",1,"Live","Unknown",0,"30-Jun-2026",77,78,1,92091,952,0,0,92091,0,92091,0,1,""],
+["Crown Royal Drive","Vanshit","Sales",1,"Live","US",0,"",227,0,3,91800,1080,0,30600,0,61200,91800,0,0,"Yes"],
+["Patel Motors NZ Ltd","Anuj","CS",1,"Churned","Unknown",0,"",350,0,1,91057,1512,0,0,0,91057,91057,0,0,"Yes 15-May"],
+["LCS Motors","Anuj","CS",1,"Churned","Unknown",0,"30-Sep-2025",350,351,12,89347,720,7748,7671,7541,66388,89347,0,1,""],
+["Marthaler Honda","Vishal","CS",1,"Live","US",0,"30-Jun-2026",77,78,3,88995,1047,29665,29665,29665,0,88995,0,1,"Yes 15-May"],
+["Twin Rivers Auto Group","Ishika","CS",1,"Live","US",0,"31-Aug-2026",40,16,3,88995,1047,59330,29665,0,0,88995,0,1,"No"],
+["Yoga Cars","Vedant","Partner",1,"Live","Unknown",0,"31-Jul-2026",46,47,1,86911,900,0,86911,0,0,86911,0,1,""],
+["Faircy Automotive","Ishika","CS",1,"Live","India",0,"30-Sep-2026",32,-14,1,85767,897,0,85767,0,0,85767,0,1,""],
+["Soave Automotive Group","Jaspreet","CS",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,85673,900,85673,0,0,0,85673,0,1,""],
+["Olympic Hyundai Vancouver","Abhijeet","CS",1,"Live","Unknown",0,"10-Jun-2026",97,98,4,85085,1001,25500,25500,25500,8585,85085,0,1,"Yes 15-May"],
+["Bill Cole AutoMall Bluefield","Jaspreet","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,85000,1000,85000,0,0,0,85000,0,1,""],
+["McLaren North Jersey","Sanyam","CS",1,"Live","Unknown",1,"31-Aug-2026",19,16,2,85000,1000,85000,0,0,0,85000,0,1,"Yes"],
+["Graff Ford of Chesterton","Ankur Batra","CS",1,"Live","US",0,"31-Aug-2026",15,16,1,85000,1000,85000,0,0,0,85000,0,1,"Follow up 25-May'26"],
+["Dutch Miller Kia Charlotte","Ankur","Sales",1,"Live","US",0,"26-Jun-2026",81,82,2,85000,1000,0,42500,42500,0,85000,0,1,""],
+["Crown Motors","Vanshit","Sales",1,"Live","US",0,"",53,0,2,85000,1000,42500,42500,0,0,85000,0,0,""],
+["Burns Hyundai","Veneet","Sales",0,"Churned","US",0,"23-May-2026",115,116,1,84915,999,0,0,0,84915,84915,0,1,""],
+["Montgomery Moore","Prakash","CS",0,"OB Churn","US",0,"26-Mar-2026",173,174,2,84830,998,0,0,0,84830,84830,0,1,"No"],
+["Ben Clymer's The Body Shop","Avinash","CS",1,"Live","US",0,"21-Jul-2026",56,57,2,84830,998,42415,42415,0,0,84830,0,1,""],
+["MT. ORAB CHEVROLET","Vanshit","Sales",0,"Live","US",0,"10-Sep-2026",199,6,3,82467,970,0,13745,13745,54978,82467,0,1,""],
+["Performance Automotive Network","Jaspreet","CS",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,81200,955,81200,0,0,0,81200,0,1,""],
+["Smartlot Solutions","Vedant","Partner",1,"Live","US",0,"31-Jul-2026",46,47,1,80240,944,0,80240,0,0,80240,0,1,""],
+["SANGLI WHEELS","Anuj","CS",1,"Live","India",0,"28-Mar-2026",171,172,2,80000,94400,0,0,40000,40000,80000,0,1,"Yes 15-May"],
+["R8 Cars Ltd","Anuj","CS",1,"Live","Unknown",1,"",464,0,3,79384,934,0,0,0,79384,79384,0,0,""],
+["Fornova, Comércio e Assistência de Veículos Lda","Anuj","CS",1,"Live","Unknown",0,"31-Jul-2026",46,47,1,79342,720,0,79342,0,0,79342,0,1,"Sed reminder 20-May-26"],
+["Greater Chicago Motors","Anmol","Sales",0,"Churned","US",0,"",199,0,1,77775,915,0,0,0,77775,77775,0,0,""],
+["Pro Vanity Ltd","Anuj","CS",1,"Churned","Unknown",0,"14-Mar-2026",185,186,7,76669,600,11063,11013,10903,43690,76669,0,1,""],
+["AUTO GRONIC","Anuj","CS",1,"Live","Unknown",0,"13-May-2026",125,126,1,76500,900,0,0,0,76500,76500,0,1,""],
+["Midway Dodge","Vishal","CS",1,"Live","Unknown",0,"30-Jun-2026",77,78,3,76500,900,25500,25500,25500,0,76500,0,1,""],
+["Autohighway","Prathamesh","CS",0,"Live","US",0,"31-May-2026",168,108,3,76500,900,0,25500,25500,25500,102000,0,1,"Yes"],
+["Marano & Sons Auto Sales","Garvit","CS",1,"Live","Unknown",1,"10-Sep-2026",5,6,1,76500,900,76500,0,0,0,76500,0,1,""],
+["ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ \"ОКОЛО ОФИЦИАЛЫ","Sanyam","CS",0,"Churned","Unknown",0,"30-Sep-2025",350,351,1,76500,900,0,0,0,76500,153000,0,1,""],
+["Blasius North","Avinash","CS",1,"Live","Unknown",1,"27-Jun-2026",80,81,1,76500,900,0,0,76500,0,76500,0,1,"Yes 15-May"],
+["West Mitsubishi","Sanyam","CS",1,"Live","US",1,"31-Jul-2026",46,47,2,76500,900,38250,38250,0,0,76500,0,1,""],
+["Speedway Car Sales","Ishika","CS",1,"Live","US",1,"14-Sep-2026",1,2,1,76500,0,76500,0,0,0,76500,0,1,""],
+["WHITEWATER MOTORS (West Harrison)","Avinash","CS",1,"Live","US",0,"19-May-2027",27,-245,1,76500,900,76500,0,0,0,76500,0,1,""],
+["Northside Auto Sales","Jace Larsen","Sales",1,"Live","India",0,"",47,0,2,76317,798,38288,38029,0,0,76317,0,0,""],
+["Turn Auto Mall","Arun Divya","Sales",1,"Live","India",0,"",37,0,2,75913,798,37953,37960,0,0,0,0,0,""],
+["Haji Zaman Safi Motors FZE","Anuj","CS",1,"Live","Unknown",0,"31-May-2026",107,108,1,75801,800,0,0,0,75801,75801,0,1,""],
+["360 Cars Chile SpA","Vedant","Partner",0,"Churned","Unknown",0,"31-Mar-2026",199,169,1,74676,800,0,0,0,74676,74676,0,1,""],
+["Silverline Auto Group","Abhijeet","CS",0,"Future Churn","US",0,"12-Jul-2026",65,66,2,73695,867,0,31195,42500,0,73695,0,1,"No"],
+["GULF CAR USED CAR","Anuj","CS",1,"Live","Unknown",0,"25-Jul-2026",52,53,1,72254,750,0,72254,0,0,72254,0,1,"Yes 15-May"],
+["Northpoint Toyota _ Australia","Anuj","CS",1,"Live","Unknown",0,"20-Jul-2026",57,58,2,69518,1030,34854,34664,0,0,69518,0,1,"Yes 15-May"],
+["Törnqvist bil AB","Anuj","CS",1,"Live","India",0,"20-Apr-2026",148,149,2,69258,630,0,34366,0,34891,69258,0,1,""],
+["New Deal Pre-Owned Autos","Avinash","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,68000,800,68000,0,0,0,68000,0,1,""],
+["DFW Auto Sale","Prathamesh","CS",1,"Live","Unknown",0,"09-Aug-2026",37,38,2,67830,798,33915,33915,0,0,67830,0,1,"Old email thread"],
+["Eagle Ridge Chevrolet Buick GMC","Sanyam","CS",1,"Live","Unknown",0,"30-Jun-2026",77,78,1,63750,750,0,0,63750,0,63750,0,1,"Yes"],
+["Alliance Automotive of Westchester LLC dba White P","Ankur Batra","CS",1,"Live","US",0,"31-Aug-2026",15,16,1,63750,750,63750,0,0,0,63750,0,1,"Jay and Saarthak working on this 18-May'26"],
+["ROSI Automotive Group","Vishal","CS",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,63750,750,63750,0,0,0,63750,0,1,""],
+["Auto Gallery Automotive Group","Jaspreet","CS",1,"Live","US",1,"31-Oct-2026",21,-45,1,63750,750,63750,0,0,0,63750,0,1,""],
+["Bentley Jacksonville","Jaspreet","CS",0,"Future Churn","Unknown",0,"31-Aug-2026",15,16,1,62560,736,62560,0,0,0,62560,0,1,"Yes"],
+["Gedi Route Cars Inc.","Vishal","CS",1,"Live","Unknown",0,"31-Aug-2026",46,16,3,59500,700,34000,25500,0,0,59500,0,1,""],
+["AUTOREV","Prathamesh","CS",1,"Live","US",1,"31-Jul-2026",46,47,1,59500,700,0,59500,0,0,59500,0,1,""],
+["Austin Ford CDJR","Zeeshana","CS",1,"Sales Drop","US",1,"02-Sep-2026",13,14,1,59500,700,59500,0,0,0,59500,0,1,"No"],
+["Al Piemonte","Abhijeet","CS",1,"Live","US",0,"31-Aug-2026",15,16,2,59500,700,59500,0,0,0,59500,0,1,"Yes"],
+["Ryan Honda of Minot","Ankur Batra","CS",1,"Live","US",1,"30-Sep-2026",46,-14,2,59500,700,29750,29750,0,0,59500,0,1,""],
+["Covert Chrysler Dodge Jeep RAM","Abhijeet","CS",1,"Live","US",0,"30-Sep-2026",15,-14,1,59500,700,59500,0,0,0,59500,0,1,""],
+["Modern Classic Motors INC","Vishal","CS",1,"Live","Unknown",1,"25-Aug-2026",21,22,1,59415,699,59415,0,0,0,59415,0,1,""],
+["Global Motor Trade International LLC","Vishal","CS",1,"Live","US",0,"05-Sep-2026",10,11,1,59415,699,59415,0,0,0,59415,0,1,""],
+["Baxter Automotive","Pallav Pandey","Sales",1,"Live","US",0,"",57,0,2,59330,698,29665,29665,0,0,88995,0,0,""],
+["Af auto","Anuj","CS",1,"Unknown","Unknown",0,"21-Jun-2026",86,87,1,59321,540,0,0,59321,0,59321,0,1,""],
+["Your Choice Auto LLC","Ishika","CS",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,59245,697,59245,0,0,0,59245,0,1,"Yes 15-May"],
+["Ado's Motors LLC","Prathamesh","CS",1,"Live","Unknown",0,"17-May-2026",121,122,1,58869,612,0,0,0,58869,58869,0,1,"Not responding"],
+["Mhl auto","Anuj","CS",1,"Live","Unknown",0,"31-Jan-2026",227,228,1,57893,633,0,0,0,57893,57893,0,1,"Yes 15-May"],
+["Auto Exchange Group","Ankur","Sales",1,"Live","India",0,"",56,0,2,57231,600,28711,28520,0,0,57231,0,0,""],
+["McLeod Auto Sales","Vanshit","Sales",1,"Live","India",0,"23-Sep-2026",54,-7,1,57045,600,0,57045,0,0,57045,0,1,""],
+["Sam's Auto","Prathamesh","CS",1,"Churned","Unknown",0,"",350,0,1,56623,890,0,0,0,56623,56623,0,0,"Yes 15-May"],
+["Autorola de Mexico","Aman","CS",0,"Churned","Unknown",0,"30-Apr-2026",138,139,1,56100,660,0,0,0,56100,56100,0,1,""],
+["Grand motors Inc O/A oscars motors","Prathamesh","CS",1,"Live","US",1,"06-Aug-2026",40,41,1,55675,655,0,55675,0,0,55675,0,1,"Yes 15-May"],
+["Emerald Motors","Vishal","CS",1,"Churned","US",0,"08-Jul-2026",69,70,2,55590,654,0,27795,27795,0,55590,0,1,"Yes"],
+["Sport Car srl","Anuj","CS",1,"Live","Unknown",0,"10-May-2026",128,129,1,55556,500,0,0,0,55556,55556,0,1,""],
+["Porsche BG","Anuj","CS",1,"Live","Unknown",0,"19-May-2026",119,120,1,55086,648,0,0,0,55086,55086,0,1,""],
+["Ferris Chevrolet, Inc","Sanyam","CS",1,"Live","US",0,"03-Aug-2026",43,44,2,54261,638,27130,27130,0,0,54261,0,1,"Yes"],
+["Subaru of Wesley Chapel","Zeeshana","CS",0,"Churned","US",0,"30-Jun-2026",77,78,1,53380,628,0,0,53380,0,53380,0,1,""],
+["Volkswagen of Wesley Chapel","Zeeshana","CS",0,"Churned","US",0,"30-Jun-2026",77,78,1,53380,628,0,0,53380,0,53380,0,1,""],
+["Gericia International Ltd","Anuj","CS",1,"Live","India",0,"31-Aug-2026",15,16,1,52258,405,52258,0,0,0,52258,0,1,"Invoice sent to Customer"],
+["Lake Auto Group","Shivam Ahuja","Sales",0,"Live","US",0,"31-Jul-2026",46,47,1,52190,614,0,52190,0,0,52190,0,1,""],
+["Rideau Valley Motors","Jaspreet","CS",1,"Live","India",0,"15-Sep-2026",123,1,1,51934,550,0,0,0,51934,51934,0,1,""],
+["Auto Smart LLC","Garvit","CS",1,"Live","US",0,"19-Jul-2026",58,59,2,51850,610,25925,25925,0,0,77775,0,1,"Yes"],
+["The wet belt tech Ltd t/a wbt vehicle sales","Pallav Pandey","Sales",1,"Live","India",0,"16-Jul-2026",61,62,2,51341,400,25873,0,25468,0,51341,0,1,""],
+["Kafrimotorways ltd","Prathamesh","CS",1,"Live","Unknown",0,"30-Jun-2026",77,78,1,51000,600,0,0,51000,0,51000,0,1,""],
+["Carzlane","Prathamesh","CS",1,"Live","Unknown",0,"18-Jul-2026",59,60,2,51000,600,25500,25500,0,0,76500,0,1,""],
+["Momentum Motor Group","Prathamesh","CS",1,"Churned","Unknown",1,"31-Aug-2026",46,16,2,51000,600,25500,25500,0,0,51000,0,1,""],
+["Clear Auto Dartmouth","Garvit","CS",1,"Live","US",0,"22-Jun-2026",85,86,3,51000,600,17000,17000,17000,0,51000,0,1,"Yes"],
+["Jidd Motors Mitsubishi","Abhijeet","CS",1,"Live","US",0,"09-Aug-2026",37,38,2,51000,600,25500,25500,0,0,51000,0,1,"No"],
+["Ron Carter Ford","Saarthak","Sales",1,"Live","US",0,"27-Sep-2026",54,-11,2,51000,600,25500,25500,0,0,51000,0,1,""],
+["Ron Carter Chrysler Dodge Jeep Ram (Alvin)","Saarthak","Sales",1,"Live","US",0,"27-Sep-2026",54,-11,2,51000,600,25500,25500,0,0,51000,0,1,""],
+["Maus Nissan of Brooksville","Saarthak","Sales",1,"Live","US",0,"27-Sep-2026",56,-11,2,51000,600,25500,25500,0,0,51000,0,1,""],
+["Maus Nissan of North Tampa","Saarthak","Sales",1,"Live","US",0,"27-Sep-2026",56,-11,2,51000,600,25500,25500,0,0,51000,0,1,""],
+["Maus Nissan of New Port Richey","Saarthak","Sales",1,"Live","US",0,"27-Sep-2026",56,-11,2,51000,600,25500,25500,0,0,51000,0,1,""],
+["Maus Acura of North Tampa","Saarthak","Sales",1,"Live","US",0,"27-Sep-2026",56,-11,2,51000,600,25500,25500,0,0,76500,0,1,""],
+["Singing River Toyota","Saarthak","Sales",1,"Live","US",0,"27-Sep-2026",50,-11,2,51000,600,25500,25500,0,0,51000,0,1,""],
+["Singing River Honda","Saarthak","Sales",1,"Live","US",0,"27-Sep-2026",50,-11,2,51000,600,25500,25500,0,0,51000,0,1,""],
+["Singing River Nissan","Saarthak","Sales",1,"Live","US",0,"27-Sep-2026",50,-11,2,51000,600,25500,25500,0,0,51000,0,1,""],
+["Bob Allen Ford- Ottawa","Vishal","CS",0,"Churned","US",0,"22-May-2026",116,117,1,50915,599,0,0,0,50915,50915,0,1,"Yes"],
+["Loyalty Chevrolet/Cadillac","Zeeshana","CS",0,"Churned","US",0,"30-Jun-2026",77,78,2,50830,598,0,25415,25415,0,50830,0,1,"Yes"],
+["Mini of Rochester","Jaspreet","CS",1,"Live","US",0,"30-Sep-2026",46,-14,2,50830,598,25415,25415,0,0,50830,0,1,""],
+["Buick GMC","Jaspreet","CS",1,"Live","US",0,"30-Sep-2026",46,-14,2,50830,598,25415,25415,0,0,50830,0,1,""],
+["Auto X-Change Inc","Garvit","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,50796,598,50796,0,0,0,50796,0,1,""],
+["iDrive Motor Sales LLC","Prathamesh","CS",0,"Churned","Unknown",0,"31-Oct-2025",319,320,3,49371,540,0,0,0,49371,49371,0,1,"Send reminder 20-May-26"],
+["Golden Cars Company","Prathamesh","CS",0,"Churned","Unknown",0,"",319,0,1,48305,57000,0,0,0,48305,48305,0,0,"Yes 15-May"],
+["Northtown Automotive","Pallav Pandey","Sales",1,"Live","India",0,"24-Sep-2026",11,-8,2,47340,498,47340,0,0,0,47340,0,1,""],
+["DRC Auto Sales","Anuj","CS",1,"Live","Unknown",1,"31-Jul-2026",46,47,1,46446,360,0,46446,0,0,46446,0,1,""],
+["Joseph Toyota Of Cincinnati","Vishal","CS",0,"Churned","Unknown",0,"31-May-2026",107,108,1,45723,538,0,0,0,45723,45723,0,1,""],
+["PILOT AI TECNOLOGIA LTDA","Vedant","Partner",0,"Churned","US",0,"30-Jun-2026",138,78,1,44625,525,0,0,0,44625,44625,0,1,""],
+["CarLux Fort Myers","Prathamesh","CS",1,"Live","US",0,"02-Sep-2026",13,14,1,44625,525,44625,0,0,0,44625,0,1,""],
+["JDBNOW | BYRIDER Cleveland","Sanyam","CS",1,"Live","US",1,"14-Sep-2026",1,2,1,43554,0,43554,0,0,0,43554,0,1,""],
+["Vayper Automoción S.L.U","Anuj","CS",1,"Live","Unknown",0,"31-May-2026",107,108,1,43127,400,0,0,0,43127,43127,0,1,""],
+["Auto Luís","Anuj","CS",1,"Live","Unknown",0,"31-Mar-2026",168,169,2,42779,440,0,0,21305,21473,42779,0,1,"Contraction issue"],
+["Njord ApS","Anuj","CS",1,"Live","Unknown",0,"22-Jun-2026",85,86,1,42614,390,0,0,42614,0,42614,0,1,""],
+["VÄRNAMO BILAFFÄR AB","Anuj","CS",1,"Live","Unknown",0,"30-Jun-2026",77,78,1,42521,450,0,0,42521,0,42521,0,1,""],
+["Beck Motors","Prathamesh","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,42500,500,42500,0,0,0,42500,0,1,""],
+["Chl Cars Ltd","Anuj","CS",1,"Live","Unknown",0,"09-Jun-2026",98,99,1,42500,500,0,0,0,42500,42500,0,1,"Email sent"],
+["Car Bazaar","Prathamesh","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,42500,500,42500,0,0,0,42500,0,1,""],
+["VinFast Of Forney","Abhijeet","CS",1,"Live","US",0,"31-Aug-2026",15,16,1,42500,500,42500,0,0,0,42500,0,1,""],
+["Integrity Auto Sales","Liam Fallon","Sales",1,"Live","US",0,"29-Aug-2026",17,18,1,42500,500,42500,0,0,0,42500,0,1,""],
+["Moffitt's Ford","Sanyam","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,42415,499,42415,0,0,0,42415,0,1,""],
+["John Hiester Chevrolet","Zeeshana","CS",1,"Live","US",0,"31-Aug-2026",15,16,1,42415,499,42415,0,0,0,42415,0,1,"Yes 15-May"],
+["Mercedes-Benz Of Arcadia","Ankur Batra","CS",1,"Live","US",0,"06-Sep-2026",9,10,1,42415,499,42415,0,0,0,42415,0,1,"Yes"],
+["Rohrich Automotive Group","Ankur Batra","CS",1,"Live","Unknown",0,"31-Aug-2026",25,16,1,42330,498,42330,0,0,0,42330,0,1,"Follow up 22-May'26 Reminder send"],
+["Navarre Premium select","Arun Divya","Sales",0,"Churned","US",0,"17-Jun-2026",90,91,2,42330,498,0,21165,21165,0,42330,0,1,""],
+["LUXURY IMPORTS","Garvit","CS",1,"Live","US",0,"31-Jul-2026",46,47,1,40800,480,0,40800,0,0,40800,0,1,"Email sent"],
+["Freedom Chevrolet","Sanyam","CS",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,40800,480,40800,0,0,0,40800,0,1,"Yes"],
+["Bemer Motor Cars","Garvit","CS",1,"Live","Unknown",0,"10-Sep-2026",5,6,1,40375,475,40375,0,0,0,40375,0,1,""],
+["Automobile Mazzeo Inc.","Manpreet","CS",0,"Churned","Unknown",0,"31-May-2026",107,108,1,40205,473,0,0,0,40205,40205,0,1,""],
+["MMAUTOWERKZ","Prathamesh","CS",1,"Live","US",1,"12-Sep-2026",3,4,1,38250,450,38250,0,0,0,38250,0,1,""],
+["Perkins Motors","Vishal","CS",1,"Live","US",1,"08-Sep-2026",7,8,1,38165,449,38165,0,0,0,38165,0,1,"Yes"],
+["Abdul Majeed Saleh Khader Company","Anuj","CS",1,"Live","Unknown",0,"04-Feb-2027",134,-141,2,38032,400,0,19080,0,18952,38032,0,1,"Yes 15-May"],
+["Car Central","Avinash","CS",1,"Live","US",1,"31-Aug-2026",201,16,2,36176,426,33915,0,0,2261,36176,0,1,"Yes"],
+["Automoviles Rolacar S.L","Anuj","CS",1,"Live","Unknown",0,"12-Sep-2026",3,4,1,35700,420,35700,0,0,0,35700,0,1,""],
+["Clarvio","Akash","Partner",1,"Live","US",0,"31-Jul-2026",46,47,1,34406,299,0,34406,0,0,34406,0,1,"Payment will receive on 25-May"],
+["Energy City Motors Limited","Anuj","CS",0,"Churned","Unknown",0,"06-Jul-2026",77,72,1,34316,360,0,0,34316,0,34316,0,1,""],
+["Sithari Cars Limited","Anuj","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,34286,500,34286,0,0,0,34286,0,1,""],
+["Hondru Auto Group(US)","Abhijeet","CS",1,"Live","Unknown",1,"14-Sep-2026",1,2,1,34000,0,34000,0,0,0,34000,0,1,""],
+["Extreme Cars US","Garvit","CS",1,"Live","Unknown",1,"31-Oct-2026",53,-45,1,34000,400,0,34000,0,0,34000,0,1,""],
+["Lexus of Merrillville","Sanyam","CS",1,"Live","Unknown",0,"04-Sep-2026",11,12,1,34000,400,34000,0,0,0,34000,0,1,"Yes 15-May"],
+["Jaguar Land Rover San Juan","Vishal","CS",1,"Live","US",0,"14-Sep-2026",1,2,1,34000,0,34000,0,0,0,34000,0,1,"Sent 24"],
+["Medgaarden's Southwest Sales Inc","Garvit","CS",1,"Live","US",1,"31-Aug-2026",15,16,1,34000,400,34000,0,0,0,34000,0,1,""],
+["DIGIFLOW AUTOMOTIVE","Akash","Partner",1,"Live","Unknown",0,"31-Jul-2026",46,47,2,33232,300,16702,16530,0,0,33232,0,1,"Payment will receive on 25-May"],
+["Strategic Vehicle Solutions","Anuj","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,32463,250,32463,0,0,0,32463,0,1,""],
+["Audi Cape Fear & Land Rover Cape Fear","Abhijeet","CS",1,"Live","Unknown",0,"31-Aug-2026",15,16,2,31875,375,31875,0,0,0,31875,0,1,""],
+["Canary Rocket 2020 S.L","Anuj","CS",0,"Churned","Unknown",0,"31-Dec-2025",258,259,1,31672,300,0,0,0,31672,31672,0,1,"Yes 15-May"],
+["Piryani Pty Ltd TA Galaxy Autos","Anuj","CS",1,"Live","India",0,"31-Aug-2026",15,16,1,31392,456,31392,0,0,0,31392,0,1,""],
+["Capital City Ford Lincoln Toyota","Vishal","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,30600,360,30600,0,0,0,30600,0,1,""],
+["Benitez Auto Group","Prathamesh","CS",1,"Live","US",0,"29-Jul-2026",48,49,1,30600,360,0,30600,0,0,30600,0,1,""],
+["Brownboys Motorclub","Prathamesh","CS",1,"Live","Unknown",0,"30-Apr-2026",138,139,5,29750,350,5950,5950,5950,11900,29750,0,1,"Yes 15-May"],
+["Pearl Chrysler Jeep Dodge & Ram","Sanyam","CS",1,"Live","Unknown",0,"16-Aug-2026",30,31,1,29750,350,29750,0,0,0,59500,0,1,""],
+["Ryan Buick GMC Cadillac","Ankur Batra","CS",1,"Live","US",1,"30-Sep-2026",15,-14,1,29750,350,29750,0,0,0,29750,0,1,""],
+["Dean Carter Chevrolet","Sanyam","CS",1,"Live","US",1,"14-Sep-2026",1,2,1,29750,0,29750,0,0,0,29750,0,1,""],
+["Northwest Indiana Auto Finance","Sanyam","CS",1,"Live","US",0,"31-Aug-2026",15,16,1,29750,350,29750,0,0,0,29750,0,1,"No"],
+["Ryan Nissan","Ankur Batra","CS",1,"Live","US",1,"30-Sep-2026",15,-14,1,29750,350,29750,0,0,0,29750,0,1,""],
+["Ideal Auto","Ankur Batra","CS",1,"Live","US",1,"30-Sep-2026",15,-14,1,29750,350,29750,0,0,0,29750,0,1,""],
+["Aristocrat Motors & Logistics","Anuj","CS",1,"Live","Unknown",1,"31-Jul-2026",46,47,2,28812,300,14327,14485,0,0,28812,0,1,""],
+["Sound auto and finance","Garvit","CS",1,"Live","US",1,"31-Aug-2026",15,16,1,27642,325,27642,0,0,0,27642,0,1,""],
+["ARJ’s Auto Sales","Vedant","Partner",1,"Live","US",0,"31-Aug-2026",15,16,1,27540,324,27540,0,0,0,27540,0,1,""],
+["Auto Dobrovolny V.M. s.r.o.","Anuj","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,26723,240,26723,0,0,0,26723,0,1,""],
+["Kia Vancouver","Abhijeet","CS",1,"Live","US",0,"09-Aug-2026",37,38,2,25979,306,25500,479,0,0,25979,0,1,"No"],
+["Knapp Chevrolet, Inc.","Sanyam","CS",1,"Live","Unknown",1,"20-Aug-2026",26,27,1,25500,300,25500,0,0,0,25500,0,1,""],
+["Capital City CDJR","Dexter","CS",0,"Churned","Unknown",0,"31-May-2026",168,108,1,25500,300,0,0,0,25500,25500,0,1,"Yes 15-May"],
+["KL Honda","Sanyam","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,25500,300,25500,0,0,0,25500,0,1,""],
+["Mossy Motors","Sanyam","CS",1,"Live","US",0,"31-Aug-2026",15,16,1,25500,300,25500,0,0,0,25500,0,1,"Yes"],
+["Janssen Chrysler Jeep Dodge","Abhijeet","CS",1,"Live","US",0,"31-Jul-2026",46,47,2,25500,300,12750,12750,0,0,25500,0,1,"Yes"],
+["Buckhannon Toyota","Sanyam","CS",1,"Live","US",0,"08-Sep-2026",7,8,1,25500,300,25500,0,0,0,25500,0,1,"Yes"],
+["Countryside Mitsubishi","Abhijeet","CS",0,"Live","US",0,"25-Aug-2026",82,22,1,25500,300,0,0,25500,0,25500,0,1,"No"],
+["Ariana Motors","Prathamesh","CS",1,"Live","US",1,"31-Aug-2026",15,16,1,25500,300,25500,0,0,0,25500,0,1,""],
+["Steve Rayman Chevrolet (Marietta)","Jaspreet","CS",1,"Live","US",0,"27-Sep-2026",15,-11,1,25500,300,25500,0,0,0,25500,0,1,""],
+["Santa Motors CA","Garvit","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,25415,299,25415,0,0,0,25415,0,1,""],
+["Volvo Cars Fort Washington","Vishal","CS",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,25415,299,25415,0,0,0,25415,0,1,"Yes 15-May"],
+["Beverly Hills Auto Group","Garvit","CS",1,"Live","US",0,"05-Sep-2026",10,11,1,25415,299,25415,0,0,0,25415,0,1,"Yes"],
+["Drivemax USA","Saarthak","Sales",1,"Live","US",0,"29-Aug-2026",17,18,1,25415,299,25415,0,0,0,25415,0,1,""],
+["Certified Collection","Jaspreet","CS",1,"Live","US",0,"30-Sep-2026",15,-14,1,25415,299,25415,0,0,0,25415,0,1,""],
+["Valley Cadillac","Jaspreet","CS",1,"Live","US",0,"30-Sep-2026",15,-14,1,25415,299,25415,0,0,0,25415,0,1,""],
+["Chevy Pulaski","Jaspreet","CS",1,"Live","US",0,"30-Sep-2026",15,-14,1,25415,299,25415,0,0,0,25415,0,1,""],
+["Bob Johnson CDJR Avon","Jaspreet","CS",1,"Live","US",0,"30-Sep-2026",15,-14,1,25415,299,25415,0,0,0,25415,0,1,""],
+["Bob Johnson GM","Jaspreet","CS",1,"Live","US",0,"30-Sep-2026",15,-14,1,25415,299,25415,0,0,0,25415,0,1,""],
+["Motor World Stoke limited","Anuj","CS",1,"Live","Unknown",1,"22-Jun-2026",85,86,1,24634,195,0,0,24634,0,24634,0,1,""],
+["4 Season Motors LLC","Prathamesh","CS",1,"Live","US",1,"31-Aug-2026",15,16,1,24226,285,24226,0,0,0,24226,0,1,""],
+["Kazoto SARL","Anuj","CS",1,"Live","Unknown",0,"15-Jun-2026",92,93,1,23911,250,0,0,0,23911,47835,0,1,""],
+["Instacar SA","Anuj","CS",1,"Live","US",1,"04-Sep-2026",11,12,1,23693,240,23693,0,0,0,23693,0,1,""],
+["Amato Hyundai Of Glendale","Avinash","CS",1,"Live","US",0,"04-Sep-2026",11,12,1,23375,275,23375,0,0,0,23375,0,1,"Yes 15-May"],
+["BPR MOTORS","Anuj","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,23238,180,23238,0,0,0,23238,0,1,"Invoice sent to Customer"],
+["Dave Knapp Ford Lincoln","Vishal","CS",1,"Live","Unknown",1,"30-Apr-2026",138,139,2,22950,270,0,11475,0,11475,22950,0,1,""],
+["Janssen Kuenle CDJR of Plattsmouth","Abhijeet","CS",1,"Live","US",0,"27-Jul-2026",50,51,2,22950,270,11475,11475,0,0,22950,0,1,""],
+["Brierfield Car Sales","Anuj","CS",0,"Churned","Unknown",0,"15-Apr-2026",335,154,1,22936,180,0,0,0,22936,22936,0,1,"Yes 15-May"],
+["Amatoscar comercio automóvel s.a","Anuj","CS",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,22269,200,22269,0,0,0,22269,0,1,""],
+["Auto Express Credit","Prathamesh","CS",1,"Live","Unknown",0,"13-Sep-2026",2,3,1,21250,250,21250,0,0,0,21250,0,1,""],
+["Finn's Discount Auto","Garvit","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,21250,250,21250,0,0,0,21250,0,1,""],
+["Hanania Automotive Group","Abhijeet","CS",1,"Live","US",0,"05-Sep-2026",10,11,1,21165,249,21165,0,0,0,21165,0,1,"No"],
+["PDX Wheels","Garvit","CS",1,"Live","US",0,"14-Sep-2026",1,2,1,21165,0,21165,0,0,0,21165,0,1,""],
+["B2C Customer out of India","Anuj","CS",1,"Live","Unknown",0,"31-Jul-2026",46,47,1,20738,218,0,20738,0,0,20738,0,1,""],
+["J & A Ferguson Cars_GBP","Anuj","CS",1,"Live","Unknown",0,"30-Jun-2026",77,78,1,20295,180,0,0,20295,0,20295,0,1,"Yes 15-May"],
+["Sardar Trading Agencies","Anuj","CS",1,"Live","Unknown",0,"26-Jul-2026",51,52,1,20094,210,0,20094,0,0,20094,0,1,"Yes 15-May"],
+["D24 Autos Sales","Anuj","CS",0,"Churned","Unknown",0,"31-Oct-2026",138,-45,1,19843,180,0,0,0,19843,19843,0,1,""],
+["Denver Auto","Prathamesh","CS",1,"Live","Unknown",0,"16-Aug-2026",30,31,1,19125,225,19125,0,0,0,38250,0,1,""],
+["Drive INC.","Anuj","CS",1,"Live","Unknown",1,"13-Sep-2026",2,3,1,19125,225,19125,0,0,0,19125,0,1,""],
+["Vivition","Akash","Partner",1,"Live","Unknown",0,"31-Jul-2026",46,47,1,19055,193,0,19055,0,0,19055,0,1,""],
+["GR Sport Limited","Anuj","CS",1,"Live","Unknown",0,"19-May-2026",119,120,1,18952,200,0,0,0,18952,18952,0,1,""],
+["Meyer Imports DBA Berwyn Kia","Abhijeet","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,18700,220,18700,0,0,0,18700,0,1,""],
+["H&K Chevrolet Family Auto","Ishika","CS",1,"Live","US",1,"12-Sep-2026",3,4,1,18153,214,18153,0,0,0,18153,0,1,""],
+["Perfection Auto Detailing & Wheels","Manpreet","CS",0,"Churned","Unknown",0,"31-May-2026",107,108,1,17680,208,0,0,0,17680,17680,0,1,""],
+["United Motorz Inc","Sanyam","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,17000,200,17000,0,0,0,17000,0,1,""],
+["Star Motors","Garvit","CS",1,"Live","Unknown",1,"13-Sep-2026",2,3,1,17000,200,17000,0,0,0,17000,0,1,""],
+["Car Bargain","Garvit","CS",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,17000,200,17000,0,0,0,17000,0,1,"Yes"],
+["Saga Motor Group","Anuj","CS",0,"Live","Unknown",0,"31-May-2026",107,108,1,16968,176,0,0,0,16968,16968,0,1,"Not responding"],
+["Quality Cars Zaventem","Anuj","CS",1,"Live","Unknown",1,"30-Jun-2026",168,78,2,16955,156,0,0,9674,7281,16955,0,1,"Sed reminder 20-May-26"],
+["Volvo Cars Palm Springs","Sanyam","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,16915,199,16915,0,0,0,16915,0,1,""],
+["Raleigh Imports","Garvit","CS",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,16915,199,16915,0,0,0,16915,0,1,"Yes"],
+["Loyalty Nissan Short Pump","Zeeshana","CS",0,"Future Churn","US",0,"31-Aug-2026",77,16,1,16915,199,0,0,16915,0,16915,0,1,""],
+["Strunk Exotics","Prathamesh","CS",1,"Live","Unknown",1,"31-Jul-2026",46,47,2,12750,150,6375,6375,0,0,12750,0,1,""],
+["Scotland Motors, Inc.","Garvit","CS",1,"Live","Unknown",1,"31-Aug-2026",15,16,1,11900,140,11900,0,0,0,11900,0,1,""],
+["Autopartners Sverige AB","Anuj","CS",1,"Live","Unknown",0,"28-Feb-2027",15,-165,1,9557,100,9557,0,0,0,9557,0,1,"Yes 15-May"],
+["DRIVE MOTOR GROUP SA","Anuj","CS",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,8709,1650,8709,0,0,0,8709,0,1,"No"],
+["International Auto Sales","Garvit","CS",1,"Live","Unknown",1,"11-Sep-2026",4,5,1,8500,100,8500,0,0,0,8500,0,1,""],
+["Pixel Cars","Vedant","Partner",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,8369,98,8369,0,0,0,8369,0,1,""],
+["Janssen Auto Group","Abhijeet","CS",1,"Live","US",0,"05-Sep-2026",10,11,1,6375,75,6375,0,0,0,6375,0,1,"Yes"],
+["HNH MOTORS LLC","Garvit","CS",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,5950,70,5950,0,0,0,5950,0,1,""],
+["Muelas SA","Anuj","CS",1,"Live","Unknown",1,"07-Sep-2026",8,9,1,5914,60,5914,0,0,0,5914,0,1,""],
+["Carsivo","Anuj","CS",1,"Live","Unknown",0,"31-Aug-2026",15,16,1,3897,35,3897,0,0,0,3897,0,1,""],
+["Marnix India Pvt. Ltd","Anuj","CS",0,"Live","Unknown",0,"04-Sep-2027",376,-353,1,2319,2736,0,0,0,2319,2319,0,1,"Yes 15-May"],
+["GETCAR LLC","Vedant","Partner",1,"Live","US",1,"19-Aug-2026",27,28,1,2040,24,2040,0,0,0,29580,0,1,""]
+];
+
+const RECUR_RAW = [
+["Asbury Automotive Management L.L.C","CS","Ankur Batra",0,220512],
+["Carvago s.r.o.","CS","Aman",0,180000],
+["Greenway Automotive Group","CS","Avinash",1,150696],
+["Dealer Specialties, LLC","Partner","Vedant",0,126000],
+["Vatland Auto Group","CS","Abhijeet",0,115200],
+["Flexcar","CS","Ankur Batra",0,97200],
+["Bapchild Motoring World (Kent) Limited","CS","Aman",0,88590],
+["Paragon Motors of Woodside Inc dba Paragon Honda","CS","Ankur Batra",0,84000],
+["McGrath Acura of Westmont (Mcgrath Imports)","CS","Abhijeet",0,64656],
+["Quantrell Auto Group","CS","Ankur Batra",0,57564],
+["Automotive Marketing Solutions","Partner","Vedant",0,56700],
+["Russ Darrow Group, Inc.","CS","Avinash",0,53820],
+["Novacti","CS","Aman",0,50400],
+["360 Cars Chile SpA","Partner","Vedant",0,50000],
+["Galleria BMW","CS","Zeeshana",0,48000],
+["Mohammed Yousuf Naghi Motors","CS","Aman",0,48000],
+["EDealer Inc.","Partner","Vedant",0,48000],
+["Roanoke Motors Inc","CS","Abhijeet",1,47952],
+["Norfolk Motors LLC","Partner","Vedant",0,45000],
+["Haley Automotive Group","CS","Ankur Batra",0,43200],
+["INERCIKAR SA","CS","Aman",0,42000],
+["Performance Automotive Network","CS","Jaspreet",0,41760],
+["Think Direct Consulting LLC","Partner","Akash",0,41200],
+["Rohrich Automotive Group","CS","Ankur Batra",0,41000],
+["Charlie Clark Auto Group","CS","Abhijeet",1,38400],
+["AUTOLOAD IT LIMITED","Partner","Akash",0,37752],
+["Starling Auto Group","CS","Abhijeet",1,36600],
+["World Car Auto Group","Sales","Ankur",0,36036],
+["Park Cities Chrysler Dodge Jeep Ram Fiat & Bishop Maserati Alfa Romeo","CS","Jaspreet",0,36000],
+["Lambert Buick GMC Inc","CS","Vishal",1,36000],
+["Worldwide Motors LTD dba Paragon Acura","CS","Ankur Batra",0,36000],
+["Scaleo SAS","Partner","Akash",0,36000],
+["35 INCH BILISIM SANAYI VE TICARET A.S.","Partner","Akash",0,34800],
+["Teton Solutions Group","CS","Abhijeet",0,32760],
+["Tradition Automotive","Sales","Prince",0,32400],
+["UNIDAS LOCADORA S.A.","CS","Aman",0,30000],
+["McCurley Dealerships","CS","Ishika",0,30000],
+["Bravo Autos","CS","Zeeshana",0,29400],
+["Pro-Motion Pix","Partner","Vedant",1,28800],
+["Dealcar Software S.L.","Partner","Akash",0,26640],
+["Planet Honda, Planet Hyundai, Leo Payne Honda & Genesis of Golden","CS","Ishika",1,26400],
+["MAG Rotherham Ltd.","CS","Aman",0,24414],
+["Performance Auto Group","CS","Abhijeet",0,24000],
+["Bill Cole AutoMall Bluefield","CS","Jaspreet",1,24000],
+["Price LeBlanc Automotive","CS","Jaspreet",0,24000],
+["Amigo Auto Group, Inc.","CS","Jaspreet",1,24000],
+["SVG Motors Group","Sales","Veneet",0,23988],
+["Apex Automotive Group","CS","Jaspreet",0,22788],
+["Edwards Chevrolet 280","CS","Jaspreet",0,21578],
+["Covert Cadillac","CS","Abhijeet",1,21000],
+["Inmersiva","Partner","Akash",0,20580],
+["Covert Ford Lincoln","CS","Abhijeet",0,20400],
+["Simmons-Rockwell Automotive Dealerships","CS","Jaspreet",0,20400],
+["Volvo of Princeton Inc","CS","Jaspreet",1,19200],
+["Mega Dealer","Partner","Vedant",0,18000],
+["Dream Automotive","CS","Jaspreet",1,18000],
+["Art Nest","Partner","Vedant",0,18000],
+["Superior Auto, INC","CS","Vishal",0,17988],
+["Keffer Inc.","CS","Aman",0,17964],
+["Euro Tech","CS","Anuj",0,17100],
+["Sell Em All Motors","CS","Prathamesh",1,16800],
+["Love Auto Group","CS","Vishal",0,16788],
+["Hawthorne Auto Square","CS","Vishal",1,16752],
+["Dubizzle Cars L.L.C","CS","Anuj",0,16200],
+["Yonkers Auto Gallery, LLC","CS","Aditya",0,15600],
+["Nissan of Boone","Sales","Ashley",0,15576],
+["Capital Chevrolet Inc.","CS","Abhijeet",0,15374],
+["Wonderstream LDA","CS","Anuj",0,15000],
+["Soave Automotive Group","CS","Jaspreet",0,14400],
+["Carrealm Automall Sdn Bhd","CS","Anuj",0,14400],
+["Qatar Living","CS","Anuj",0,14400],
+["Bill Penney Toyota","CS","Sanyam",0,14400],
+["AUTO GALLERY","CS","Jaspreet",1,13680],
+["Haldeman Lexus of Princeton","CS","Ishika",0,13200],
+["Tropical Chevrolet","CS","Sanyam",1,13200],
+["Princeton Chevrolet GMC","CS","Avinash",1,13200],
+["Royal Nissan, LLC","CS","Ankur Batra",0,13200],
+["Parks Chevrolet Richmond","CS","Ankur Batra",0,13188],
+["Springfield Auto Pros","CS","Manpreet",0,12966],
+["Georgia Auto World","CS","Jaspreet",1,12603],
+["Street Toyota","CS","Vishal",1,12600],
+["Yoga Cars","Partner","Vedant",0,12000],
+["Bridgeton Auto Mall","CS","Jaspreet",0,12000],
+["Dick Dyer & Associates","CS","Jaspreet",1,12000],
+["Bergstrom Automotive","CS","Aman",0,12000],
+["Greenville Automotive Group","CS","Abhijeet",1,12000],
+["Highline Motor Cars Corp.","CS","Greeva",0,12000],
+["Bob King Mazda","CS","Sudansh",0,11988],
+["TVS CERTIFIED PRIVATE LIMITED","CS","Anuj",0,11880],
+["Covert Bee Cave","CS","Abhijeet",0,11520],
+["Sosoumaf LLC","Sales","Saarthak",0,11388],
+["Lindholm Biler A/S","CS","Anuj",1,10897],
+["Tropical Used Cars","CS","Vishal",1,10800],
+["Boli Garage GmbH","CS","Anuj",1,10800],
+["Towne Ford Inc","CS","Jaspreet",1,10800],
+["Alliance Automotive of Westchester LLC dba White P","CS","Ankur Batra",0,10800],
+["M&M AUTO SALES","CS","Srishti",0,10800],
+["Excel Auto Lounge","Sales","Pallav Pandey",0,10788],
+["All Star Buick GMC truck","CS","Ishika",0,10784],
+["Bentley Jacksonville","CS","Jaspreet",0,10188],
+["Dunning Motor Sales/ Dunning ford","CS","Sanyam",0,10080],
+["Watermark Ford Hyundai","CS","Jaspreet",0,9720],
+["New Deal Pre-Owned Autos","CS","Avinash",1,9600],
+["Moore Motor Sales","CS","Sanyam",1,9588],
+["Car Hop Auto Sales & Finance","CS","Ankur Batra",1,9552],
+["Van Mossel","CS","Anuj",0,9388],
+["Peragnoli Auto S.R.L","CS","Anuj",0,9108],
+["Euro Motorcars","CS","Ishika",0,9000],
+["Startin Group","CS","Anuj",0,9000],
+["Flood Auto Group","CS","Jaspreet",1,9000],
+["Mosaic Auto Group","CS","Jaspreet",0,9000],
+["Icon Motors Group of Framingham","CS","Vishal",1,9000],
+["Pritchard Companies","CS","Jaspreet",0,9000],
+["City World Toyota","CS","Jaspreet",0,9000],
+["C.A. Larsen Automobiler A/S","CS","Anuj",1,8874],
+["5 Star Imports","CS","Prathamesh",0,8640],
+["VW of Duluth","CS","Sanyam",1,8400],
+["Drivelineca.com","CS","Garvit",1,8400],
+["Forrester Lincoln","CS","Vishal",1,8400],
+["Richard lawson autoecosse","CS","Anuj",0,8393],
+["Lamacchia Honda","CS","Vishal",0,8388],
+["Modern Classic Motors INC","CS","Vishal",1,8388],
+["Your Choice Auto LLC","CS","Ishika",0,8388],
+["Autorola de Mexico","CS","Aman",0,7920],
+["Bentley Greensboro & Greensboro Ineos Grenadier","CS","Ankur Batra",0,7788],
+["Lewiston Auto","CS","Sanyam",0,7788],
+["J & A Ferguson Cars_GBP","CS","Anuj",0,7743],
+["Rim Revolution LLC","Partner","Vedant",0,7650],
+["Median Media LLC","Partner","Vedant",0,7200],
+["Yoder Family Of Companies","CS","Ishika",0,7200],
+["Knapp Chevrolet, Inc.","CS","Sanyam",1,7200],
+["Marano & Sons Auto Sales","CS","Garvit",1,7200],
+["Rev Auto Wholesalers","CS","Vishal",0,7200],
+["Impex Auto Sales","Sales","Vanshit",1,7200],
+["Bemidji Chrysler & Honda of Bemidji","CS","Sanyam",0,7200],
+["Dave Knapp Ford Lincoln","CS","Vishal",1,7200],
+["Bill Dickason Chevrolet","CS","Sanyam",1,7188],
+["IM Marketplace GmBH","CS","Aman",0,7022],
+["Airpark Motor Cars LLC","CS","Garvit",1,6900],
+["Columbus Motorcars LLC DBA - Great Lakes Hyundai of Columbus","CS","Abhijeet",0,6750],
+["Dublin Motorcars LLC DBA - Great Lakes Hyundai of Dublin","CS","Abhijeet",0,6744],
+["Elite Auto Marketing Solutions","Partner","Vedant",0,6720],
+["Team Nissan Inc","CS","Sanyam",1,6600],
+["Taylor BMW","CS","Vishal",0,6600],
+["Deery Brothers Ford","CS","Abhijeet",1,6600],
+["Approval Genie (6929290 Canada Corp.)","CS","Jaspreet",1,6600],
+["Bilar99e Oy","CS","Anuj",1,6506],
+["Beck Motors","CS","Prathamesh",1,6396],
+["Van Mossel Ford Weert","CS","Anuj",0,6259],
+["First Motors W.L.L","CS","Anuj",0,6180],
+["SLEEK CARS LIMITED","CS","Anuj",1,6001],
+["Northpoint Toyota _ Australia","CS","Anuj",0,6000],
+["Rideau Valley Motors","CS","Jaspreet",0,6000],
+["AUTO CENTRAL - SOLE PROPRIETORSHIP ( DUBAI BRANCH )","CS","Anuj",0,6000],
+["Family Trucks and Vans","CS","Vishal",1,6000],
+["The Used Car Guys GMBH","CS","Anuj",0,6000],
+["House Chevrolet Co.","CS","Abhijeet",0,6000],
+["Direct Auto","CS","Vishal",1,6000],
+["Wallingford Auto Park, Inc.","CS","Prathamesh",1,6000],
+["Runde Chevrolet, Inc.","CS","Jaspreet",1,6000],
+["Beechmont Ford Inc","CS","Jaspreet",1,6000],
+["SUBARU OF GWINNETT","CS","Sanyam",0,6000],
+["Juneau Auto Mall","CS","Abhijeet",0,6000],
+["Husker Chevrolet","CS","Ankur Batra",0,6000],
+["Juettner Motors Inc.","CS","Vishal",0,6000],
+["Car Bazaar","CS","Prathamesh",1,6000],
+["Sherwood Ford","CS","Sanyam",1,6000],
+["Zink Motor Company","CS","Prathamesh",1,6000],
+["Community Ford of Mooresville","CS","Sanyam",0,6000],
+["Toyota of Massapequa","CS","Sanyam",1,6000],
+["Diffee Ford Lincoln","CS","Vishal",0,6000],
+["McLaren North Jersey","CS","Sanyam",1,6000],
+["Sterling Acura of Austin","CS","Sanyam",0,6000],
+["AW Rostamani","CS","Anuj",0,5988],
+["Think Reliable Auto","CS","Prathamesh",0,5988],
+["Sprinkler Used Cars","CS","Garvit",1,5988],
+["Joseph Toyota Of Cincinnati","CS","Vishal",0,5988],
+["Mount Airy Nissan","CS","Sanyam",0,5988],
+["Montgomery Moore","CS","Prakash",0,5988],
+["Marthaler Chevrolet of Glenwood","CS","Zeeshana",0,5988],
+["Moffitt's Ford","CS","Sanyam",1,5988],
+["Terry Auto Group","CS","Ishika",0,5940],
+["Rijschoolchecker","Partner","Akash",0,5901],
+["Marnix India Pvt. Ltd","CS","Anuj",0,5900],
+["Freedom Chevrolet","CS","Sanyam",0,5760],
+["Adliv Motors Ltd T/A AutoXpress","CS","Anuj",1,5746],
+["Don Hewlett Chevrolet Buick, Inc.","CS","Jaspreet",1,5700],
+["JDMotorline LTD","CS","Anuj",0,5697],
+["Otto Cadillac Inc","CS","Vishal",1,5400],
+["Turpin Dodge Chrysler Jeep Ram","CS","Vishal",1,5400],
+["Best Deal Auto Sales, INC.","CS","Ishika",1,5400],
+["Yokem Motors LLC DBA Yokem Toyota","CS","Sanyam",0,5400],
+["Kimberly BMW","CS","Abhijeet",1,5400],
+["Kempton Chevrolet","CS","Sanyam",1,5400],
+["Toyota Of Wallingford","CS","Sanyam",1,5400],
+["ROSI Automotive Group","CS","Vishal",0,5400],
+["Davenport Used Car Superstore","CS","Punya",0,5400],
+["ONE STOP MOTORS MMB LTD","CS","Anuj",0,5365],
+["Louyet Used Cars SA","CS","Anuj",0,5294],
+["Amatoscar comercio automóvel s.a","CS","Anuj",0,5207],
+["Auto Carpe","CS","Sanyam",0,5205],
+["R8 Cars Ltd","CS","Anuj",1,5181],
+["The Ford Store Morgan Hill","CS","Vishal",1,5100],
+["Vanzone","CS","Anuj",0,5086],
+["Eddie Gilstrap Motors","CS","Vishal",0,5000],
+["EC HOLDING","CS","Anuj",0,4981],
+["Marcin Ogieglo Used Automobile Trading For Export LLC","CS","Anuj",0,4868],
+["Auto Export Corporation","Partner","Vedant",0,4800],
+["Wiz Leasing Inc","CS","Ishika",1,4800],
+["Subaru Calgary","CS","Vishal",0,4800],
+["Blasius Buick GMC","CS","Avinash",1,4800],
+["22G Auto group","CS","Prathamesh",0,4800],
+["Subaru of Columbia (CMSUB, LLC)","CS","Abhijeet",0,4800],
+["Lexus of Merrillville","CS","Sanyam",0,4800],
+["Curry Acura","CS","Ankur Batra",1,4800],
+["Porsche Pre Owned Rio","CS","Ankur Batra",1,4800],
+["GoldBoyz Auto Sales","CS","Manpreet",0,4800],
+["Gerry Raymond Chevrolet of Fairmont","CS","Dexter",0,4800],
+["Mega Motors","CS","Prathamesh",1,4800],
+["Jaguar Land Rover San Juan","CS","Vishal",0,4800],
+["Community Motors","CS","Prathamesh",1,4800],
+["Luxury Auto Plex","CS","Garvit",1,4788],
+["Lexus of Lehigh Valley","CS","Vishal",0,4788],
+["Rochester Toyota","CS","Ankur Batra",0,4788],
+["County Ford","CS","Vishal",0,4788],
+["Carnet Auctions Smithfield","CS","Anuj",0,4771],
+["Denver Auto","CS","Prathamesh",0,4680],
+["Vindevers Autohaus of Sylvania","CS","Vishal",1,4640],
+["REFFINE Sp. z o.o.","Partner","Akash",0,4566],
+["RonTirapelli Ford","CS","Greeva",0,4500],
+["Amato Hyundai Of Glendale","CS","Avinash",0,4400],
+["Lee Group","CS","Avinash",0,4356],
+["Subaru of Cherry Hill LLC","CS","Sanyam",1,4320],
+["Gene Langley Ford","CS","Vishal",0,4320],
+["Enterprise Motor Group","CS","Anuj",0,4291],
+["Buckingham Hyundai","CS","Sanyam",1,4200],
+["Alchi PTY Ltd","Partner","Akash",0,4200],
+["TX Auto Group","CS","Vishal",1,4200],
+["Northgate Auto company LLC","CS","Manpreet",0,4200],
+["XYZ Motors","CS","Vishal",0,4200],
+["Aguilar Auto Repair and Sales LLC","Sales","Mohak",0,4200],
+["Pearl Chrysler Jeep Dodge & Ram","CS","Sanyam",0,4200],
+["Gwatney Buick GMC","CS","Sanyam",0,4188],
+["Big Valley Ford","CS","Sanyam",1,4080],
+["Perfection Auto Detailing & Wheels","CS","Manpreet",0,4000],
+["Faricy Ford","CS","Ishika",0,4000],
+["Midway Dodge","CS","Vishal",0,3960],
+["Asbjørn Biler Aps","CS","Anuj",0,3904],
+["Jim O’Connor Select Auto","CS","Prathamesh",1,3900],
+["Harvest auto Family","CS","Garvit",1,3900],
+["HNH MOTORS LLC","CS","Garvit",0,3840],
+["Prestige Auto Sales","CS","Garvit",1,3840],
+["Motorpedia365 Revolution Private Limited","CS","Anuj",0,3839],
+["Willowbrook Ford & Kia","CS","Abhijeet",1,3780],
+["Southern Ford of Thomaston","CS","Vishal",1,3600],
+["Carsa","CS","Aman",0,3600],
+["Hondru Auto Group(US)","CS","Abhijeet",1,3600],
+["Der Wagen B.V.","CS","Anuj",0,3600],
+["Car City INC","CS","Garvit",1,3600],
+["Olympic Hyundai Vancouver","CS","Abhijeet",0,3600],
+["Gedi Route Cars Inc.","CS","Vishal",0,3600],
+["Autohighway","CS","Prathamesh",0,3600],
+["Lake Norman Auto Exchange","CS","Manpreet",0,3600],
+["Blasius South","CS","Avinash",1,3600],
+["Reliance Motor Group LLC","CS","Garvit",1,3600],
+["ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ \"ОКОЛО ОФИЦИАЛЫ","CS","Sanyam",0,3600],
+["Automobile Mazzeo Inc.","CS","Manpreet",0,3600],
+["Certified Autoplex Inc.","CS","Prathamesh",1,3600],
+["Blasius North","CS","Avinash",1,3600],
+["Safy Auto Sales","CS","Garvit",0,3600],
+["Capital City CDJR","CS","Dexter",0,3600],
+["Strunk Exotics","CS","Prathamesh",1,3600],
+["DFW Auto Sale","CS","Prathamesh",0,3600],
+["KL Honda","CS","Sanyam",1,3600],
+["Prestige Motor Works","Sales","Pulkit",0,3600],
+["Kian Motors INC","CS","Sanyam",1,3600],
+["Carzlane","CS","Prathamesh",0,3600],
+["Momentum Motor Group","CS","Prathamesh",1,3600],
+["Loyalty Volkswagen","CS","Zeeshana",0,3588],
+["Loyalty Toyota","CS","Zeeshana",0,3588],
+["Loyalty Used Car Supercenter","CS","Zeeshana",0,3588],
+["Trevinos Auto Mart ltd","CS","Prathamesh",1,3588],
+["Aventus Autohaus (Raja Bahar)","CS","Greeva",0,3588],
+["Quality Assurance Autos LLC","Sales","Saarthak",0,3588],
+["Volvo Cars Fort Washington","CS","Vishal",0,3588],
+["Moto Pfohe EOOD","CS","Anuj",0,3578],
+["CUBRAIN DESIGN STUDIO S.R.L.","CS","Anuj",0,3500],
+["Dellenbach Motors","CS","Vishal",0,3456],
+["Auto Dobrovolny V.M. s.r.o.","CS","Anuj",1,3443],
+["Envision Management Group","CS","Garvit",1,3400],
+["Superb Auto Sales","CS","Garvit",1,3373],
+["Hershey Motors","CS","Garvit",1,3360],
+["Njord ApS","CS","Anuj",0,3353],
+["Fornova, Comércio e Assistência de Veículos Lda","CS","Anuj",0,3343],
+["Ideal Centre Ltd T/A Ideal Car Centre","CS","Anuj",1,3332],
+["Etelän Autoliike Oy (ltd.)","CS","Anuj",0,3253],
+["Stock Center Plovdiv","CS","Anuj",0,3253],
+["Carlover NI Limited","Partner","Akash",0,3239],
+["Enkae Prestige Motors Ltd","CS","Anuj",1,3223],
+["Ohio Specialty Services, LTD.","CS","Prathamesh",1,3180]
+];
+
+/* Exact aggregates for the recurring page, so the scorecards stay right
+   even though the embedded table carries the subscription rows only. */
+const RECUR_AGG = {uniq:904, rows:905, act:258, without:646,
+  arr:4834956, actArr:1233880, withoutArr:3601076,
+  /* the embedded table carries the top 300 accounts by ARR (91% of the book);
+     these splits are computed over all 905 rows so the charts stay exact.
+     Each entry is [name, activeARR, withoutRecurringARR]. */
+  tableNote:'top 300 of 905 subscription accounts by ARR',
+  byAm:[["CS",1197880,2829148],["Partner",28800,625266],["Sales",7200,146662]],
+  byAe:[["Ankur Batra",19152,635240],["Aman",0,511910],["Anuj",129882,379040],
+    ["Abhijeet",180972,324464],["Vedant",28800,407460],["Jaspreet",169383,248534],
+    ["Vishal",158480,134552],["Avinash",185496,67676],["Sanyam",124152,109465],
+    ["Akash",0,217806],["Prathamesh",90980,59007],["Garvit",102783,34617],
+    ["Ishika",36600,95805],["Zeeshana",0,98460],["Manpreet",0,43054],
+    ["Ankur",0,36036],["Prince",0,32400],["Veneet",0,23988]]};
+
+/* Page 4 — aggregates computed from the 8,928 dated receipts in the Collection tab. */
+const COLL_SNAP = {
+  rows:8928, allTime:979432267, ytd:436784048, qtd:141556116, mtd:31384837,
+  roll30:52440617, roll90:162676988, mtdCode:'202609',
+  series:[["202406",21333607],["202407",17656014],["202408",19666803],["202409",16651504],
+    ["202410",25659554],["202411",30413318],["202412",15863233],["202501",26690915],
+    ["202502",25540124],["202503",27801339],["202504",41333974],["202505",25114885],
+    ["202506",33723625],["202507",35452214],["202508",35816678],["202509",36380808],
+    ["202510",29614629],["202511",41738496],["202512",36196499],["202601",47319466],
+    ["202602",41512113],["202603",49963689],["202604",46377413],["202605",57545573],
+    ["202606",52509678],["202607",58863151],["202608",51308128],["202609",31384837]],
+  mtdByAE:[["Aman Seth",18903601],["Jagrit",9690531],["Vivek",2790705]],
+  byAE:[["Aman Seth",328583237],["Vivek",261992412],["Jagrit",171116192],["Deepak",145287808],
+    ["Kartik",50447434],["Anurag",15744668],["Dave",4992460],["Sumpan",1216056],["Anurag_Retail",52000]],
+  byAcct:[["CS",466911705],["Sales (New)",255662634],["Sales (New)_4",172412192],["ECOM",57367069],
+    ["Sales (New)_3",15821168],["Sales (New)_US",5283022],["sales (New)",3441992],["Sales (New)_2",1274445]],
+  byCcy:[["USD",759132860],["INR",85652393],["EUR",50320165],["GBP",45952266],["Euro",31927561],
+    ["AUD",2851003],["CAD",1847631],["NZD",687692],["EURO",378968]],
+  byDep:[["Stripe Clearing",573338912],["HSBC Bank",173797608],["HSBC Bank (9001)",128545744],
+    ["ICICI Bank (0462)",82946615],["Paypal",16007240],["IDFC Bank (0764)",4796148]],
+  byEnt:[["US",610702680],["India",368729587]],
+  topCust:[["IM MARKETPLACE GMBH",12584512],["Swiggy Limited",12142475],["Pro-Motion Pix",11664000],
+    ["Dealer Specialties, LLC",10681219],["Asbury Automotive Management L.L.C",10081800],
+    ["Greenway Automotive Group",8222490],["Dealercue Automotive Corp, DBA VINCUE",7870500],
+    ["Dealer Vision",6615000],["Foto-ops",5940000],["Bapchild Motoring World (Kent) Limited",5472000],
+    ["NetLook, Inc",5400000],["Bergstrom Automotive",5130000],["Rawian Oy",4900988],
+    ["Van Horn Automotive Group",4847850],["Automotive Marketing Solutions",4606065],
+    ["AUTOLOAD IT LIMITED",4470000],["NUMERO CINCO FOTOS, S.L",4383400],
+    ["Paragon Motors of Woodside Inc dba Paragon Honda",4270500],["Bob Johnson Automotive Group",3875040],
+    ["Adloid Technologies Pvt. Ltd",3421440],["Novacti",3402000],["Jenkins Auto Group",3378690],
+    ["CARS24 Services Private Limited",3321442],["Flexi Car",3272400],["Dream Automotive",3240000]],
+  topScope:'calendar 2026', fromCSV:false
+};
+
+/* ---------------- helpers ---------------- */
+const inr=new Intl.NumberFormat('en-IN',{maximumFractionDigits:0});
+const money=v=>v?('₹'+inr.format(Math.round(v))):'—';
+const plain=v=>v?inr.format(Math.round(v)):'—';
+const short=v=>{const a=Math.abs(v);
+  if(a>=1e9)return '₹'+(v/1e9).toFixed(2)+' bn';
+  if(a>=1e7)return '₹'+(v/1e7).toFixed(2)+' Cr';
+  if(a>=1e5)return '₹'+(v/1e5).toFixed(2)+' L';
+  return '₹'+inr.format(Math.round(v));};
+const lakh=v=>v?(v/1e5).toFixed(2)+' L':'—';
+const usd=v=>{const a=Math.abs(v);
+  if(a>=1e6)return '$'+(v/1e6).toFixed(2)+'m';
+  if(a>=1e3)return '$'+(v/1e3).toFixed(1)+'k';
+  return '$'+Math.round(v);};
+const pct=(a,b)=>b?(100*a/b).toFixed(1)+'%':'0%';
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MONTH=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const mcLabel=mc=>MONTH[+mc.slice(4,6)-1]+" '"+mc.slice(2,4);
+const sum=(a,f)=>a.reduce((s,x)=>s+f(x),0);
+
+const PF=['cust','spoc','am','st','ms','ent','map','last','tat','due','inv','pend','accy',
+          'b0','b1','b2','b3','studio','vini','pay','rem'];
+const RF=['cust','am','spoc','act','arr'];
+
+let PEND=[], RECUR=[], COLL=COLL_SNAP, provPend='', provColl='';
+
+/* ---------------- manual remarks ----------------
+   Typed by hand in the details tables, keyed by customer name so a remark
+   survives sorting, filtering, a page switch and a fresh CSV load. Kept in
+   this browser's localStorage, which can be unavailable or cleared — use
+   "Save remarks" to keep a copy you own, and "Load remarks" to restore it. */
+const NOTE_KEY='spyne.collections.manualRemarks.v1';
+let NOTES={};
+function notesLoad(){
+  try{const raw=localStorage.getItem(NOTE_KEY); NOTES=raw?JSON.parse(raw):{};}
+  catch(e){NOTES={};}
+  if(!NOTES||typeof NOTES!=='object') NOTES={};
+}
+let noteWarned=false;
+function notesSave(){
+  try{localStorage.setItem(NOTE_KEY,JSON.stringify(NOTES));}
+  catch(e){
+    if(!noteWarned){noteWarned=true;
+      const m=document.getElementById('noteMsg');
+      if(m){m.className='status err';
+        m.textContent='This browser will not store remarks — use "Save remarks" to keep them.';}}
+  }
+}
+function noteCount(){return Object.keys(NOTES).filter(k=>NOTES[k]).length;}
+function noteSet(cust,text){
+  const t=String(text||'').slice(0,300);
+  if(t) NOTES[cust]=t; else delete NOTES[cust];
+  PEND.forEach(r=>{if(r.cust===cust) r.note=t;});
+  RECUR.forEach(r=>{if(r.cust===cust) r.note=t;});
+  notesSave(); renderNoteBar();
+}
+function renderNoteBar(){
+  const el=document.getElementById('noteCount');
+  if(el){const n=noteCount(); el.textContent=n?n+(n===1?' remark saved':' remarks saved'):'no remarks yet';}
+}
+
+function hydrate(){
+  PEND = PEND_RAW.map(r=>{const o={};PF.forEach((k,i)=>o[k]=r[i]);
+    o.over=o.b1+o.b2+o.b3; o.note=NOTES[o.cust]||''; return o;}).sort((a,b)=>b.pend-a.pend);
+  RECUR = RECUR_RAW.map(r=>{const o={};RF.forEach((k,i)=>o[k]=r[i]);
+    o.note=NOTES[o.cust]||''; return o;}).sort((a,b)=>b.arr-a.arr);
+}
+
+const noteFoot=rows=>{const n=rows.filter(r=>r.note).length;
+  return n?`<span class="muted">${n} remark${n===1?'':'s'} in view</span>`:'';};
+
+/* one delegated listener, so redraws never lose the handler */
+const NOTE_COL={k:'note',txt:1,cls:'notecell',
+  f:r=>`<input class="noteIn${r.note?' filled':''}" data-c="${esc(r.cust)}" `+
+       `value="${esc(r.note||'')}" placeholder="add remark…" maxlength="300" spellcheck="false">`};
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(!el.classList||!el.classList.contains('noteIn')) return;
+  noteSet(el.dataset.c, el.value);
+  el.classList.toggle('filled',!!el.value.trim());
+});
+
+/* views */
+const noAuto = ()=>PEND.filter(r=>!r.map);
+const noPay  = ()=>PEND.filter(r=>!r.pay);
+
+/* generic bar panel */
+function bars(el,items,fmt,color,onClick,activeKey){
+  const max=items.length?Math.max(...items.map(i=>i[1])):1;
+  el.innerHTML = items.length? items.map(([k,v])=>
+    `<div class="bar" data-k="${esc(k)}" ${onClick?'style="cursor:pointer"':''}>
+       <div class="t" title="${esc(k)}" ${k===activeKey?'style="color:var(--ink);font-weight:600"':''}>${esc(k)}</div>
+       <div class="track"><div class="fill" style="width:${max?100*v/max:0}%;background:${color}"></div></div>
+       <div class="v">${fmt(v)}</div></div>`).join('') : '<span class="muted">No data.</span>';
+  if(onClick) el.querySelectorAll('.bar').forEach(b=>b.onclick=()=>onClick(b.dataset.k));
+}
+function colChart(el,items,fmt){
+  const max=items.length?Math.max(...items.map(i=>i[1])):1;
+  el.innerHTML=items.map(([k,v])=>
+    `<div class="col" title="${esc(k)} · ${fmt(v)}">
+       <span class="cv">${fmt(v)}</span>
+       <div class="cb" style="height:${max?Math.max(2,100*v/max):2}%"></div>
+       <span class="cl">${esc(mcLabel(k))}</span></div>`).join('');
+}
+function groupSum(rows,key,valKey,n){
+  const m={};rows.forEach(r=>{const k=r[key]||'(blank)';m[k]=(m[k]||0)+r[valKey];});
+  return Object.entries(m).filter(([,v])=>v).sort((a,b)=>b[1]-a[1]).slice(0,n||99);
+}
+function fillSel(id,label,vals,keep){
+  const el=document.getElementById(id);
+  el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  if(keep&&vals.includes(keep)) el.value=keep;
+}
+const uniqVals=(rows,k)=>[...new Set(rows.map(r=>r[k]))].filter(v=>v!=='').sort();
+
+/* sortable table engine */
+function makeTable(id,getRows,cols,foot){
+  const st={k:cols.find(c=>c.sorted).k, asc:false};
+  const tbl=document.getElementById(id);
+  function draw(){
+    const rows=[...getRows()];
+    const k=st.k, dir=st.asc?1:-1;
+    rows.sort((a,b)=>{const A=a[k],B=b[k];
+      return (typeof A==='string')?dir*A.localeCompare(B):dir*((A||0)-(B||0));});
+    tbl.querySelector('tbody').innerHTML=rows.map(r=>
+      '<tr>'+cols.map(c=>`<td class="${c.cls||''}" ${c.title?`title="${esc(r[c.k])}"`:''} ${c.style?`style="${c.style(r)}"`:''}>${c.f(r)}</td>`).join('')+'</tr>').join('');
+    const tf=tbl.querySelector('tfoot');
+    if(tf) tf.innerHTML = foot? '<tr>'+foot(rows).map(c=>`<td>${c}</td>`).join('')+'</tr>' : '';
+    tbl.querySelectorAll('thead th').forEach(th=>{
+      th.classList.toggle('sorted',th.dataset.k===st.k);
+      th.classList.toggle('asc',th.dataset.k===st.k&&st.asc);});
+  }
+  tbl.querySelectorAll('thead th').forEach(th=>th.onclick=()=>{
+    const k=th.dataset.k;
+    const col=cols.find(c=>c.k===k);
+    st.k===k?(st.asc=!st.asc):(st.k=k,st.asc=!!(col&&col.txt));
+    draw();});
+  return draw;
+}
+
+/* ================= PAGE 1 ================= */
+const S1={q:'',am:'',ae:'',st:'',band:''};
+function p1rows(){
+  return noAuto().filter(r=>
+    (!S1.q||r.cust.toLowerCase().includes(S1.q)) &&
+    (!S1.am||r.am===S1.am)&&(!S1.ae||r.spoc===S1.ae)&&
+    (!S1.st||(S1.st==='active'?r.st:!r.st))&&
+    (!S1.band||(S1.band==='a'?r.tat<=30:S1.band==='b'?(r.tat>30&&r.tat<=60):r.tat>60)));
+}
+const drawP1=makeTable('t-pend',p1rows,[
+  {k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
+  {k:'last',f:r=>r.last?esc(r.last):'<span class=muted>null</span>',cls:'muted',txt:1},
+  {k:'am',f:r=>esc(r.am),txt:1},{k:'spoc',f:r=>esc(r.spoc),txt:1},
+  {k:'st',f:r=>`<span class="chip ${r.st?'yes':'no'}">${r.st?'active':'inactive'}</span>`},
+  {k:'due',f:r=>r.due||'—',style:r=>r.due>60?'color:var(--b4)':r.due>30?'color:var(--b3)':''},
+  {k:'inv',f:r=>r.inv||'—',cls:'muted'},
+  {k:'pend',sorted:1,f:r=>'<b>'+lakh(r.pend)+'</b>'},
+  {k:'accy',f:r=>plain(r.accy),cls:'muted'},
+  NOTE_COL
+], rows=>['Grand total','','','','',plain(sum(rows,r=>r.due)),plain(sum(rows,r=>r.inv)),
+          lakh(sum(rows,r=>r.pend)),plain(sum(rows,r=>r.accy)),noteFoot(rows)]);
+
+function renderP1(){
+  const rs=noAuto();
+  const tot=sum(rs,r=>r.pend);
+  const a=sum(rs.filter(r=>r.tat<=30),r=>r.pend);
+  const b=sum(rs.filter(r=>r.tat>30&&r.tat<=60),r=>r.pend);
+  const c=sum(rs.filter(r=>r.tat>60),r=>r.pend);
+  document.getElementById('k-pend').innerHTML=[
+    ['Total outstanding',short(tot),rs.length+' accounts',''],
+    ['≤ 30 days pending',short(a),pct(a,tot)+' of book','good'],
+    ['31 - 60 days pending',short(b),pct(b,tot)+' of book','warn'],
+    ['&gt; 60 days pending',short(c),pct(c,tot)+' of book','crit'],
+    ['Unique customers',new Set(rs.map(r=>r.cust)).size,'with a balance','teal'],
+    ['Invoices outstanding',plain(sum(rs,r=>r.inv)),'open invoice count','']
+  ].map(([l,v,h,k])=>`<div class="kpi ${k}"><div class="lab">${l}</div><div class="val">${v}</div><div class="hint">${h}</div></div>`).join('');
+
+  bars(document.getElementById('b-pend-am'),groupSum(rs,'am','pend'),lakh,'var(--b2)',
+    k=>{S1.am=(S1.am===k?'':k);document.getElementById('f-pend-am').value=S1.am;renderP1();drawP1();},S1.am);
+  bars(document.getElementById('b-pend-ae'),groupSum(rs,'spoc','pend',15),lakh,'var(--g1)',
+    k=>{S1.ae=(S1.ae===k?'':k);document.getElementById('f-pend-ae').value=S1.ae;renderP1();drawP1();},S1.ae);
+
+  fillSel('f-pend-am','All account managers',uniqVals(rs,'am'),S1.am);
+  fillSel('f-pend-ae','All AEs / SPOCs',uniqVals(rs,'spoc'),S1.ae);
+  fillSel('f-pend-st','Any status',['active','inactive'],S1.st);
+  const v=p1rows();
+  document.getElementById('cap-pend').innerHTML=
+    `${v.length} of ${rs.length} rows · <b>${short(sum(v,r=>r.pend))}</b> pending`;
+}
+
+/* ================= PAGE 2 ================= */
+const S2={q:'',am:'',ae:''};
+function p2rows(){
+  return noPay().filter(r=>(!S2.q||r.cust.toLowerCase().includes(S2.q))&&
+    (!S2.am||r.am===S2.am)&&(!S2.ae||r.spoc===S2.ae));
+}
+const drawP2=makeTable('t-nopay',p2rows,[
+  {k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
+  {k:'am',f:r=>esc(r.am),txt:1},{k:'spoc',f:r=>esc(r.spoc),txt:1},
+  {k:'ms',f:r=>`<span class="chip ${/^Live$/i.test(r.ms)?'live':/Churn|Drop/i.test(r.ms)?'churn':/Future/i.test(r.ms)?'fut':''}">${esc(r.ms)}</span>`,txt:1},
+  {k:'due',f:r=>r.due||'—'},{k:'inv',f:r=>r.inv||'—',cls:'muted'},
+  {k:'studio',f:r=>r.studio?lakh(r.studio):'—',cls:'muted'},
+  {k:'vini',f:r=>r.vini?lakh(r.vini):'—',cls:'muted'},
+  {k:'pend',sorted:1,f:r=>'<b>'+lakh(r.pend)+'</b>'},
+  NOTE_COL
+], rows=>['Grand total','','','','',plain(sum(rows,r=>r.inv)),
+          lakh(sum(rows,r=>r.studio)),lakh(sum(rows,r=>r.vini)),lakh(sum(rows,r=>r.pend)),noteFoot(rows)]);
+
+function renderP2(){
+  const rs=noPay(), tot=sum(rs,r=>r.pend);
+  document.getElementById('k-nopay').innerHTML=[
+    ['Total collection pending',short(tot),rs.length+' accounts','crit'],
+    ['Studio',short(sum(rs,r=>r.studio)),pct(sum(rs,r=>r.studio),tot)+' of it',''],
+    ['Vini',short(sum(rs,r=>r.vini)),'nothing pending here','teal'],
+    ['Unique customers',new Set(rs.map(r=>r.cust)).size,'never paid once','purp'],
+    ['Invoices raised',plain(sum(rs,r=>r.inv)),'all unpaid',''],
+    ['Oldest',plain(Math.max(0,...rs.map(r=>r.due)))+' days',"since contract/first invoice",'warn']
+  ].map(([l,v,h,k])=>`<div class="kpi ${k}"><div class="lab">${l}</div><div class="val">${v}</div><div class="hint">${h}</div></div>`).join('');
+  bars(document.getElementById('b-nopay-am'),groupSum(rs,'am','pend'),lakh,'var(--p1)',
+    k=>{S2.am=(S2.am===k?'':k);document.getElementById('f-nopay-am').value=S2.am;renderP2();drawP2();},S2.am);
+  bars(document.getElementById('b-nopay-ae'),groupSum(rs,'spoc','pend',15),lakh,'var(--b3)',
+    k=>{S2.ae=(S2.ae===k?'':k);document.getElementById('f-nopay-ae').value=S2.ae;renderP2();drawP2();},S2.ae);
+  fillSel('f-nopay-am','All account managers',uniqVals(rs,'am'),S2.am);
+  fillSel('f-nopay-ae','All AEs / SPOCs',uniqVals(rs,'spoc'),S2.ae);
+  const v=p2rows();
+  document.getElementById('cap-nopay').innerHTML=`${v.length} of ${rs.length} rows · <b>${short(sum(v,r=>r.pend))}</b>`;
+}
+
+/* ================= PAGE 3 ================= */
+const S3={q:'',am:'',ae:'',st:''};
+function p3rows(){
+  return RECUR.filter(r=>(!S3.q||r.cust.toLowerCase().includes(S3.q))&&
+    (!S3.am||r.am===S3.am)&&(!S3.ae||r.spoc===S3.ae)&&
+    (S3.st===''||String(r.act)===S3.st));
+}
+const drawP3=makeTable('t-recur',p3rows,[
+  {k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
+  {k:'am',f:r=>esc(r.am),txt:1},{k:'spoc',f:r=>esc(r.spoc),txt:1},
+  {k:'act',f:r=>`<span class="chip ${r.act?'yes':'no'}">${r.act?'Active':'Not Active'}</span>`},
+  {k:'arr',sorted:1,f:r=>r.arr?'<b>'+usd(r.arr)+'</b>':'<span class=muted>—</span>'},
+  NOTE_COL
+], rows=>['Grand total','','','',usd(sum(rows,r=>r.arr)),noteFoot(rows)]);
+
+function renderP3(){
+  const A=RECUR_AGG;
+  document.getElementById('k-recur').innerHTML=[
+    ['Total unique customers',A.uniq,A.rows+' subscription rows','teal'],
+    ['Recurring activated',A.act,pct(A.act,A.act+A.without)+' of customers','good'],
+    ['Without recurring',A.without,pct(A.without,A.act+A.without)+' of customers','crit'],
+    ['Total ARR',usd(A.arr),'subscription book',''],
+    ['Active recurring ARR',usd(A.actArr),pct(A.actArr,A.arr)+' collects itself','good'],
+    ['Without recurring ARR',usd(A.withoutArr),pct(A.withoutArr,A.arr)+' chased by hand','crit']
+  ].map(([l,v,h,k])=>`<div class="kpi ${k}"><div class="lab">${l}</div><div class="val">${v}</div><div class="hint">${h}</div></div>`).join('');
+
+  /* split bars: pre-computed over the whole book when using the snapshot,
+     recomputed from the rows when a fresh CSV is loaded */
+  const split=(key,aggKey,n)=>{
+    if(A[aggKey]) return A[aggKey].slice(0,n);
+    const m={};RECUR.forEach(r=>{const k=r[key]||'(blank)';(m[k]=m[k]||[0,0])[r.act?0:1]+=r.arr;});
+    return Object.entries(m).map(([k,v])=>[k,v[0],v[1]])
+      .sort((a,b)=>(b[1]+b[2])-(a[1]+a[2])).slice(0,n);
+  };
+  const splitBars=(el,rows)=>{
+    const max=Math.max(1,...rows.map(r=>r[1]+r[2]));
+    el.innerHTML=rows.map(([k,a,b])=>{const t=a+b||1;
+      return `<div class="bar"><div class="t" title="${esc(k)}">${esc(k)}</div>
+        <div class="track"><div class="fill" style="width:${100*(a+b)/max}%;display:flex;background:transparent">
+          <i style="background:var(--g1);width:${100*a/t}%"></i>
+          <i style="background:var(--b4);width:${100*b/t}%"></i></div></div>
+        <div class="v">${usd(a+b)}</div></div>`;}).join('')
+      +`<div class="legend" style="margin-top:4px"><span><i class="sw" style="background:var(--g1)"></i>Active</span>
+        <span><i class="sw" style="background:var(--b4)"></i>Without recurring</span></div>`;
+  };
+  splitBars(document.getElementById('b-recur-am'),split('am','byAm',8));
+  splitBars(document.getElementById('b-recur-ae'),split('spoc','byAe',15));
+
+  fillSel('f-recur-am','All account managers',uniqVals(RECUR,'am'),S3.am);
+  fillSel('f-recur-ae','All AEs / SPOCs',uniqVals(RECUR,'spoc'),S3.ae);
+  const v=p3rows();
+  document.getElementById('cap-recur').innerHTML=
+    `${v.length} of ${RECUR.length} rows shown · <b>${usd(sum(v,r=>r.arr))}</b> ARR`+
+    (A.tableNote?` · <span class="muted">${A.tableNote}; scorecards and charts cover all ${A.rows}</span>`:'');
+}
+
+/* ================= PAGE 4 ================= */
+function renderP4(){
+  const C=COLL;
+  document.getElementById('k-coll').innerHTML=[
+    ['Total collection',short(C.allTime),C.rows.toLocaleString('en-IN')+' receipts','teal'],
+    ['YTD collection',short(C.ytd),'calendar 2026','good'],
+    ['QTD collection',short(C.qtd),'Jul - Sep 2026',''],
+    ['MTD collection',short(C.mtd),mcLabel(C.mtdCode),'purp'],
+    ['Rolling 30 days',short(C.roll30),'to '+SNAP,''],
+    ['Rolling 90 days',short(C.roll90),'to '+SNAP,'']
+  ].map(([l,v,h,k])=>`<div class="kpi ${k}"><div class="lab">${l}</div><div class="val">${v}</div><div class="hint">${h}</div></div>`).join('');
+
+  const last12=C.series.slice(-12);
+  colChart(document.getElementById('c-coll-series'),C.series,v=>(v/1e7).toFixed(1));
+  document.getElementById('cap-coll-series').textContent=
+    'INR crore per month · '+mcLabel(C.series[0][0])+' to '+mcLabel(C.series[C.series.length-1][0])+
+    ' · last 12 months '+short(sum(last12,x=>x[1]));
+
+  bars(document.getElementById('b-coll-mtdae'),C.mtdByAE,short,'var(--p1)');
+  bars(document.getElementById('b-coll-ae'),C.byAE,short,'var(--b1)');
+  bars(document.getElementById('b-coll-acct'),C.byAcct,short,'var(--t1)');
+  bars(document.getElementById('b-coll-ccy'),C.byCcy,short,'var(--g1)');
+  bars(document.getElementById('b-coll-dep'),C.byDep,short,'var(--b2)');
+  bars(document.getElementById('b-coll-ent'),C.byEnt,short,'var(--b3)');
+
+  const tot=sum(C.topCust,x=>x[1]);
+  document.getElementById('cap-coll-top').textContent='top '+C.topCust.length+' by collection, '+C.topScope;
+  document.getElementById('t-coll').querySelector('tbody').innerHTML=C.topCust.map(([k,v])=>
+    `<tr><td class="name" title="${esc(k)}">${esc(k)}</td><td><b>${short(v)}</b></td>
+      <td class="muted">${pct(v,tot)}</td></tr>`).join('');
+  document.getElementById('coll-caveat').innerHTML = C.fromCSV? '' :
+    ' The Looker page reports <b>1.13bn</b> all-time against this tab’s <b>979.43m</b>, so its total scorecard draws on '+
+    'more than this tab alone — every date-scoped figure (MTD, QTD, YTD) matches it exactly.';
+}
+
+/* ================= PAGE 5 ================= */
+const S5={q:'',spoc:'',ms:'',ent:'',bucket:''};
+function p5rows(){
+  return PEND.filter(r=>
+    (!S5.q||r.cust.toLowerCase().includes(S5.q))&&
+    (!S5.spoc||r.spoc===S5.spoc)&&(!S5.ms||r.ms===S5.ms)&&(!S5.ent||r.ent===S5.ent)&&
+    (!S5.bucket||(S5.bucket==='over'?r.over>0:S5.bucket==='clean'?r.over===0:r[S5.bucket]>0)));
+}
+const drawP5=makeTable('t-aging',p5rows,[
+  {k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
+  {k:'spoc',f:r=>esc(r.spoc),txt:1},{k:'am',f:r=>esc(r.am),cls:'muted',txt:1},
+  {k:'ms',f:r=>`<span class="chip ${/^Live$/i.test(r.ms)?'live':/Churn|Drop/i.test(r.ms)?'churn':/Future/i.test(r.ms)?'fut':''}">${esc(r.ms)}</span>`,txt:1},
+  {k:'ent',f:r=>esc(r.ent),cls:'muted',txt:1},{k:'inv',f:r=>r.inv||'—',cls:'muted'},
+  {k:'b0',f:r=>r.b0?money(r.b0):'<span class=muted>—</span>'},
+  {k:'b1',f:r=>r.b1?money(r.b1):'<span class=muted>—</span>'},
+  {k:'b2',f:r=>r.b2?money(r.b2):'<span class=muted>—</span>'},
+  {k:'b3',f:r=>r.b3?money(r.b3):'<span class=muted>—</span>',style:r=>r.b3?'color:var(--b4);font-weight:600':''},
+  {k:'pend',sorted:1,f:r=>'<b>'+money(r.pend)+'</b>'},
+  {k:'due',f:r=>r.due||'—',style:r=>r.due>90?'color:var(--b4)':r.due>30?'color:var(--b3)':''},
+  {k:'last',f:r=>r.last?esc(r.last):'—',cls:'muted',txt:1},
+  {k:'rem',f:r=>esc(r.rem),cls:'name muted',title:1,txt:1},
+  NOTE_COL
+], rows=>['Grand total','','','','',plain(sum(rows,r=>r.inv)),
+   money(sum(rows,r=>r.b0)),money(sum(rows,r=>r.b1)),money(sum(rows,r=>r.b2)),money(sum(rows,r=>r.b3)),
+   money(sum(rows,r=>r.pend)),'','','',noteFoot(rows)]);
+
+function renderP5(){
+  const T={total:sum(PEND,r=>r.pend),b0:sum(PEND,r=>r.b0),b1:sum(PEND,r=>r.b1),
+           b2:sum(PEND,r=>r.b2),b3:sum(PEND,r=>r.b3)};
+  T.over=T.b1+T.b2+T.b3;
+  const churn=PEND.filter(r=>/Churn|Drop/i.test(r.ms));
+  document.getElementById('k-aging').innerHTML=[
+    ['Total pending',short(T.total),PEND.length+' accounts · '+new Set(PEND.map(r=>r.spoc)).size+' SPOCs',''],
+    ['Overdue 30+',short(T.over),pct(T.over,T.total)+' of book','warn'],
+    ['&gt;90 days',short(T.b3),PEND.filter(r=>r.b3>0).length+' accounts','crit'],
+    ['Current 0-30',short(T.b0),pct(T.b0,T.total)+' of book','good'],
+    ['On churned / future churn',short(sum(churn,r=>r.pend)),churn.length+' accounts','warn'],
+    ['Top 10 concentration',short(sum(PEND.slice(0,10),r=>r.pend)),
+      pct(sum(PEND.slice(0,10),r=>r.pend),T.total)+' in 10 accounts','']
+  ].map(([l,v,h,k])=>`<div class="kpi ${k}"><div class="lab">${l}</div><div class="val">${v}</div><div class="hint">${h}</div></div>`).join('');
+
+  document.getElementById('strip').innerHTML=
+    [['0-30',T.b0,'var(--b1)'],['30-60',T.b1,'var(--b2)'],['60-90',T.b2,'var(--b3)'],['>90',T.b3,'var(--b4)']]
+    .map(([l,v,c])=>`<div style="background:${c};flex:${Math.max(v,1)}">${l} · ${short(v)} · ${pct(v,T.total)}</div>`).join('');
+
+  const m={};PEND.forEach(r=>{const s=m[r.spoc]||(m[r.spoc]={spoc:r.spoc,n:0,b0:0,b1:0,b2:0,b3:0,total:0,over:0});
+    s.n++;s.b0+=r.b0;s.b1+=r.b1;s.b2+=r.b2;s.b3+=r.b3;s.total+=r.pend;s.over+=r.over;});
+  const spocs=Object.values(m).sort((a,b)=>b.total-a.total);
+  spocs.forEach(s=>s.share=T.total?s.total/T.total:0);
+  document.getElementById('t-spoc').querySelector('tbody').innerHTML=spocs.map((s,i)=>{
+    const t=s.total||1;
+    return `<tr class="clickrow ${s.spoc===S5.spoc?'active':''}" data-spoc="${esc(s.spoc)}">
+      <td><span class="muted" style="display:inline-block;width:18px">${i+1}</span>${esc(s.spoc)}</td>
+      <td>${s.n}</td>
+      <td>${s.b0?money(s.b0):'<span class=muted>—</span>'}</td>
+      <td>${s.b1?money(s.b1):'<span class=muted>—</span>'}</td>
+      <td>${s.b2?money(s.b2):'<span class=muted>—</span>'}</td>
+      <td style="${s.b3?'color:var(--b4);font-weight:600':''}">${s.b3?money(s.b3):'<span class=muted>—</span>'}</td>
+      <td>${s.over?money(s.over):'<span class=muted>—</span>'}</td>
+      <td><b>${money(s.total)}</b> <span class="muted">${(100*s.share).toFixed(1)}%</span></td>
+      <td><div class="stack">
+        <i style="background:var(--b1);width:${100*s.b0/t}%"></i>
+        <i style="background:var(--b2);width:${100*s.b1/t}%"></i>
+        <i style="background:var(--b3);width:${100*s.b2/t}%"></i>
+        <i style="background:var(--b4);width:${100*s.b3/t}%"></i></div></td></tr>`;}).join('');
+  document.querySelectorAll('#t-spoc .clickrow').forEach(tr=>tr.onclick=()=>{
+    S5.spoc=(S5.spoc===tr.dataset.spoc?'':tr.dataset.spoc);
+    document.getElementById('f-aging-spoc').value=S5.spoc; renderP5(); drawP5();});
+
+  const top=spocs.slice(0,12), tmax=Math.max(1,...top.map(s=>s.total));
+  document.getElementById('b-aging-spoc').innerHTML=top.map(s=>
+    `<div class="bar"><div class="t" title="${esc(s.spoc)}">${esc(s.spoc)}</div>
+      <div class="track"><div class="fill" style="width:${100*s.total/tmax}%;display:flex;background:transparent">
+        <i style="background:var(--b1);width:${100*s.b0/s.total}%"></i>
+        <i style="background:var(--b2);width:${100*s.b1/s.total}%"></i>
+        <i style="background:var(--b3);width:${100*s.b2/s.total}%"></i>
+        <i style="background:var(--b4);width:${100*s.b3/s.total}%"></i></div></div>
+      <div class="v">${short(s.total)}</div></div>`).join('');
+  const crit=PEND.filter(r=>r.b3>0).sort((a,b)=>b.b3-a.b3).slice(0,12);
+  bars(document.getElementById('b-aging-crit'),crit.map(r=>[r.cust+' · '+r.spoc,r.b3]),short,'var(--b4)');
+
+  fillSel('f-aging-spoc','All SPOCs',uniqVals(PEND,'spoc'),S5.spoc);
+  fillSel('f-aging-ms','All statuses',uniqVals(PEND,'ms'),S5.ms);
+  fillSel('f-aging-ent','All entities',uniqVals(PEND,'ent'),S5.ent);
+  const v=p5rows();
+  document.getElementById('cap-aging').innerHTML=
+    `${v.length} of ${PEND.length} accounts · <b>${short(sum(v,r=>r.pend))}</b> pending · ${short(sum(v,r=>r.over))} overdue 30+`;
+}
+
+/* ================= shell ================= */
+function renderProv(){
+  document.getElementById('prov').innerHTML=
+    'Rebuild of the Looker Studio <b>Collection Dashboard</b> · source <b>Collection Projections - Working</b> · '+
+    provPend+' · page 4 '+provColl+' · pending in <b>INR</b>, recurring ARR in <b>USD</b>';
+  document.getElementById('foot').innerHTML=
+    'Provenance — internal Spyne collections sheet, vendor-internal and <b>unaudited</b>; not NADA, Cox, NIADA or any audited industry source, '+
+    'and nothing here should be quoted externally as such. Pending amounts are the sheet’s INR-converted values; '+
+    '<i>Actual currency</i> is the original-currency figure and its column total mixes currencies, so read it per row only. '+
+    'Page 1 reproduces the Looker filter <i>Mapping ≠ Active</i> with TAT buckets ≤30 / 31-60 / &gt;60; '+
+    'page 2 is <i>Payment Received Status = No</i>. Negative due-day values mean the sheet’s collection date is in the future — scheduled, not aged. '+
+    'Customer names, remarks and receipts are dealer customer data — keep this file internal. '+
+    '<i>Manual remark</i> is your own text, held in this browser and in the copies you save; it is never written back to the sheet.';
+}
+function renderAll(){renderProv();renderNoteBar();
+  renderP1();drawP1();renderP2();drawP2();renderP3();drawP3();renderP4();renderP5();drawP5();}
+
+document.querySelectorAll('#pageNav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#pageNav button').forEach(x=>x.setAttribute('aria-selected',String(x===b)));
+  document.querySelectorAll('section.page').forEach(s=>s.classList.toggle('on',s.id==='p-'+b.dataset.p));
+});
+
+/* filter wiring */
+const wire=(id,st,key,fn,draw,lower)=>{
+  const el=document.getElementById(id);
+  el.addEventListener(el.type==='search'?'input':'change',()=>{
+    st[key]=lower?el.value.trim().toLowerCase():el.value; fn(); draw();});
+};
+wire('q-pend',S1,'q',renderP1,drawP1,1); wire('f-pend-am',S1,'am',renderP1,drawP1);
+wire('f-pend-ae',S1,'ae',renderP1,drawP1); wire('f-pend-st',S1,'st',renderP1,drawP1);
+wire('f-pend-band',S1,'band',renderP1,drawP1);
+wire('q-nopay',S2,'q',renderP2,drawP2,1); wire('f-nopay-am',S2,'am',renderP2,drawP2);
+wire('f-nopay-ae',S2,'ae',renderP2,drawP2);
+wire('q-recur',S3,'q',renderP3,drawP3,1); wire('f-recur-am',S3,'am',renderP3,drawP3);
+wire('f-recur-ae',S3,'ae',renderP3,drawP3); wire('f-recur-st',S3,'st',renderP3,drawP3);
+wire('q-aging',S5,'q',renderP5,drawP5,1); wire('f-aging-spoc',S5,'spoc',renderP5,drawP5);
+wire('f-aging-ms',S5,'ms',renderP5,drawP5); wire('f-aging-ent',S5,'ent',renderP5,drawP5);
+wire('f-aging-bucket',S5,'bucket',renderP5,drawP5);
+
+const RESET={pend:[S1,renderP1,drawP1,['q-pend','f-pend-am','f-pend-ae','f-pend-st','f-pend-band']],
+  nopay:[S2,renderP2,drawP2,['q-nopay','f-nopay-am','f-nopay-ae']],
+  recur:[S3,renderP3,drawP3,['q-recur','f-recur-am','f-recur-ae','f-recur-st']],
+  aging:[S5,renderP5,drawP5,['q-aging','f-aging-spoc','f-aging-ms','f-aging-ent','f-aging-bucket']]};
+document.querySelectorAll('[data-reset]').forEach(b=>b.onclick=()=>{
+  const [st,fn,draw,ids]=RESET[b.dataset.reset];
+  Object.keys(st).forEach(k=>st[k]='');
+  ids.forEach(i=>document.getElementById(i).value='');
+  fn(); draw();});
+
+/* CSV export */
+const EXPORT={
+  pend:()=>[['Customer','Last collection','Account manager','SPOC','Status','Due days','Invoices','Pending INR','Actual currency','Manual remark'],
+    p1rows().map(r=>[r.cust,r.last,r.am,r.spoc,r.st?'active':'inactive',r.due,r.inv,r.pend,r.accy,r.note]),'collections-pending'],
+  nopay:()=>[['Customer','Account manager','SPOC','Account status','Due days','Invoices','Studio','Vini','Pending INR','Manual remark'],
+    p2rows().map(r=>[r.cust,r.am,r.spoc,r.ms,r.due,r.inv,r.studio,r.vini,r.pend,r.note]),'never-received-payment'],
+  recur:()=>[['Customer','Account manager','SPOC','Recurring status','ARR USD','Manual remark'],
+    p3rows().map(r=>[r.cust,r.am,r.spoc,r.act?'Active':'Not Active',r.arr,r.note]),'payment-recurring'],
+  aging:()=>[['Customer','SPOC','Owner','Status','Entity','Invoices','0-30','30-60','60-90','>90','Total','Overdue 30+','Due days','Last collection','Sheet remarks','Manual remark'],
+    p5rows().map(r=>[r.cust,r.spoc,r.am,r.ms,r.ent,r.inv,r.b0,r.b1,r.b2,r.b3,r.pend,r.over,r.due,r.last,r.rem,r.note]),'spoc-aging']
+};
+document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>{
+  const [head,body,name]=EXPORT[b.dataset.export]();
+  const q=s=>'"'+String(s==null?'':s).replace(/"/g,'""')+'"';
+  const blob=new Blob(['﻿'+[head.map(q).join(','),...body.map(r=>r.map(q).join(','))].join('\r\n')],
+    {type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name+'.csv'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);});
+
+/* ---------------- CSV loaders ---------------- */
+function parseCSV(t){
+  if(t.charCodeAt(0)===0xFEFF)t=t.slice(1);
+  const out=[];let row=[],f='',q=false;
+  for(let i=0;i<t.length;i++){const c=t[i];
+    if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++;}else q=false;}else f+=c;}
+    else{if(c==='"')q=true;else if(c===','){row.push(f);f='';}
+      else if(c==='\r'){}else if(c==='\n'){row.push(f);out.push(row);row=[];f='';}else f+=c;}}
+  if(f!==''||row.length){row.push(f);out.push(row);}
+  return out;
+}
+const numOf=v=>{if(v==null)return 0;
+  let s=String(v).replace(/[₹$,\s]/g,'').replace(/^\((.*)\)$/,'-$1');
+  if(s===''||s==='-'||s==='#N/A'||s==='#REF!'||s==='#ERROR!')return 0;
+  const n=parseFloat(s);return isNaN(n)?0:n;};
+const cln=v=>{const s=String(v==null?'':v).replace(/\s+/g,' ').trim();return s==='#N/A'?'':s;};
+function headerRow(grid,must,limit){
+  for(let i=0;i<Math.min(grid.length,limit||15);i++){
+    const low=grid[i].map(c=>cln(c).toLowerCase());
+    if(must.every(m=>low.some(c=>c===m||m.split('|').some(x=>c===x)))) return i;}
+  return -1;
+}
+function colMap(hdrLow,want){
+  const idx={};
+  for(const k in want) for(const alias of want[k]){const j=hdrLow.indexOf(alias);if(j>-1){idx[k]=j;break;}}
+  return idx;
+}
+const today=()=>new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+
+function loadPendCSV(text,fname){
+  const g=parseCSV(text);
+  const hi=headerRow(g,['spoc','customer name|customer']);
+  if(hi<0) throw new Error('No header row with "Customer Name" and "SPOC" — wrong tab?');
+  const low=g[hi].map(c=>cln(c).toLowerCase());
+  const idx=colMap(low,{cust:['customer name','customer'],spoc:['spoc'],am:['account manager'],
+    st:['status'],ms:['main status'],ent:['entity'],map:['mapping'],last:['last collection date'],
+    tat:['tat'],due:['last collection days outstanding'],inv:['invoice count'],
+    pend:['total outstanding','final pending amount'],accy:['actual currency'],
+    b0:['0-30'],b1:['30-60'],b2:['60-90'],b3:['>90','90+'],studio:['studio'],vini:['vini'],
+    pay:['payment received status'],rem:['ae/cs remarks','remarks'],
+    svc:['zoho service type'],arr:['arr']});
+  const need=['cust','spoc','pend'].filter(k=>idx[k]===undefined);
+  if(need.length) throw new Error('Missing column(s): '+need.join(', '));
+  const pick=(r,k,fb)=>idx[k]===undefined?fb:r[idx[k]];
+  const pend=[],rec=[];const seen=new Set();let act=0,without=0,arrT=0,arrA=0,arrW=0;
+  for(let i=hi+1;i<g.length;i++){
+    const r=g[i]; if(!r||r.join('').trim()==='')continue;
+    const cust=cln(pick(r,'cust','')); if(!cust)continue;
+    const mapAct=cln(pick(r,'map',''))==='Active'?1:0;
+    const total=numOf(pick(r,'pend',0));
+    if(Math.abs(total)>0.5){
+      pend.push([cust,cln(pick(r,'spoc',''))||'Unassigned',cln(pick(r,'am',''))||'Unknown',
+        cln(pick(r,'st',''))==='active'?1:0,cln(pick(r,'ms',''))||'Unknown',cln(pick(r,'ent',''))||'Unknown',
+        mapAct,cln(pick(r,'last','')),Math.round(numOf(pick(r,'tat',0))),Math.round(numOf(pick(r,'due',0))),
+        Math.round(numOf(pick(r,'inv',0))),Math.round(total),Math.round(numOf(pick(r,'accy',0))),
+        Math.round(numOf(pick(r,'b0',0))),Math.round(numOf(pick(r,'b1',0))),
+        Math.round(numOf(pick(r,'b2',0))),Math.round(numOf(pick(r,'b3',0))),
+        Math.round(numOf(pick(r,'studio',0))),Math.round(numOf(pick(r,'vini',0))),
+        cln(pick(r,'pay',''))==='Yes'?1:0,cln(pick(r,'rem','')).slice(0,80)]);
+    }
+    if(/subscription/i.test(cln(pick(r,'svc','')))){
+      const arr=Math.round(numOf(pick(r,'arr',0)));
+      rec.push([cust,cln(pick(r,'am',''))||'Unknown',cln(pick(r,'spoc',''))||'Unassigned',mapAct,arr]);
+      seen.add(cust); arrT+=arr;
+      if(mapAct){act++;arrA+=arr;}else{without++;arrW+=arr;}
+    }
+  }
+  if(!pend.length) throw new Error('No rows with a non-zero Total Outstanding.');
+  PEND_RAW.length=0; PEND_RAW.push(...pend);
+  RECUR_RAW.length=0; RECUR_RAW.push(...rec);
+  /* a fresh CSV carries every row, so drop the snapshot's pre-computed splits
+     and let the charts recompute from the rows themselves */
+  Object.assign(RECUR_AGG,{uniq:seen.size,rows:rec.length,act,without,arr:arrT,actArr:arrA,withoutArr:arrW,
+    byAm:null,byAe:null,tableNote:null});
+  provPend='pending &amp; recurring refreshed from <b>'+esc(fname)+'</b> on <b>'+today()+'</b>';
+  hydrate();
+  return pend.length+' pending rows, '+rec.length+' subscription rows';
+}
+
+function loadCollCSV(text,fname){
+  const g=parseCSV(text);
+  const hi=headerRow(g,['customer name','date of collection'],25);
+  if(hi<0) throw new Error('No header row with "Customer Name" and "Date of Collection" — is this the Collection tab?');
+  const low=g[hi].map(c=>cln(c).toLowerCase());
+  const idx=colMap(low,{cust:['customer name'],ccy:['currency'],inr:['collected amount (inr)'],
+    dt:['date of collection'],dep:['deposit to'],ent:['entity'],ae:['spoc name'],
+    acct:['account type'],mc:['monthcode']});
+  const need=['cust','inr','dt'].filter(k=>idx[k]===undefined);
+  if(need.length) throw new Error('Missing column(s): '+need.join(', '));
+  const MO={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  const pd=s=>{const m=/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/.exec(cln(s));
+    if(m&&MO[m[2].toLowerCase()]!==undefined) return new Date(Date.UTC(+m[3],MO[m[2].toLowerCase()],+m[1]));
+    const d=new Date(cln(s)); return isNaN(d)?null:d;};
+  const pick=(r,k,fb)=>idx[k]===undefined?fb:r[idx[k]];
+  const rows=[];
+  for(let i=hi+1;i<g.length;i++){
+    const r=g[i]; if(!r||r.join('').trim()==='')continue;
+    const inrv=numOf(pick(r,'inr',0)); if(!inrv)continue;
+    const dt=pd(pick(r,'dt','')); if(!dt)continue;
+    let mc=cln(pick(r,'mc',''));
+    if(!/^\d{6}$/.test(mc)) mc=dt.getUTCFullYear()+String(dt.getUTCMonth()+1).padStart(2,'0');
+    rows.push({cust:cln(pick(r,'cust','')),ccy:cln(pick(r,'ccy',''))||'(blank)',inr:inrv,dt,mc,
+      dep:cln(pick(r,'dep',''))||'(blank)',ent:cln(pick(r,'ent',''))||'(blank)',
+      ae:cln(pick(r,'ae',''))||'(blank)',acct:cln(pick(r,'acct',''))||'(blank)'});
+  }
+  if(!rows.length) throw new Error('No receipts with a converted INR amount.');
+  const now=new Date(); const nowT=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
+  const yr=now.getFullYear(), mcNow=yr+String(now.getMonth()+1).padStart(2,'0');
+  const qStart=Math.floor(now.getMonth()/3)*3;
+  const qCodes=[0,1,2].map(i=>yr+String(qStart+i+1).padStart(2,'0'));
+  const S=a=>Math.round(a.reduce((s,x)=>s+x.inr,0));
+  const grp=(k,n)=>{const m={};rows.forEach(x=>{m[x[k]]=(m[x[k]]||0)+x.inr;});
+    return Object.entries(m).filter(([,v])=>v).sort((a,b)=>b[1]-a[1]).slice(0,n).map(([a,v])=>[a,Math.round(v)]);};
+  const months={};rows.forEach(x=>{months[x.mc]=(months[x.mc]||0)+x.inr;});
+  const mtdRows=rows.filter(x=>x.mc===mcNow);
+  const mtdAE={};mtdRows.forEach(x=>{mtdAE[x.ae]=(mtdAE[x.ae]||0)+x.inr;});
+  const cy={};rows.filter(x=>x.mc.startsWith(String(yr))).forEach(x=>{cy[x.cust]=(cy[x.cust]||0)+x.inr;});
+  COLL={rows:rows.length,allTime:S(rows),ytd:S(rows.filter(x=>x.mc.startsWith(String(yr)))),
+    qtd:S(rows.filter(x=>qCodes.includes(x.mc))),mtd:S(mtdRows),
+    roll30:S(rows.filter(x=>x.dt.getTime()>nowT-30*864e5)),
+    roll90:S(rows.filter(x=>x.dt.getTime()>nowT-90*864e5)),mtdCode:mcNow,
+    series:Object.entries(months).sort().map(([k,v])=>[k,Math.round(v)]),
+    mtdByAE:Object.entries(mtdAE).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([k,v])=>[k,Math.round(v)]),
+    byAE:grp('ae',12),byAcct:grp('acct',8),byCcy:grp('ccy',9),byDep:grp('dep',8),byEnt:grp('ent',6),
+    topCust:Object.entries(cy).sort((a,b)=>b[1]-a[1]).slice(0,25).map(([k,v])=>[k,Math.round(v)]),
+    topScope:'calendar '+yr,fromCSV:true};
+  provColl='refreshed from <b>'+esc(fname)+'</b> on <b>'+today()+'</b>';
+  return rows.length+' receipts';
+}
+
+function hookLoader(inputId,fn){
+  document.getElementById(inputId).addEventListener('change',e=>{
+    const f=e.target.files[0]; if(!f)return;
+    const msg=document.getElementById('loadMsg'), fr=new FileReader();
+    msg.className='status'; msg.textContent='Reading '+f.name+'…';
+    fr.onload=()=>{try{
+        const info=fn(String(fr.result),f.name);
+        renderAll(); msg.className='status good'; msg.textContent='Loaded '+info+'.';
+      }catch(err){msg.className='status err'; msg.textContent=err.message;}};
+    fr.onerror=()=>{msg.className='status err';msg.textContent='Could not read that file.';};
+    fr.readAsText(f); e.target.value='';});
+}
+hookLoader('csvPend',loadPendCSV);
+hookLoader('csvColl',loadCollCSV);
+
+/* ---------------- live read straight from the sheet ----------------
+   Google's CSV export sends CORS headers, so a browser on any origin can
+   read it directly — no server or API key needed. This works only while the
+   sheet stays link-viewable; if it is locked down, restricted or offline the
+   embedded snapshot stands and the manual CSV loaders still work. */
+const SHEET_ID='1F9A2F5Me0ZR-ZlrBebFtD6xGQM0axDtdHLl1eaGvtXA';
+const LIVE={
+  pend:{label:'pending + recurring',
+        url:'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/export?format=csv&gid=1780682586',
+        load:(t)=>loadPendCSV(t,'the live sheet')},
+  coll:{label:'collected amount',
+        url:'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:csv&sheet=Collection',
+        load:(t)=>loadCollCSV(t,'the live sheet')}
+};
+const liveMsg=(cls,txt)=>{const m=document.getElementById('liveMsg');
+  m.className='status '+cls; m.textContent=txt;};
+
+async function refreshLive(){
+  const btn=document.getElementById('liveBtn');
+  btn.disabled=true; liveMsg('','Reading the sheet…');
+  const ok=[], bad=[];
+  for(const k of ['pend','coll']){
+    try{
+      const r=await fetch(LIVE[k].url,{cache:'no-store'});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const t=await r.text();
+      if(/^\s*<(!doctype|html)/i.test(t.slice(0,80)))
+        throw new Error('got a sign-in page — is the sheet still link-viewable?');
+      LIVE[k].load(t);
+      ok.push(LIVE[k].label);
+    }catch(e){ bad.push(LIVE[k].label+' ('+e.message+')'); }
+  }
+  if(ok.length) renderAll();
+  btn.disabled=false;
+  const at=new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  if(!bad.length)      liveMsg('good','Live · read at '+at);
+  else if(ok.length)   liveMsg('err','Partly live ('+ok.join(', ')+'). Could not read: '+bad.join('; '));
+  else                 liveMsg('err','Could not read the sheet: '+bad.join('; ')+' — showing the '+SNAP+' snapshot.');
+}
+document.getElementById('liveBtn').onclick=refreshLive;
+
+const SNAP_PEND=PEND_RAW.map(r=>r.slice()), SNAP_RECUR=RECUR_RAW.map(r=>r.slice());
+const SNAP_AGG=Object.assign({},RECUR_AGG);
+document.getElementById('snapBack').onclick=()=>{
+  PEND_RAW.length=0; PEND_RAW.push(...SNAP_PEND.map(r=>r.slice()));
+  RECUR_RAW.length=0; RECUR_RAW.push(...SNAP_RECUR.map(r=>r.slice()));
+  Object.assign(RECUR_AGG,SNAP_AGG);
+  COLL=COLL_SNAP;
+  provPend='snapshot pulled <b>'+SNAP+'</b>'; provColl='snapshot pulled <b>'+SNAP+'</b>';
+  document.getElementById('loadMsg').textContent='';
+  hydrate(); renderAll();
+};
+
+/* ---------------- manual remark save / load / clear ---------------- */
+const noteMsg=(cls,txt)=>{const m=document.getElementById('noteMsg');
+  m.className='status '+cls; m.textContent=txt;};
+document.getElementById('noteSave').onclick=()=>{
+  if(!noteCount()){noteMsg('err','Nothing to save yet.');return;}
+  const blob=new Blob([JSON.stringify({savedAt:new Date().toISOString(),
+    source:'Spyne Collection Dashboard manual remarks',remarks:NOTES},null,2)],
+    {type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='manual-remarks.json'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  noteMsg('good','Saved '+noteCount()+' remarks to manual-remarks.json.');
+};
+document.getElementById('noteLoad').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const fr=new FileReader();
+  fr.onload=()=>{
+    try{
+      const o=JSON.parse(String(fr.result));
+      const incoming=(o&&o.remarks&&typeof o.remarks==='object')?o.remarks:o;
+      if(!incoming||typeof incoming!=='object') throw new Error('Not a remarks file.');
+      let n=0;
+      Object.keys(incoming).forEach(k=>{
+        const t=String(incoming[k]||'').slice(0,300);
+        if(t){NOTES[k]=t;n++;}
+      });
+      notesSave(); hydrate(); renderAll();
+      noteMsg('good','Loaded '+n+' remarks; '+noteCount()+' held in total.');
+    }catch(err){noteMsg('err','Could not read that remarks file.');}
+  };
+  fr.onerror=()=>noteMsg('err','Could not read that file.');
+  fr.readAsText(f); e.target.value='';
+});
+document.getElementById('noteClear').onclick=()=>{
+  const n=noteCount();
+  if(!n){noteMsg('err','Nothing to clear.');return;}
+  if(!confirm('Delete all '+n+' manual remarks? This cannot be undone — save them first if you want a copy.')) return;
+  NOTES={}; notesSave(); hydrate(); renderAll();
+  noteMsg('','All manual remarks cleared.');
+};
+
+provPend='snapshot pulled <b>'+SNAP+'</b>'; provColl='snapshot pulled <b>'+SNAP+'</b>';
+notesLoad(); hydrate(); renderAll();
+/* paint the snapshot first so the page is never blank, then go live */
+refreshLive();
+</script>
+</body>
+</html>
