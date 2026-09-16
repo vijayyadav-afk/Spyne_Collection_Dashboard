@@ -111,6 +111,23 @@
   button.btn:hover,label.btn:hover{border-color:var(--b1);color:var(--b1)}
   .btn.primary{border-color:var(--b1);color:var(--b1)}
   button.btn:disabled{opacity:.5;cursor:default}
+
+  /* thin control strip that replaced the old instruction panels */
+  .bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:12px 0 0;padding:7px 10px;
+    background:var(--card);border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow)}
+  .bar .spacer{flex:1 1 auto}
+  .bar .sep{width:1px;height:16px;background:var(--line)}
+  .bar .btn,.bar summary.btn{font-size:11.5px;padding:4px 9px}
+  .bar .status{font-size:11.5px}
+  .more{position:relative}
+  .more>summary{list-style:none;cursor:pointer}
+  .more>summary::-webkit-details-marker{display:none}
+  .more[open]>summary{border-color:var(--b1);color:var(--b1)}
+  .more .menu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;display:flex;
+    flex-direction:column;gap:6px;padding:9px;min-width:215px;
+    background:var(--card);border:1px solid var(--line);border-radius:9px;
+    box-shadow:0 6px 20px rgba(16,24,40,.16)}
+  .more .menu .btn{text-align:center}
   input[type=file]{display:none}
   td.notecell{padding:3px 6px}
   input.noteIn{font:inherit;font-size:12px;width:190px;min-width:150px;padding:4px 7px;
@@ -138,46 +155,29 @@
 <h1>Spyne Collection Dashboard</h1>
 <div class="sub" id="prov"></div>
 
-<div class="refresh">
-  <div class="txt">
-    <b>Live data.</b> This page reads the sheet directly when it loads — the <i>SPOC wise invoice amount</i> and
-    <i>Collection</i> tabs — so the figures are whatever the sheet says right now, not when the file was built.
-    It works while the sheet stays link-viewable. If it can't be reached, the embedded snapshot below is shown
-    instead and nothing breaks.
-  </div>
-  <button class="btn primary" id="liveBtn">Refresh live data</button>
+<div class="bar">
   <span class="status" id="liveMsg"></span>
-</div>
-
-<div class="refresh">
-  <div class="txt">
-    <b>Or load a CSV by hand.</b>
-    From <i>Collection Projections - Working</i>: download the <b>SPOC wise invoice amount</b> tab (gid 1780682586)
-    for the pending/recurring pages, and the <b>Collection</b> tab for the collected-amount page —
-    <b>File → Download → CSV</b>, then load them here. Columns are matched by header name.
-    Nothing leaves your machine.
-  </div>
-  <label class="btn primary" for="csvPend">Load pending CSV…</label>
-  <input type="file" id="csvPend" accept=".csv,text/csv">
-  <label class="btn primary" for="csvColl">Load Collection CSV…</label>
-  <input type="file" id="csvColl" accept=".csv,text/csv">
-  <button class="btn" id="snapBack">Snapshot</button>
   <span class="status" id="loadMsg"></span>
-</div>
-
-<div class="refresh">
-  <div class="txt">
-    <b>Manual remarks.</b> Type straight into the <i>Manual remark</i> column of any details table — it saves as you
-    type and is keyed to the customer, so it survives sorting, filtering, switching pages and loading a fresh CSV,
-    and it rides along in every <i>Export CSV</i>. It is stored in this browser only: keep your own copy with
-    <b>Save remarks</b>, and use <b>Load remarks</b> to restore them on another machine or after site data is cleared.
-  </div>
+  <span class="spacer"></span>
+  <button class="btn" id="liveBtn" title="Re-read the sheet now">Refresh</button>
+  <span class="sep"></span>
   <span class="status" id="noteCount"></span>
-  <button class="btn" id="noteSave">Save remarks</button>
-  <label class="btn" for="noteLoad">Load remarks…</label>
+  <button class="btn" id="noteSave" title="Download your manual remarks as a file">Save remarks</button>
+  <label class="btn" for="noteLoad" title="Restore manual remarks from a saved file">Load</label>
   <input type="file" id="noteLoad" accept=".json,application/json">
-  <button class="btn" id="noteClear">Clear all</button>
-  <span class="status" id="noteMsg"></span>
+  <span class="sep"></span>
+  <details class="more">
+    <summary class="btn">More</summary>
+    <div class="menu">
+      <label class="btn" for="csvPend">Load pending CSV…</label>
+      <input type="file" id="csvPend" accept=".csv,text/csv">
+      <label class="btn" for="csvColl">Load Collection CSV…</label>
+      <input type="file" id="csvColl" accept=".csv,text/csv">
+      <button class="btn" id="snapBack">Revert to snapshot</button>
+      <button class="btn" id="noteClear">Clear all remarks</button>
+      <span class="status" id="noteMsg"></span>
+    </div>
+  </details>
 </div>
 
 <nav class="pages" id="pageNav">
@@ -1804,36 +1804,101 @@ const LIVE={
   pend:{label:'pending + recurring',
         url:'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/export?format=csv&gid=1780682586',
         load:(t)=>loadPendCSV(t,'the live sheet')},
+  /* Only the nine columns page 4 actually uses, projected server-side by
+     Google's query language: 2,038 KB -> 929 KB. The header labels come back
+     unchanged, so the parser needs no special case. */
   coll:{label:'collected amount',
-        url:'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:csv&sheet=Collection',
+        url:'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:csv&sheet=Collection'
+            +'&tq='+encodeURIComponent('select A,E,F,H,I,J,K,N,O'),
         load:(t)=>loadCollCSV(t,'the live sheet')}
 };
 const liveMsg=(cls,txt)=>{const m=document.getElementById('liveMsg');
   m.className='status '+cls; m.textContent=txt;};
 
+let lastLive=0, liveBusy=false, lastReadText='Live';
+
 async function refreshLive(){
+  if(liveBusy) return;                       /* never overlap two reads */
+  liveBusy=true;
   const btn=document.getElementById('liveBtn');
+  const t0=performance.now();
   btn.disabled=true; liveMsg('','Reading the sheet…');
-  const ok=[], bad=[];
-  for(const k of ['pend','coll']){
+
+  /* both tabs at once — wall time is the slower read, not the sum */
+  const got=await Promise.all(['pend','coll'].map(async k=>{
     try{
       const r=await fetch(LIVE[k].url,{cache:'no-store'});
       if(!r.ok) throw new Error('HTTP '+r.status);
       const t=await r.text();
       if(/^\s*<(!doctype|html)/i.test(t.slice(0,80)))
         throw new Error('got a sign-in page — is the sheet still link-viewable?');
-      LIVE[k].load(t);
-      ok.push(LIVE[k].label);
-    }catch(e){ bad.push(LIVE[k].label+' ('+e.message+')'); }
+      return {k,t};
+    }catch(e){ return {k,err:e.message}; }
+  }));
+
+  const ok=[], bad=[];
+  for(const g of got){                       /* parsing is synchronous, so do it after both land */
+    if(g.err){ bad.push(LIVE[g.k].label+' ('+g.err+')'); continue; }
+    try{ LIVE[g.k].load(g.t); ok.push(LIVE[g.k].label); }
+    catch(e){ bad.push(LIVE[g.k].label+' ('+e.message+')'); }
   }
-  if(ok.length) renderAll();
-  btn.disabled=false;
+  if(ok.length){ renderAll(); lastLive=Date.now(); }
+
+  btn.disabled=false; liveBusy=false;
   const at=new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-  if(!bad.length)      liveMsg('good','Live · read at '+at);
-  else if(ok.length)   liveMsg('err','Partly live ('+ok.join(', ')+'). Could not read: '+bad.join('; '));
+  const secs=((performance.now()-t0)/1000).toFixed(1)+'s';
+  if(!bad.length){     lastReadText='Live · read at '+at+' in '+secs; liveMsg('good',lastReadText); }
+  else if(ok.length)   liveMsg('err','Partly live ('+ok.join(', ')+') in '+secs+'. Could not read: '+bad.join('; '));
   else                 liveMsg('err','Could not read the sheet: '+bad.join('; ')+' — showing the '+SNAP+' snapshot.');
 }
 document.getElementById('liveBtn').onclick=refreshLive;
+
+/* ---------------- one-minute freshness, cheaply ----------------
+   A full read is ~1.3 MB. Asking Google for just a row count and a total is
+   ~170 bytes, so every minute we ask "has the sheet moved?" and only pay for
+   the full read when the answer is yes. A forced read every 15 minutes covers
+   edits that happen to leave both figures unchanged. */
+const SHEET_BASE='https://docs.google.com/spreadsheets/d/'+SHEET_ID;
+const PROBE=[
+  SHEET_BASE+'/gviz/tq?tqx=out:csv&gid=1780682586&headers=2&tq='+encodeURIComponent('select count(C), sum(BC)'),
+  SHEET_BASE+'/gviz/tq?tqx=out:csv&sheet=Collection&tq='+encodeURIComponent('select count(H), sum(H)')
+];
+const PROBE_EVERY=60*1000, FORCE_EVERY=15*60*1000;
+let lastSig=null;
+
+const typing=()=>document.activeElement && /^(input|select|textarea)$/i.test(document.activeElement.tagName);
+const hhmm=()=>new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+
+/* a fingerprint of the sheet: "<rows>,<total>|<receipts>,<collected>" */
+async function probeSig(){
+  try{
+    const parts=await Promise.all(PROBE.map(async u=>{
+      const r=await fetch(u,{cache:'no-store'});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const t=(await r.text()).trim();
+      const last=t.split('\n').pop().replace(/"/g,'').trim();
+      if(!last) throw new Error('empty probe');
+      return last;
+    }));
+    return parts.join('|');
+  }catch(e){ return null; }          /* probe failed — leave the data alone */
+}
+
+async function tick(){
+  if(document.hidden || typing() || liveBusy) return;
+  const sig=await probeSig();
+  if(!sig) return;
+  if(sig!==lastSig || Date.now()-lastLive>FORCE_EVERY){
+    lastSig=sig;
+    await refreshLive();
+  }else{
+    liveMsg('good', lastReadText+' · unchanged at '+hhmm());
+  }
+}
+setInterval(tick, PROBE_EVERY);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) tick(); });
+/* seed the fingerprint so the first minute's check is a comparison, not a reload */
+probeSig().then(s=>{ if(s) lastSig=s; });
 
 const SNAP_PEND=PEND_RAW.map(r=>r.slice()), SNAP_RECUR=RECUR_RAW.map(r=>r.slice());
 const SNAP_AGG=Object.assign({},RECUR_AGG);
