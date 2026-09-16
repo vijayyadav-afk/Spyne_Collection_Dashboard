@@ -112,13 +112,14 @@
   .btn.primary{border-color:var(--b1);color:var(--b1)}
   button.btn:disabled{opacity:.5;cursor:default}
 
-  /* thin control strip that replaced the old instruction panels */
-  .bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:12px 0 0;padding:7px 10px;
+  /* thin control strip that replaced the old instruction panels.
+     NOTE: must not be called .bar — that class belongs to the chart rows. */
+  .toolbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:12px 0 0;padding:7px 10px;
     background:var(--card);border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow)}
-  .bar .spacer{flex:1 1 auto}
-  .bar .sep{width:1px;height:16px;background:var(--line)}
-  .bar .btn,.bar summary.btn{font-size:11.5px;padding:4px 9px}
-  .bar .status{font-size:11.5px}
+  .toolbar .spacer{flex:1 1 auto}
+  .toolbar .sep{width:1px;height:16px;background:var(--line)}
+  .toolbar .btn,.toolbar summary.btn{font-size:11.5px;padding:4px 9px}
+  .toolbar .status{font-size:11.5px}
   .more{position:relative}
   .more>summary{list-style:none;cursor:pointer}
   .more>summary::-webkit-details-marker{display:none}
@@ -155,7 +156,7 @@
 <h1>Spyne Collection Dashboard</h1>
 <div class="sub" id="prov"></div>
 
-<div class="bar">
+<div class="toolbar">
   <span class="status" id="liveMsg"></span>
   <span class="status" id="loadMsg"></span>
   <span class="spacer"></span>
