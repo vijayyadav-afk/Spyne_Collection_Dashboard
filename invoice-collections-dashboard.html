@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -27,7 +27,7 @@
   h1{font-size:19px;margin:0 0 3px;letter-spacing:-.01em}
   .sub{color:var(--ink2);font-size:12.5px}
   .sub b{color:var(--ink);font-weight:600}
-  /* The per-page explainer blocks are hidden — kept in the markup so they can
+  /* The per-page explainer blocks are hidden â€” kept in the markup so they can
      be switched back on by deleting this one rule. (Does not affect .noteIn,
      the manual remark inputs.) */
   .note{display:none!important}
@@ -135,7 +135,7 @@
   th{position:sticky;top:0;background:var(--card);color:var(--ink3);font-size:10px;text-transform:uppercase;
     letter-spacing:.05em;font-weight:650;cursor:pointer;user-select:none;z-index:2}
   th:hover{color:var(--ink)}
-  th.sorted::after{content:" ▾";color:var(--b1)} th.sorted.asc::after{content:" ▴"}
+  th.sorted::after{content:" â–¾";color:var(--b1)} th.sorted.asc::after{content:" â–´"}
   tbody tr:hover{background:var(--line2)}
   tfoot td{font-weight:650;border-top:2px solid var(--line);border-bottom:none;background:var(--card)}
   .scroll{max-height:560px;overflow:auto}
@@ -175,7 +175,7 @@
 <div class="wrap">
 
 <h1>Item Level Collection Pending Dashboard</h1>
-<div class="sub gone" id="prov">Reading the sheet…</div>
+<div class="sub gone" id="prov">Reading the sheetâ€¦</div>
 
 <div class="toolbar gone">
   <span class="status" id="liveMsg"></span>
@@ -190,7 +190,7 @@
   <details class="more">
     <summary class="btn">More</summary>
     <div class="menu">
-      <label class="btn" for="csvFile">Load invoice CSV…</label>
+      <label class="btn" for="csvFile">Load invoice CSVâ€¦</label>
       <input type="file" id="csvFile" accept=".csv,text/csv">
       <button class="btn" id="noteClear">Clear all remarks</button>
       <span class="status" id="noteMsg"></span>
@@ -199,7 +199,7 @@
 </div>
 
 <div class="toolbar">
-  <input type="search" id="fq" placeholder="Search customer or invoice…">
+  <input type="search" id="fq" placeholder="Search customer or invoiceâ€¦">
   <select id="fRegion"></select>
   <select id="fAm"></select>
   <select id="fSpoc"></select>
@@ -233,9 +233,9 @@
     <div id="noDataWhy" style="max-width:620px;margin:0 auto 14px"></div>
     <div style="max-width:620px;margin:0 auto 14px;color:var(--ink3);font-size:12px">
       This dashboard reads the sheet live and keeps no copy of its own. Google refuses that request from a page
-      opened off the disk, so open it from your Vercel URL — or load the <i>Combined Invoices</i> tab as a CSV here.
+      opened off the disk, so open it from your Vercel URL â€” or load the <i>Combined Invoices</i> tab as a CSV here.
     </div>
-    <label class="btn primary" for="csvFile">Load invoice CSV…</label>
+    <label class="btn primary" for="csvFile">Load invoice CSVâ€¦</label>
   </div>
 </div>
 
@@ -243,7 +243,7 @@
 <section class="page on" id="p-pend">
   <div class="note">
     <b>Every open invoice line, aged.</b> One row per invoice line item, so a single invoice can appear more
-    than once — the invoice and customer counts above de-duplicate. Day buckets come from
+    than once â€” the invoice and customer counts above de-duplicate. Day buckets come from
     <b>Aging Due Days</b>. Amounts are the sheet's <b>Total Outstanding</b> (INR); <b>Due Amount USD</b> is the
     same balance in USD.
   </div>
@@ -259,7 +259,7 @@
     </div>
   </div>
   <div class="card">
-    <header><h2>Invoice line detail</h2><span class="cap" id="cap-pend"></span>
+    <header><h2>Invoice line detail</h2><span class="cap gone" id="cap-pend"></span>
       <button class="btn" data-export="pend">Export CSV</button></header>
     <div class="scroll"><table id="t-pend"><thead><tr>
       <th data-k="cust">Customer</th>
@@ -279,7 +279,7 @@
 <section class="page" id="p-aging">
   <div class="note">
     <b>How old the money is.</b> Buckets are on <b>Aging Due Days</b> from the sheet. Anything past 90 days is
-    the escalation list — it is the least likely to ever arrive, and it is where the collection effort belongs.
+    the escalation list â€” it is the least likely to ever arrive, and it is where the collection effort belongs.
   </div>
   <div class="kpis" id="k-aging"></div>
   <div class="card">
@@ -314,7 +314,7 @@
   <div class="note blue">
     <b>What collects itself versus what somebody has to chase.</b> <i>Autopay Active</i> money arrives without a
     human touching it. Everything under <i>Manual Payment</i> costs somebody a call, an email and a follow-up
-    every cycle — that recurring cost, not the balance itself, is what this page is for.
+    every cycle â€” that recurring cost, not the balance itself, is what this page is for.
   </div>
   <div class="kpis" id="k-auto"></div>
   <div class="grid2">
@@ -328,7 +328,7 @@
     </div>
   </div>
   <div class="card">
-    <header><h2>Manual-payment chase list</h2><span class="cap" id="cap-auto"></span>
+    <header><h2>Manual-payment chase list</h2><span class="cap gone" id="cap-auto"></span>
       <button class="btn" data-export="auto">Export CSV</button></header>
     <div class="scroll"><table id="t-auto"><thead><tr>
       <th data-k="cust">Customer</th><th data-k="spoc">SPOC</th><th data-k="am">Acct mgr</th>
@@ -343,7 +343,7 @@
 <section class="page" id="p-prod">
   <div class="note">
     <b>Studio and Vini, split by the sheet's <i>Item Status</i>.</b> Vini sits on far fewer customers than Studio,
-    so the same rupee of Vini exposure is concentrated in a handful of accounts — worth knowing before you
+    so the same rupee of Vini exposure is concentrated in a handful of accounts â€” worth knowing before you
     chase it the same way.
   </div>
   <div class="kpis" id="k-prod"></div>
@@ -362,7 +362,7 @@
     </div>
   </div>
   <div class="card">
-    <header><h2>Outstanding by item</h2><span class="cap" id="cap-prod"></span>
+    <header><h2>Outstanding by item</h2><span class="cap gone" id="cap-prod"></span>
       <button class="btn" data-export="prod">Export CSV</button></header>
     <div class="scroll"><table id="t-prod"><thead><tr>
       <th data-k="item">Item</th><th data-k="product">Product</th>
@@ -380,7 +380,7 @@
   </div>
   <div class="kpis" id="k-cust"></div>
   <div class="card">
-    <header><h2>Customer rollup</h2><span class="cap" id="cap-cust"></span>
+    <header><h2>Customer rollup</h2><span class="cap gone" id="cap-cust"></span>
       <button class="btn" data-export="cust">Export CSV</button></header>
     <div class="scroll"><table id="t-cust"><thead><tr>
       <th data-k="cust">Customer</th><th data-k="spoc">SPOC</th><th data-k="am">Acct mgr</th>
@@ -400,7 +400,7 @@
 /* =====================================================================
    Item Level Collection Pending Dashboard
    Source: "Zoho Item Level Invoice Data", tab "Combined Invoices"
-           (gid 1578042790) — one row per invoice LINE ITEM.
+           (gid 1578042790) â€” one row per invoice LINE ITEM.
 
    Reads the sheet live in the browser on load; no data is embedded in this
    file, so it needs the sheet to stay link-viewable and must be served over
@@ -412,7 +412,7 @@ const SHEET_BASE='https://docs.google.com/spreadsheets/d/'+SHEET_ID;
 /* Ask Google for only the 20 columns this dashboard uses instead of all 40:
    272 KB -> 181 KB, 2.2s -> 0.9s. Column letters are positional, so if the
    sheet is ever restructured this projection may stop carrying a column we
-   need — buildRows throws, and we fall back to the full export automatically. */
+   need â€” buildRows throws, and we fall back to the full export automatically. */
 const COLS='select A,C,D,E,F,G,H,K,M,Z,AC,AD,AE,AF,AG,AH,AI,AJ,AM,AN';
 const DATA_URL=SHEET_BASE+'/gviz/tq?tqx=out:csv&gid='+GID+'&tq='+encodeURIComponent(COLS);
 const DATA_URL_FULL=SHEET_BASE+'/export?format=csv&gid='+GID;
@@ -421,14 +421,14 @@ const PROBE_URL=SHEET_BASE+'/gviz/tq?tqx=out:csv&gid='+GID+
 
 /* ---------------- formatting ---------------- */
 const inrFmt=new Intl.NumberFormat('en-IN',{maximumFractionDigits:0});
-const money=v=>v?('₹'+inrFmt.format(Math.round(v))):'—';
-const plain=v=>v?inrFmt.format(Math.round(v)):'—';
+const money=v=>v?('â‚¹'+inrFmt.format(Math.round(v))):'â€”';
+const plain=v=>v?inrFmt.format(Math.round(v)):'â€”';
 const short=v=>{const a=Math.abs(v);
-  if(a>=1e9)return '₹'+(v/1e9).toFixed(2)+' bn';
-  if(a>=1e7)return '₹'+(v/1e7).toFixed(2)+' Cr';
-  if(a>=1e5)return '₹'+(v/1e5).toFixed(2)+' L';
-  return '₹'+inrFmt.format(Math.round(v));};
-const lakh=v=>v?(v/1e5).toFixed(2)+' L':'—';
+  if(a>=1e9)return 'â‚¹'+(v/1e9).toFixed(2)+' bn';
+  if(a>=1e7)return 'â‚¹'+(v/1e7).toFixed(2)+' Cr';
+  if(a>=1e5)return 'â‚¹'+(v/1e5).toFixed(2)+' L';
+  return 'â‚¹'+inrFmt.format(Math.round(v));};
+const lakh=v=>v?(v/1e5).toFixed(2)+' L':'â€”';
 const usd=v=>{const a=Math.abs(v);
   if(a>=1e6)return '$'+(v/1e6).toFixed(2)+'m';
   if(a>=1e3)return '$'+(v/1e3).toFixed(1)+'k';
@@ -450,7 +450,7 @@ function parseCSV(t){
   return out;
 }
 const numOf=v=>{if(v==null)return 0;
-  let s=String(v).replace(/[₹$,\s]/g,'').replace(/^\((.*)\)$/,'-$1');
+  let s=String(v).replace(/[â‚¹$,\s]/g,'').replace(/^\((.*)\)$/,'-$1');
   if(s===''||s==='-'||s==='#N/A'||s==='#REF!'||s==='#ERROR!')return 0;
   const n=parseFloat(s);return isNaN(n)?0:n;};
 const cln=v=>{const s=String(v==null?'':v).replace(/\s+/g,' ').trim();return s==='#N/A'?'':s;};
@@ -491,7 +491,7 @@ function buildRows(text,label){
     const low=g[i].map(c=>cln(c).toLowerCase());
     if(low.some(c=>/^customer[_ ]?name$/.test(c)||c==='customer')){hi=i;break;}
   }
-  if(hi<0) throw new Error('no header row with a customer name column — wrong tab?');
+  if(hi<0) throw new Error('no header row with a customer name column â€” wrong tab?');
   const low=g[hi].map(c=>cln(c).toLowerCase());
   const idx={};
   for(const k in WANT) for(const a of WANT[k]){const j=low.indexOf(a);if(j>-1){idx[k]=j;break;}}
@@ -511,29 +511,29 @@ function buildRows(text,label){
     const cust=cln(pick(r,'cust',''));
     if(!cust)continue;
     rows.push({
-      cust, region:cln(pick(r,'region',''))||'—',
+      cust, region:cln(pick(r,'region',''))||'â€”',
       invNo:cln(pick(r,'invNo','')), invDate:cln(pick(r,'invDate','')),
       entId:cln(pick(r,'entId','')),
-      invStatus:(cln(pick(r,'invStatus',''))||'—').toLowerCase(),
-      ccy:cln(pick(r,'ccy',''))||'—',
+      invStatus:(cln(pick(r,'invStatus',''))||'â€”').toLowerCase(),
+      ccy:cln(pick(r,'ccy',''))||'â€”',
       lastPay:cln(pick(r,'lastPay','')),
-      item:cln(pick(r,'item',''))||'—',
-      product:cln(pick(r,'product',''))||'—',
+      item:cln(pick(r,'item',''))||'â€”',
+      product:cln(pick(r,'product',''))||'â€”',
       aging:Math.round(numOf(pick(r,'aging',0))),
-      payStatus:(cln(pick(r,'payStatus',''))||'—').toLowerCase(),
+      payStatus:(cln(pick(r,'payStatus',''))||'â€”').toLowerCase(),
       writeoff:cln(pick(r,'writeoff','')),
       usd:numOf(pick(r,'usd',0)),
       finalUsd:numOf(pick(r,'finalUsd',0)),
       inr:numOf(pick(r,'inr',0)),
       spoc:cln(pick(r,'spoc',''))||'Unassigned',
-      am:cln(pick(r,'am',''))||'—',
+      am:cln(pick(r,'am',''))||'â€”',
       /* the sheet mixes "active" and "Active" */
-      acctStatus:(cln(pick(r,'acctStatus',''))||'—').toLowerCase(),
+      acctStatus:(cln(pick(r,'acctStatus',''))||'â€”').toLowerCase(),
       autopay:/autopay/i.test(cln(pick(r,'autopay','')))?1:0
     });
   }
   if(!rows.length) throw new Error('no usable rows found');
-  if(rows.length<50) throw new Error('only '+rows.length+' rows came back — the export looks truncated, try again');
+  if(rows.length<50) throw new Error('only '+rows.length+' rows came back â€” the export looks truncated, try again');
   rows.forEach(r=>r.note=NOTES[r.cust]||'');
   return {rows,ragged,label};
 }
@@ -567,11 +567,11 @@ function notesSave(){
     /* silent loss of typed remarks would be the worst failure here, so say it
        somewhere still on screen */
     if(!noteWarned){noteWarned=true;
-      const msg='This browser is refusing to store remarks — they will be lost on reload.';
+      const msg='This browser is refusing to store remarks â€” they will be lost on reload.';
       const m=document.getElementById('noteMsg');
       if(m){m.className='status err';m.textContent=msg;}
       const mini=document.getElementById('liveMini');
-      if(mini){mini.className='status err';mini.textContent='· '+msg;}
+      if(mini){mini.className='status err';mini.textContent='Â· '+msg;}
       alert(msg+'\n\nLikely causes: private browsing, or site data blocked for this URL.');
     }
   }
@@ -587,7 +587,7 @@ function renderNoteBar(){const el=document.getElementById('noteCount');if(!el)re
   const n=noteCount();el.textContent=n?n+(n===1?' remark saved':' remarks saved'):'no remarks yet';}
 const NOTE_COL={k:'note',txt:1,cls:'notecell',
   f:r=>`<input class="noteIn${r.note?' filled':''}" data-c="${esc(r.cust)}" value="${esc(r.note||'')}" `+
-       `placeholder="add remark…" maxlength="300" spellcheck="false">`};
+       `placeholder="add remarkâ€¦" maxlength="300" spellcheck="false">`};
 const noteFoot=rows=>{const n=rows.filter(r=>r.note).length;
   return n?`<span class="muted">${n} remark${n===1?'':'s'} in view</span>`:'';};
 document.addEventListener('input',e=>{
@@ -613,7 +613,7 @@ function vCols(el,items,fmt,onClick,activeKey){
   el.className='vchart';
   if(!items.length){el.innerHTML='<span class="muted">No data.</span>';return;}
   el.innerHTML='<div class="vcols">'+items.map(([k,v])=>
-      `<div class="vcol ${k===activeKey?'hit':''}" data-k="${esc(k)}" title="${esc(k)} · ${fmt(v)}"
+      `<div class="vcol ${k===activeKey?'hit':''}" data-k="${esc(k)}" title="${esc(k)} Â· ${fmt(v)}"
             ${onClick?'style="cursor:pointer"':''}>
          <span class="vv">${fmt(v)}</span>
          <div class="vb" style="height:${Math.max(1,100*v/max)}%"></div></div>`).join('')+'</div>'+
@@ -641,7 +641,7 @@ function splitBars(el,rows,fmt){
     :'<span class="muted">No data.</span>';
 }
 function groupSum(rows,key,valKey,n){
-  const m={};rows.forEach(r=>{const k=r[key]||'—';m[k]=(m[k]||0)+r[valKey];});
+  const m={};rows.forEach(r=>{const k=r[key]||'â€”';m[k]=(m[k]||0)+r[valKey];});
   return Object.entries(m).filter(([,v])=>v).sort((a,b)=>b[1]-a[1]).slice(0,n||99);
 }
 function fillSel(id,label,vals,keep){
@@ -649,7 +649,7 @@ function fillSel(id,label,vals,keep){
   el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
   if(keep&&vals.includes(keep))el.value=keep;
 }
-const uniqVals=(rows,k)=>[...new Set(rows.map(r=>r[k]))].filter(v=>v&&v!=='—').sort();
+const uniqVals=(rows,k)=>[...new Set(rows.map(r=>r[k]))].filter(v=>v&&v!=='â€”').sort();
 
 /* ---------------- table engine ---------------- */
 function mkTable(id,getRows,cols,foot){
@@ -691,12 +691,12 @@ function byCustomer(rows){
     c.inr+=r.inr; c.usd+=r.usd; c.lines++;
     c.oldest=Math.max(c.oldest,r.aging);
     if(r.invNo)c.invs.add(r.invNo);
-    if(r.product&&r.product!=='—')c.prods.add(r.product);
+    if(r.product&&r.product!=='â€”')c.prods.add(r.product);
     r.autopay?c.auto+=r.inr:c.manual+=r.inr;
     c[bucketOf(r)]+=r.inr;
   });
   return Object.values(m).map(c=>({...c,inv:c.invs.size,
-    products:[...c.prods].sort().join(' + ')||'—',
+    products:[...c.prods].sort().join(' + ')||'â€”',
     pay:c.auto>0&&c.manual>0?'mixed':c.auto>0?'autopay':'manual'}));
 }
 
@@ -706,7 +706,7 @@ function renderPend(){
   const tot=sum(v,r=>r.inr);
   const b=k=>sum(v.filter(r=>bucketOf(r)===k),r=>r.inr);
   document.getElementById('k-pend').innerHTML=kpiHtml([
-    ['Total outstanding',short(tot),usd(sum(v,r=>r.usd))+' · '+v.length+' lines',''],
+    ['Total outstanding',short(tot),usd(sum(v,r=>r.usd))+' Â· '+v.length+' lines',''],
     ['0 - 30 days',short(b('b0')),pct(b('b0'),tot)+' of book','good'],
     ['31 - 60 days',short(b('b1')),pct(b('b1'),tot)+' of book','warn'],
     ['61 - 90 days',short(b('b2')),pct(b('b2'),tot)+' of book','warn'],
@@ -718,7 +718,7 @@ function renderPend(){
   vCols(document.getElementById('b-pend-spoc'),groupSum(v,'spoc','inr',18),lakh,
     k=>{F.spoc=(F.spoc===k?'':k);syncFilters();renderAll();},F.spoc);
   document.getElementById('cap-pend').innerHTML=
-    `${v.length} of ${ALL.length} lines · <b>${short(tot)}</b>`;
+    `${v.length} of ${ALL.length} lines Â· <b>${short(tot)}</b>`;
 }
 const drawPend=mkTable('t-pend',view,[
   {k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
@@ -727,11 +727,11 @@ const drawPend=mkTable('t-pend',view,[
   {k:'am',f:r=>esc(r.am),txt:1,cls:'muted'},
   {k:'acctStatus',f:r=>statusChip(r.acctStatus),txt:1},
   {k:'aging',f:r=>r.aging,style:r=>r.aging>90?'color:var(--b4);font-weight:600':r.aging>60?'color:var(--b3)':''},
-  {k:'usd',f:r=>r.usd?usd(r.usd):'—',cls:'muted'},
+  {k:'usd',f:r=>r.usd?usd(r.usd):'â€”',cls:'muted'},
   {k:'inr',sorted:1,f:r=>'<b>'+money(r.inr)+'</b>'},
   NOTE_COL
 /* 9 cells: customer, product, spoc, acct mgr, account status, aging, usd, inr, remark.
-   Aging is left blank — a sum of day counts would be meaningless. */
+   Aging is left blank â€” a sum of day counts would be meaningless. */
 ],rows=>['Grand total','','','','','',
   usd(sum(rows,r=>r.usd)),money(sum(rows,r=>r.inr)),noteFoot(rows)]);
 
@@ -751,7 +751,7 @@ function renderAging(){
   document.getElementById('strip').innerHTML=
     [['0-30',b('b0'),'var(--b1)'],['31-60',b('b1'),'var(--b2)'],
      ['61-90',b('b2'),'var(--b3)'],['>90',b('b3'),'var(--b4)']]
-    .map(([l,x,c])=>`<div style="background:${c};flex:${Math.max(x,1)}">${l} · ${short(x)} · ${pct(x,tot)}</div>`).join('');
+    .map(([l,x,c])=>`<div style="background:${c};flex:${Math.max(x,1)}">${l} Â· ${short(x)} Â· ${pct(x,tot)}</div>`).join('');
 
   /* aging by SPOC */
   const m={};
@@ -762,10 +762,10 @@ function renderAging(){
     const t=s.total||1;
     return `<tr class="clickrow ${s.spoc===F.spoc?'active':''}" data-spoc="${esc(s.spoc)}">
       <td>${esc(s.spoc)}</td><td>${s.inv}</td>
-      <td>${s.b0?money(s.b0):'<span class=muted>—</span>'}</td>
-      <td>${s.b1?money(s.b1):'<span class=muted>—</span>'}</td>
-      <td>${s.b2?money(s.b2):'<span class=muted>—</span>'}</td>
-      <td style="${s.b3?'color:var(--b4);font-weight:600':''}">${s.b3?money(s.b3):'<span class=muted>—</span>'}</td>
+      <td>${s.b0?money(s.b0):'<span class=muted>â€”</span>'}</td>
+      <td>${s.b1?money(s.b1):'<span class=muted>â€”</span>'}</td>
+      <td>${s.b2?money(s.b2):'<span class=muted>â€”</span>'}</td>
+      <td style="${s.b3?'color:var(--b4);font-weight:600':''}">${s.b3?money(s.b3):'<span class=muted>â€”</span>'}</td>
       <td><b>${money(s.total)}</b> <span class="muted">${pct(s.total,tot)}</span></td>
       <td><div class="stack">
         <i style="background:var(--b1);width:${100*s.b0/t}%"></i>
@@ -780,7 +780,7 @@ function renderAging(){
   const inv={};
   v.filter(r=>r.aging>90).forEach(r=>{
     const k=r.invNo||r.cust;
-    const o=inv[k]||(inv[k]={label:(r.invNo?r.invNo+' · ':'')+r.cust,v:0});
+    const o=inv[k]||(inv[k]={label:(r.invNo?r.invNo+' Â· ':'')+r.cust,v:0});
     o.v+=r.inr;});
   plainBars(document.getElementById('b-aging-worst'),
     Object.values(inv).sort((a,b2)=>b2.v-a.v).slice(0,14).map(o=>[o.label,o.v]),short,'var(--b4)');
@@ -799,13 +799,13 @@ function renderAuto(){
     ['Manual over 90 days',short(sum(man.filter(r=>r.aging>90),r=>r.inr)),'oldest manual exposure','crit']
   ]);
   const split=(key,n)=>{const m={};
-    v.forEach(r=>{const k=r[key]||'—';(m[k]=m[k]||[0,0])[r.autopay?0:1]+=r.inr;});
+    v.forEach(r=>{const k=r[key]||'â€”';(m[k]=m[k]||[0,0])[r.autopay?0:1]+=r.inr;});
     return Object.entries(m).map(([k,x])=>[k,x[0],x[1]]).sort((a,b2)=>(b2[1]+b2[2])-(a[1]+a[2])).slice(0,n);};
   splitBars(document.getElementById('b-auto-am'),split('am',8),short);
   splitBars(document.getElementById('b-auto-spoc'),split('spoc',15),short);
   const chase=byCustomer(man);
   document.getElementById('cap-auto').innerHTML=
-    `${chase.length} customers · <b>${short(tm)}</b> to collect by hand`;
+    `${chase.length} customers Â· <b>${short(tm)}</b> to collect by hand`;
 }
 const drawAuto=mkTable('t-auto',()=>byCustomer(view().filter(r=>!r.autopay)),[
   {k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
@@ -824,13 +824,13 @@ function renderProd(){
   const studio=P('Studio'), vini=P('Vini');
   document.getElementById('k-prod').innerHTML=kpiHtml([
     ['Studio outstanding',short(sum(studio,r=>r.inr)),
-      uniqCount(studio,r=>r.cust)+' customers · '+pct(sum(studio,r=>r.inr),tot),''],
+      uniqCount(studio,r=>r.cust)+' customers Â· '+pct(sum(studio,r=>r.inr),tot),''],
     ['Vini outstanding',short(sum(vini,r=>r.inr)),
-      uniqCount(vini,r=>r.cust)+' customers · '+pct(sum(vini,r=>r.inr),tot),'purp'],
+      uniqCount(vini,r=>r.cust)+' customers Â· '+pct(sum(vini,r=>r.inr),tot),'purp'],
     ['Studio per customer',short(uniqCount(studio,r=>r.cust)?sum(studio,r=>r.inr)/uniqCount(studio,r=>r.cust):0),
       'average balance',''],
     ['Vini per customer',short(uniqCount(vini,r=>r.cust)?sum(vini,r=>r.inr)/uniqCount(vini,r=>r.cust):0),
-      'average balance — far more concentrated','purp'],
+      'average balance â€” far more concentrated','purp'],
     ['Vini over 90 days',short(sum(vini.filter(r=>r.aging>90),r=>r.inr)),
       pct(sum(vini.filter(r=>r.aging>90),r=>r.inr),sum(vini,r=>r.inr))+' of Vini','crit'],
     ['Studio over 90 days',short(sum(studio.filter(r=>r.aging>90),r=>r.inr)),
@@ -873,7 +873,7 @@ function renderCust(){
     ['On autopay',list.filter(c=>c.pay==='autopay').length,
       pct(list.filter(c=>c.pay==='autopay').length,list.length)+' of customers','good']
   ]);
-  document.getElementById('cap-cust').innerHTML=`${list.length} customers · <b>${short(tot)}</b>`;
+  document.getElementById('cap-cust').innerHTML=`${list.length} customers Â· <b>${short(tot)}</b>`;
 }
 const drawCust=mkTable('t-cust',()=>byCustomer(view()),[
   {k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
@@ -885,10 +885,10 @@ const drawCust=mkTable('t-cust',()=>byCustomer(view()),[
   {k:'products',f:r=>esc(r.products),txt:1,cls:'muted'},
   {k:'inv',f:r=>r.inv},{k:'lines',f:r=>r.lines,cls:'muted'},
   {k:'oldest',f:r=>r.oldest,style:r=>r.oldest>90?'color:var(--b4);font-weight:600':r.oldest>60?'color:var(--b3)':''},
-  {k:'b0',f:r=>r.b0?money(r.b0):'<span class=muted>—</span>'},
-  {k:'b1',f:r=>r.b1?money(r.b1):'<span class=muted>—</span>'},
-  {k:'b2',f:r=>r.b2?money(r.b2):'<span class=muted>—</span>'},
-  {k:'b3',f:r=>r.b3?money(r.b3):'<span class=muted>—</span>',style:r=>r.b3?'color:var(--b4);font-weight:600':''},
+  {k:'b0',f:r=>r.b0?money(r.b0):'<span class=muted>â€”</span>'},
+  {k:'b1',f:r=>r.b1?money(r.b1):'<span class=muted>â€”</span>'},
+  {k:'b2',f:r=>r.b2?money(r.b2):'<span class=muted>â€”</span>'},
+  {k:'b3',f:r=>r.b3?money(r.b3):'<span class=muted>â€”</span>',style:r=>r.b3?'color:var(--b4);font-weight:600':''},
   {k:'inr',sorted:1,f:r=>'<b>'+money(r.inr)+'</b>'},
   NOTE_COL
 ],rows=>['Grand total','','','','','','',plain(sum(rows,r=>r.inv)),plain(sum(rows,r=>r.lines)),'',
@@ -899,22 +899,22 @@ const drawCust=mkTable('t-cust',()=>byCustomer(view()),[
 function renderProv(){
   const v=view();
   document.getElementById('prov').innerHTML=
-    'Source <b>Zoho Item Level Invoice Data</b> · tab <b>Combined Invoices</b> · '+provText+
-    ' · <b>'+ALL.length+'</b> invoice lines, <b>'+uniqCount(ALL,r=>r.invNo)+'</b> invoices, <b>'+
-    uniqCount(ALL,r=>r.cust)+'</b> customers · outstanding in <b>INR</b>'+
-    (ragged?' · <span style="color:var(--b4)">'+ragged+' malformed rows skipped</span>':'');
+    'Source <b>Zoho Item Level Invoice Data</b> Â· tab <b>Combined Invoices</b> Â· '+provText+
+    ' Â· <b>'+ALL.length+'</b> invoice lines, <b>'+uniqCount(ALL,r=>r.invNo)+'</b> invoices, <b>'+
+    uniqCount(ALL,r=>r.cust)+'</b> customers Â· outstanding in <b>INR</b>'+
+    (ragged?' Â· <span style="color:var(--b4)">'+ragged+' malformed rows skipped</span>':'');
   const bits=[];
   if(F.noAuto)bits.push('autopay excluded');
   document.getElementById('scopeMsg').textContent=
-    (bits.length?bits.join(' · ')+' · ':'')+v.length+' of '+ALL.length+' lines in scope';
+    (bits.length?bits.join(' Â· ')+' Â· ':'')+v.length+' of '+ALL.length+' lines in scope';
   document.getElementById('foot').innerHTML=
-    'Provenance — internal Spyne invoice export (Zoho), <b>unaudited</b>; not NADA, Cox, NIADA or any audited '+
+    'Provenance â€” internal Spyne invoice export (Zoho), <b>unaudited</b>; not NADA, Cox, NIADA or any audited '+
     'industry source, and nothing here should be quoted externally as such. One row per invoice <i>line item</i>, '+
     'so invoice and customer counts are de-duplicated while line counts are not. <i>Total Outstanding</i> is the '+
-    'INR figure and <i>Due Amount USD</i> the same balance in USD — never sum the original-currency columns across '+
+    'INR figure and <i>Due Amount USD</i> the same balance in USD â€” never sum the original-currency columns across '+
     'rows, since the sheet mixes USD, EUR, GBP, INR, AUD, CAD, NOK and ZAR. Negative aging days mean the invoice '+
     'is not yet due. <i>Manual remark</i> is your own text, held in this browser only and never written back to '+
-    'the sheet. Customer names and invoice detail are dealer customer data — keep this internal.';
+    'the sheet. Customer names and invoice detail are dealer customer data â€” keep this internal.';
 }
 /* when there is nothing to show, say why instead of rendering five empty pages */
 function setEmptyState(why){
@@ -983,7 +983,7 @@ const EXPORT={
 document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>{
   const [head,body,name]=EXPORT[b.dataset.export]();
   const q=s=>'"'+String(s==null?'':s).replace(/"/g,'""')+'"';
-  const blob=new Blob(['﻿'+[head.map(q).join(','),...body.map(r=>r.map(q).join(','))].join('\r\n')],
+  const blob=new Blob(['ï»¿'+[head.map(q).join(','),...body.map(r=>r.map(q).join(','))].join('\r\n')],
     {type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);a.download=name+'.csv';a.click();
@@ -998,7 +998,7 @@ const liveMsg=(cls,txt)=>{
   m.className='status '+cls; m.textContent=txt;
   const mini=document.getElementById('liveMini');
   if(mini){mini.className='status '+(cls==='err'?'err':'muted');
-    mini.textContent=cls==='err'?('· '+txt):('· '+txt.replace(/^Live · /,''));}
+    mini.textContent=cls==='err'?('Â· '+txt):('Â· '+txt.replace(/^Live Â· /,''));}
 };
 let lastLive=0, liveBusy=false, lastReadText='', lastSig=null;
 const hhmm=()=>new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
@@ -1017,13 +1017,13 @@ async function refreshLive(){
   liveBusy=true;
   const btn=document.getElementById('liveBtn');
   const t0=performance.now();
-  btn.disabled=true; liveMsg('','Reading the sheet…');
+  btn.disabled=true; liveMsg('','Reading the sheetâ€¦');
   const grab=async(url)=>{
     const r=await fetch(url+'&cb='+Date.now(),{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const t=await r.text();
     if(/^\s*<(!doctype|html)/i.test(t.slice(0,80)))
-      throw new Error('got a sign-in page — is the sheet still link-viewable?');
+      throw new Error('got a sign-in page â€” is the sheet still link-viewable?');
     return t;
   };
   try{
@@ -1031,21 +1031,21 @@ async function refreshLive(){
     try{
       n=applyText(await grab(DATA_URL),how);
     }catch(first){
-      /* trimmed read failed — most likely the sheet's columns moved. Take the
+      /* trimmed read failed â€” most likely the sheet's columns moved. Take the
          whole export instead rather than showing nothing. */
       how='read live (full export)';
       n=applyText(await grab(DATA_URL_FULL),how);
     }
     lastLive=Date.now();
-    lastReadText='Live · '+n+' lines at '+hhmm()+' in '+((performance.now()-t0)/1000).toFixed(1)+'s';
+    lastReadText='Live Â· '+n+' lines at '+hhmm()+' in '+((performance.now()-t0)/1000).toFixed(1)+'s';
     liveMsg('good',lastReadText);
   }catch(e){
-    liveMsg('err','Could not read the sheet: '+e.message+(ALL.length?' — showing the last good read.':''));
+    liveMsg('err','Could not read the sheet: '+e.message+(ALL.length?' â€” showing the last good read.':''));
     if(!ALL.length){
       document.getElementById('prov').innerHTML=
-        'Source <b>Zoho Item Level Invoice Data</b> · tab <b>Combined Invoices</b> · '+
+        'Source <b>Zoho Item Level Invoice Data</b> Â· tab <b>Combined Invoices</b> Â· '+
         '<span style="color:var(--b4)">no data loaded</span>';
-      setEmptyState('The live read failed — '+e.message);
+      setEmptyState('The live read failed â€” '+e.message);
     }
   }
   btn.disabled=false; liveBusy=false;
@@ -1068,7 +1068,7 @@ async function tick(){
   const sig=await probeSig();
   if(!sig)return;
   if(sig!==lastSig||Date.now()-lastLive>FORCE_EVERY){ lastSig=sig; await refreshLive(); }
-  else if(lastReadText) liveMsg('good',lastReadText+' · unchanged at '+hhmm());
+  else if(lastReadText) liveMsg('good',lastReadText+' Â· unchanged at '+hhmm());
 }
 setInterval(tick,PROBE_EVERY);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick();});
@@ -1079,7 +1079,7 @@ document.getElementById('csvFile').addEventListener('change',e=>{
   const fr=new FileReader();
   fr.onload=()=>{try{
       const n=applyText(String(fr.result),'loaded from '+f.name);
-      lastReadText='From file · '+n+' lines';
+      lastReadText='From file Â· '+n+' lines';
       liveMsg('good',lastReadText);
     }catch(err){liveMsg('err',err.message);}};
   fr.onerror=()=>liveMsg('err','Could not read that file.');
@@ -1121,7 +1121,7 @@ document.getElementById('noteClear').onclick=()=>{
 
 /* ---------------- go ---------------- */
 notesLoad(); renderNoteBar();
-setEmptyState('Reading the sheet…');
+setEmptyState('Reading the sheetâ€¦');
 refreshLive().then(()=>probeSig().then(s=>{if(s)lastSig=s;}));
 </script>
 </body>
