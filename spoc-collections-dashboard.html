@@ -10,12 +10,14 @@
     --line:#e3e6ec; --line2:#eef0f4;
     --b1:#3d7dd6; --b2:#e9a33a; --b3:#e3722f; --b4:#cf3f4a;
     --g1:#2f9e6f; --p1:#8a6fd1; --t1:#2aa4b5;
+    --amber:#f0b429; --amber-ink:#3d2c00; --lime:#c9d92e;
     --ok:#2f9e6f; --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.04);
   }
   @media (prefers-color-scheme:dark){
     :root{--bg:#10131a;--card:#171b23;--ink:#e9edf4;--ink2:#a4adbb;--ink3:#7b8494;
       --line:#262c37;--line2:#1e242d;--shadow:none;
-      --b1:#5b93e0;--b2:#e2ab55;--b3:#e08356;--b4:#e05c68;--g1:#48b085;--p1:#9d86dd;--t1:#45b7c7;}
+      --b1:#5b93e0;--b2:#e2ab55;--b3:#e08356;--b4:#e05c68;--g1:#48b085;--p1:#9d86dd;--t1:#45b7c7;
+      --amber:#e3a52a;--amber-ink:#24190a;--lime:#b9c936;}
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);
@@ -86,6 +88,45 @@
   .chip.live,.chip.yes{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,var(--line))}
   .chip.churn,.chip.no{color:var(--b4);border-color:color-mix(in srgb,var(--b4) 35%,var(--line))}
   .chip.fut{color:var(--b2);border-color:color-mix(in srgb,var(--b2) 40%,var(--line))}
+
+  /* ---- Looker-style charts: horizontal amber bars, vertical lime columns ---- */
+  /* .fit makes the two cards in a row equal height and lets the bar chart grow
+     into the space, instead of leaving a blank block under the shorter card. */
+  .grid2.fit{align-items:stretch}
+  .grid2.fit>.card{display:flex;flex-direction:column}
+  .grid2.fit>.card>.pad{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+
+  .hbars{display:flex;flex-direction:column;gap:12px;padding:8px 2px 4px;
+    flex:1 1 auto;justify-content:space-around}
+  .hbar{display:grid;grid-template-columns:72px 1fr;gap:9px;align-items:stretch;font-size:12px;
+    flex:1 1 auto;min-height:28px;max-height:58px}
+  .hbar .cat{color:var(--ink2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    display:flex;align-items:center;justify-content:flex-end}
+  .hbar .zone{position:relative;height:100%;min-height:26px;border-left:1px solid var(--line);
+    background:repeating-linear-gradient(to right,var(--line2) 0 1px,transparent 1px 20%)}
+  .hbar .hfill{position:absolute;left:0;top:0;height:100%;background:var(--amber);
+    display:flex;align-items:center;justify-content:flex-end;padding:0 7px;box-sizing:border-box;
+    font-weight:600;color:var(--amber-ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .hbar.hit .hfill{outline:2px solid var(--b1);outline-offset:1px}
+
+  .vchart{padding:18px 2px 2px;overflow-x:auto}
+  .vcols{display:flex;align-items:flex-end;gap:5px;height:180px;min-width:100%;
+    border-bottom:1px solid var(--line);
+    background:repeating-linear-gradient(to top,var(--line2) 0 1px,transparent 1px 25%)}
+  .vcol{flex:1 0 24px;display:flex;flex-direction:column;justify-content:flex-end;
+    align-items:center;height:100%;position:relative}
+  .vcol .vv{position:absolute;top:-15px;font-size:10px;color:var(--ink2);white-space:nowrap;
+    font-variant-numeric:tabular-nums}
+  .vcol .vb{width:72%;background:var(--lime);min-height:2px}
+  .vcol.hit .vb{outline:2px solid var(--b1);outline-offset:1px}
+  .vlabs{display:flex;gap:5px;min-width:100%;height:32px;margin-top:4px}
+  .vlab{flex:1 0 24px;text-align:center;font-size:10px;color:var(--ink3);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .vlab.low{transform:translateY(15px)}
+  .vlab.on{color:var(--ink);font-weight:600}
+  /* too many columns for the width: drop the per-column values, keep the names.
+     Hover still shows "name · value" on every column. */
+  @media (max-width:1150px){ .vchart .vv{display:none} .vlab{font-size:9px} }
 
   .bars{display:flex;flex-direction:column;gap:8px}
   .bar{display:grid;grid-template-columns:120px 1fr 92px;gap:9px;align-items:center;font-size:12px}
@@ -197,7 +238,7 @@
     which is how the Looker report splits them. Amounts in <b>INR</b>.
   </div>
   <div class="kpis" id="k-pend"></div>
-  <div class="grid2">
+  <div class="grid2 fit">
     <div class="card">
       <header><h2>Pending by Account Manager</h2><span class="cap">click to filter</span></header>
       <div class="pad"><div class="bars" id="b-pend-am"></div></div>
@@ -246,7 +287,7 @@
     failures, not late payers, and they need a different conversation.
   </div>
   <div class="kpis" id="k-nopay"></div>
-  <div class="grid2">
+  <div class="grid2 fit">
     <div class="card">
       <header><h2>Pending by Account Manager</h2></header>
       <div class="pad"><div class="bars" id="b-nopay-am"></div></div>
@@ -1269,6 +1310,35 @@ function bars(el,items,fmt,color,onClick,activeKey){
        <div class="v">${fmt(v)}</div></div>`).join('') : '<span class="muted">No data.</span>';
   if(onClick) el.querySelectorAll('.bar').forEach(b=>b.onclick=()=>onClick(b.dataset.k));
 }
+/* horizontal amber bars, value sitting inside the bar (Looker's Account Mgr chart) */
+function hBars(el,items,fmt,onClick,activeKey){
+  const max=Math.max(1,...items.map(i=>i[1]));
+  el.className='hbars';
+  el.innerHTML = items.length? items.map(([k,v])=>
+    `<div class="hbar ${k===activeKey?'hit':''}" data-k="${esc(k)}" ${onClick?'style="cursor:pointer"':''}>
+       <div class="cat" title="${esc(k)}">${esc(k)}</div>
+       <div class="zone"><div class="hfill" style="width:${Math.max(6,100*v/max)}%">${fmt(v)}</div></div>
+     </div>`).join('') : '<span class="muted">No data.</span>';
+  if(onClick) el.querySelectorAll('.hbar').forEach(b=>b.onclick=()=>onClick(b.dataset.k));
+}
+
+/* vertical lime columns, value above, labels staggered on two rows (Looker's AE chart) */
+function vCols(el,items,fmt,onClick,activeKey){
+  const max=Math.max(1,...items.map(i=>i[1]));
+  el.className='vchart';
+  if(!items.length){ el.innerHTML='<span class="muted">No data.</span>'; return; }
+  el.innerHTML =
+    '<div class="vcols">'+items.map(([k,v])=>
+      `<div class="vcol ${k===activeKey?'hit':''}" data-k="${esc(k)}" title="${esc(k)} · ${fmt(v)}"
+            ${onClick?'style="cursor:pointer"':''}>
+         <span class="vv">${fmt(v)}</span>
+         <div class="vb" style="height:${Math.max(1,100*v/max)}%"></div>
+       </div>`).join('')+'</div>'+
+    '<div class="vlabs">'+items.map(([k],i)=>
+      `<div class="vlab ${i%2?'low':''} ${k===activeKey?'on':''}" title="${esc(k)}">${esc(k)}</div>`).join('')+'</div>';
+  if(onClick) el.querySelectorAll('.vcol').forEach(c=>c.onclick=()=>onClick(c.dataset.k));
+}
+
 function colChart(el,items,fmt){
   const max=items.length?Math.max(...items.map(i=>i[1])):1;
   el.innerHTML=items.map(([k,v])=>
@@ -1350,9 +1420,9 @@ function renderP1(){
     ['Invoices outstanding',plain(sum(rs,r=>r.inv)),'open invoice count','']
   ].map(([l,v,h,k])=>`<div class="kpi ${k}"><div class="lab">${l}</div><div class="val">${v}</div><div class="hint">${h}</div></div>`).join('');
 
-  bars(document.getElementById('b-pend-am'),groupSum(rs,'am','pend'),lakh,'var(--b2)',
+  hBars(document.getElementById('b-pend-am'),groupSum(rs,'am','pend'),lakh,
     k=>{S1.am=(S1.am===k?'':k);document.getElementById('f-pend-am').value=S1.am;renderP1();drawP1();},S1.am);
-  bars(document.getElementById('b-pend-ae'),groupSum(rs,'spoc','pend',15),lakh,'var(--g1)',
+  vCols(document.getElementById('b-pend-ae'),groupSum(rs,'spoc','pend',18),lakh,
     k=>{S1.ae=(S1.ae===k?'':k);document.getElementById('f-pend-ae').value=S1.ae;renderP1();drawP1();},S1.ae);
 
   fillSel('f-pend-am','All account managers',uniqVals(rs,'am'),S1.am);
@@ -1391,9 +1461,9 @@ function renderP2(){
     ['Invoices raised',plain(sum(rs,r=>r.inv)),'all unpaid',''],
     ['Oldest',plain(Math.max(0,...rs.map(r=>r.due)))+' days',"since contract/first invoice",'warn']
   ].map(([l,v,h,k])=>`<div class="kpi ${k}"><div class="lab">${l}</div><div class="val">${v}</div><div class="hint">${h}</div></div>`).join('');
-  bars(document.getElementById('b-nopay-am'),groupSum(rs,'am','pend'),lakh,'var(--p1)',
+  hBars(document.getElementById('b-nopay-am'),groupSum(rs,'am','pend'),lakh,
     k=>{S2.am=(S2.am===k?'':k);document.getElementById('f-nopay-am').value=S2.am;renderP2();drawP2();},S2.am);
-  bars(document.getElementById('b-nopay-ae'),groupSum(rs,'spoc','pend',15),lakh,'var(--b3)',
+  vCols(document.getElementById('b-nopay-ae'),groupSum(rs,'spoc','pend',18),lakh,
     k=>{S2.ae=(S2.ae===k?'':k);document.getElementById('f-nopay-ae').value=S2.ae;renderP2();drawP2();},S2.ae);
   fillSel('f-nopay-am','All account managers',uniqVals(rs,'am'),S2.am);
   fillSel('f-nopay-ae','All AEs / SPOCs',uniqVals(rs,'spoc'),S2.ae);
