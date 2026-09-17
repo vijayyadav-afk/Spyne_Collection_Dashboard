@@ -405,7 +405,13 @@
 const SHEET_ID='1y2Xs0HsJtwO4DRkUoWA7a_2KP-ygXXTO4iue6looDws';
 const GID='1578042790';
 const SHEET_BASE='https://docs.google.com/spreadsheets/d/'+SHEET_ID;
-const DATA_URL=SHEET_BASE+'/export?format=csv&gid='+GID;
+/* Ask Google for only the 20 columns this dashboard uses instead of all 40:
+   272 KB -> 181 KB, 2.2s -> 0.9s. Column letters are positional, so if the
+   sheet is ever restructured this projection may stop carrying a column we
+   need — buildRows throws, and we fall back to the full export automatically. */
+const COLS='select A,C,D,E,F,G,H,K,M,Z,AC,AD,AE,AF,AG,AH,AI,AJ,AM,AN';
+const DATA_URL=SHEET_BASE+'/gviz/tq?tqx=out:csv&gid='+GID+'&tq='+encodeURIComponent(COLS);
+const DATA_URL_FULL=SHEET_BASE+'/export?format=csv&gid='+GID;
 const PROBE_URL=SHEET_BASE+'/gviz/tq?tqx=out:csv&gid='+GID+
   '&tq='+encodeURIComponent('select count(E), sum(AH)');
 
@@ -1008,13 +1014,24 @@ async function refreshLive(){
   const btn=document.getElementById('liveBtn');
   const t0=performance.now();
   btn.disabled=true; liveMsg('','Reading the sheet…');
-  try{
-    const r=await fetch(DATA_URL+'&cb='+Date.now(),{cache:'no-store'});
+  const grab=async(url)=>{
+    const r=await fetch(url+'&cb='+Date.now(),{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const t=await r.text();
     if(/^\s*<(!doctype|html)/i.test(t.slice(0,80)))
       throw new Error('got a sign-in page — is the sheet still link-viewable?');
-    const n=applyText(t,'read live');
+    return t;
+  };
+  try{
+    let n, how='read live';
+    try{
+      n=applyText(await grab(DATA_URL),how);
+    }catch(first){
+      /* trimmed read failed — most likely the sheet's columns moved. Take the
+         whole export instead rather than showing nothing. */
+      how='read live (full export)';
+      n=applyText(await grab(DATA_URL_FULL),how);
+    }
     lastLive=Date.now();
     lastReadText='Live · '+n+' lines at '+hhmm()+' in '+((performance.now()-t0)/1000).toFixed(1)+'s';
     liveMsg('good',lastReadText);
