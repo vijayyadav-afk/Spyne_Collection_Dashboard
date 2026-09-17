@@ -45,11 +45,30 @@ The page fetches two tabs of **Collection Projections - Working** directly from 
 | Page | Tab | Endpoint |
 |---|---|---|
 | Collections Pending, Never Received Payment, Payment Recurring, SPOC Aging | `SPOC wise invoice amount` (gid `1780682586`) | `/export?format=csv&gid=…` |
-| Collected Amount | `Collection` | `/gviz/tq?tqx=out:csv&sheet=Collection` |
+| Collected Amount | `Collection` | `/gviz/tq?tqx=out:csv&sheet=Collection&tq=select A,E,F,H,I,J,K,N,O` |
 
 Google's CSV export sends CORS headers, so the browser reads it from any origin — no server, API key
 or service account involved. Verified from a third-party origin: every column resolves and the totals
 match the Looker report.
+
+**Speed.** The two reads run in parallel, and the `Collection` query projects only the nine columns
+page 4 uses — 2,038 KB down to 929 KB. Measured end to end: ~2.3s, versus ~3.5s sequential and
+unprojected. The header bar reports the read time so a slow sheet is visible rather than guessed at.
+
+**Freshness — checked every minute.** A full read is ~1.3 MB, so polling that often would be wasteful.
+Instead the page asks Google once a minute for just a row count and a total:
+
+```
+/gviz/tq?tqx=out:csv&gid=1780682586&headers=2&tq=select count(C), sum(BC)   ->  84 bytes
+/gviz/tq?tqx=out:csv&sheet=Collection&tq=select count(H), sum(H)           ->  88 bytes
+```
+
+If that fingerprint differs from the last one, it does the full read; if not, it just updates the
+"unchanged at HH:MM" stamp. A full read is forced every 15 minutes regardless, covering edits that
+happen to leave both figures unchanged. Checking is skipped while a field has focus, so it never
+interrupts typing, and pauses while the tab is hidden — returning to the tab triggers an immediate check.
+
+Net cost of one-minute freshness: ~170 bytes a minute when nothing changes.
 
 **This depends on the sheet staying "anyone with the link can view."** If sharing is tightened the
 live read fails, the page falls back to its embedded snapshot, and a red message says so. The two
