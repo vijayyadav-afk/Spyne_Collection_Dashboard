@@ -259,9 +259,6 @@
       <button class="btn" data-export="pend">Export CSV</button></header>
     <div class="scroll"><table id="t-pend"><thead><tr>
       <th data-k="cust">Customer</th>
-      <th data-k="invNo">Invoice</th>
-      <th data-k="invDate">Invoice date</th>
-      <th data-k="item">Item</th>
       <th data-k="product">Product</th>
       <th data-k="spoc">SPOC</th>
       <th data-k="am">Acct mgr</th>
@@ -715,9 +712,6 @@ function renderPend(){
 }
 const drawPend=mkTable('t-pend',view,[
   {k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
-  {k:'invNo',f:r=>esc(r.invNo||'—'),txt:1,cls:'muted'},
-  {k:'invDate',f:r=>esc(r.invDate||'—'),txt:1,cls:'muted'},
-  {k:'item',f:r=>esc(r.item),cls:'name muted',title:1,txt:1},
   {k:'product',f:r=>`<span class="chip">${esc(r.product)}</span>`,txt:1},
   {k:'spoc',f:r=>esc(r.spoc),txt:1},
   {k:'am',f:r=>esc(r.am),txt:1,cls:'muted'},
@@ -726,7 +720,9 @@ const drawPend=mkTable('t-pend',view,[
   {k:'usd',f:r=>r.usd?usd(r.usd):'—',cls:'muted'},
   {k:'inr',sorted:1,f:r=>'<b>'+money(r.inr)+'</b>'},
   NOTE_COL
-],rows=>['Grand total','','','','','','','',plain(sum(rows,r=>r.aging)),
+/* 9 cells: customer, product, spoc, acct mgr, account status, aging, usd, inr, remark.
+   Aging is left blank — a sum of day counts would be meaningless. */
+],rows=>['Grand total','','','','','',
   usd(sum(rows,r=>r.usd)),money(sum(rows,r=>r.inr)),noteFoot(rows)]);
 
 function renderAging(){
