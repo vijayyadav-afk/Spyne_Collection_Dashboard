@@ -159,6 +159,8 @@
   .legend span{display:inline-flex;align-items:center;gap:5px}
   .sw{width:9px;height:9px;border-radius:2px;display:inline-block}
   .muted{color:var(--ink3)}
+  /* kept in the DOM so every control stays wired, just not shown */
+  .gone{display:none!important}
   .status{font-size:12px;font-weight:600}
   .status.err{color:var(--b4)} .status.good{color:var(--ok)}
   .empty{padding:40px 20px;text-align:center;color:var(--ink2);font-size:13px}
@@ -169,9 +171,9 @@
 <div class="wrap">
 
 <h1>Item Level Collection Pending Dashboard</h1>
-<div class="sub" id="prov">Reading the sheet…</div>
+<div class="sub gone" id="prov">Reading the sheet…</div>
 
-<div class="toolbar">
+<div class="toolbar gone">
   <span class="status" id="liveMsg"></span>
   <span class="spacer"></span>
   <button class="btn" id="liveBtn" title="Re-read the sheet now">Refresh</button>
@@ -206,10 +208,10 @@
     <option value="c">61 - 90 days</option>
     <option value="d">Over 90 days</option>
   </select>
-  <label class="chk"><input type="checkbox" id="fNoDraft" checked> exclude drafts</label>
   <label class="chk"><input type="checkbox" id="fNoAuto"> exclude autopay</label>
   <span class="spacer"></span>
   <span class="status muted" id="scopeMsg"></span>
+  <span class="status muted" id="liveMini" title="Manual remarks save themselves as you type"></span>
   <button class="btn" id="fReset">Reset</button>
 </div>
 
@@ -225,11 +227,11 @@
   <div class="empty">
     <div style="font-size:15px;font-weight:650;color:var(--ink);margin-bottom:8px">No data loaded yet</div>
     <div id="noDataWhy" style="max-width:620px;margin:0 auto 14px"></div>
-    <div style="max-width:620px;margin:0 auto;color:var(--ink3);font-size:12px">
+    <div style="max-width:620px;margin:0 auto 14px;color:var(--ink3);font-size:12px">
       This dashboard reads the sheet live and keeps no copy of its own. Google refuses that request from a page
-      opened off the disk, so serve it over http(s) — your Vercel URL — or use
-      <b>More → Load invoice CSV</b> with the <i>Combined Invoices</i> tab downloaded as CSV.
+      opened off the disk, so open it from your Vercel URL — or load the <i>Combined Invoices</i> tab as a CSV here.
     </div>
+    <label class="btn primary" for="csvFile">Load invoice CSV…</label>
   </div>
 </div>
 
@@ -531,7 +533,7 @@ function buildRows(text,label){
 
 /* ---------------- state ---------------- */
 let ALL=[], provText='', ragged=0;
-const F={q:'',region:'',am:'',spoc:'',product:'',acct:'',band:'',noDraft:true,noAuto:false};
+const F={q:'',region:'',am:'',spoc:'',product:'',acct:'',band:'',noAuto:false};
 
 const BANDS={a:r=>r.aging<=30, b:r=>r.aging>30&&r.aging<=60, c:r=>r.aging>60&&r.aging<=90, d:r=>r.aging>90};
 function view(){
@@ -542,7 +544,6 @@ function view(){
     (!F.spoc || r.spoc===F.spoc) && (!F.product || r.product===F.product) &&
     (!F.acct || r.acctStatus===F.acct) &&
     (!F.band || BANDS[F.band](r)) &&
-    (!F.noDraft || r.invStatus!=='draft') &&
     (!F.noAuto || !r.autopay));
 }
 const bucketOf=r=>r.aging<=30?'b0':r.aging<=60?'b1':r.aging<=90?'b2':'b3';
@@ -553,9 +554,21 @@ let NOTES={};
 function notesLoad(){try{const raw=localStorage.getItem(NOTE_KEY);NOTES=raw?JSON.parse(raw):{};}catch(e){NOTES={};}
   if(!NOTES||typeof NOTES!=='object')NOTES={};}
 let noteWarned=false;
-function notesSave(){try{localStorage.setItem(NOTE_KEY,JSON.stringify(NOTES));}
-  catch(e){if(!noteWarned){noteWarned=true;const m=document.getElementById('noteMsg');
-    if(m){m.className='status err';m.textContent='This browser will not store remarks — use Save remarks.';}}}}
+function notesSave(){
+  try{localStorage.setItem(NOTE_KEY,JSON.stringify(NOTES));}
+  catch(e){
+    /* silent loss of typed remarks would be the worst failure here, so say it
+       somewhere still on screen */
+    if(!noteWarned){noteWarned=true;
+      const msg='This browser is refusing to store remarks — they will be lost on reload.';
+      const m=document.getElementById('noteMsg');
+      if(m){m.className='status err';m.textContent=msg;}
+      const mini=document.getElementById('liveMini');
+      if(mini){mini.className='status err';mini.textContent='· '+msg;}
+      alert(msg+'\n\nLikely causes: private browsing, or site data blocked for this URL.');
+    }
+  }
+}
 const noteCount=()=>Object.keys(NOTES).filter(k=>NOTES[k]).length;
 function noteSet(cust,text){
   const t=String(text||'').slice(0,300);
@@ -885,7 +898,6 @@ function renderProv(){
     uniqCount(ALL,r=>r.cust)+'</b> customers · outstanding in <b>INR</b>'+
     (ragged?' · <span style="color:var(--b4)">'+ragged+' malformed rows skipped</span>':'');
   const bits=[];
-  if(F.noDraft)bits.push('drafts excluded');
   if(F.noAuto)bits.push('autopay excluded');
   document.getElementById('scopeMsg').textContent=
     (bits.length?bits.join(' · ')+' · ':'')+v.length+' of '+ALL.length+' lines in scope';
@@ -926,7 +938,6 @@ function syncFilters(){
   fillSel('fAcct','Any account status',uniqVals(v,'acctStatus'),F.acct);
   document.getElementById('fBand').value=F.band;
   document.getElementById('fq').value=F.q;
-  document.getElementById('fNoDraft').checked=F.noDraft;
   document.getElementById('fNoAuto').checked=F.noAuto;
 }
 document.querySelectorAll('#pageNav button').forEach(b=>b.onclick=()=>{
@@ -941,9 +952,9 @@ const wire=(id,key,lower)=>{
 };
 wire('fq','q',1); wire('fRegion','region'); wire('fAm','am'); wire('fSpoc','spoc');
 wire('fProduct','product'); wire('fAcct','acct'); wire('fBand','band');
-wire('fNoDraft','noDraft'); wire('fNoAuto','noAuto');
+wire('fNoAuto','noAuto');
 document.getElementById('fReset').onclick=()=>{
-  Object.assign(F,{q:'',region:'',am:'',spoc:'',product:'',acct:'',band:'',noDraft:true,noAuto:false});
+  Object.assign(F,{q:'',region:'',am:'',spoc:'',product:'',acct:'',band:'',noAuto:false});
   syncFilters(); renderAll();
 };
 
@@ -974,7 +985,15 @@ document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>{
 });
 
 /* ---------------- live read + minute probe ---------------- */
-const liveMsg=(cls,txt)=>{const m=document.getElementById('liveMsg');m.className='status '+cls;m.textContent=txt;};
+/* The old control strip is hidden, so the read status also goes somewhere
+   visible: a short version at the end of the filter bar. */
+const liveMsg=(cls,txt)=>{
+  const m=document.getElementById('liveMsg');
+  m.className='status '+cls; m.textContent=txt;
+  const mini=document.getElementById('liveMini');
+  if(mini){mini.className='status '+(cls==='err'?'err':'muted');
+    mini.textContent=cls==='err'?('· '+txt):('· '+txt.replace(/^Live · /,''));}
+};
 let lastLive=0, liveBusy=false, lastReadText='', lastSig=null;
 const hhmm=()=>new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 const typing=()=>document.activeElement&&/^(input|select|textarea)$/i.test(document.activeElement.tagName);
