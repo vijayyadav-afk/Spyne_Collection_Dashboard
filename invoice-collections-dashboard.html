@@ -73,11 +73,6 @@
   .toolbar #fReset{background:var(--bar1);border-color:var(--bar1);color:var(--bar1-ink)}
   .toolbar #fReset:hover{background:color-mix(in srgb,var(--bar1) 85%,#000);color:var(--bar1-ink)}
 
-  nav.pages{display:flex;gap:4px;margin:12px 0 0;flex-wrap:wrap;border-bottom:1px solid var(--line)}
-  nav.pages button{font:inherit;font-size:12.5px;font-weight:600;padding:9px 14px;border:1px solid transparent;
-    border-bottom:none;border-radius:8px 8px 0 0;background:transparent;color:var(--ink2);cursor:pointer;margin-bottom:-1px}
-  nav.pages button:hover{color:var(--ink)}
-  nav.pages button[aria-selected=true]{background:var(--card);border-color:var(--line);color:var(--ink)}
   section.page{display:none;padding-top:14px}
   section.page.on{display:block}
 
@@ -246,13 +241,6 @@
   <span class="status muted gone" id="liveMini"></span>
 </div>
 
-<nav class="pages" id="pageNav">
-  <button data-p="pend" aria-selected="true">Collections Pending</button>
-  <button data-p="aging" aria-selected="false">Aging</button>
-  <button data-p="auto" aria-selected="false">Autopay vs Manual</button>
-  <button data-p="prod" aria-selected="false">Studio vs Vini</button>
-  <button data-p="cust" aria-selected="false">Customers</button>
-</nav>
 
 <div class="card" id="noData" style="display:none">
   <div class="empty">
@@ -298,124 +286,6 @@
       <th data-k="usd">Due USD</th>
       <th data-k="inr" class="sorted">Outstanding</th>
       <th data-k="note">Manual remark</th>
-    </tr></thead><tbody></tbody><tfoot></tfoot></table></div>
-  </div>
-</section>
-
-<!-- ===== PAGE 2 ===== -->
-<section class="page" id="p-aging">
-  <div class="note">
-    <b>How old the money is.</b> Buckets are on <b>Aging Due Days</b> from the sheet. Anything past 90 days is
-    the escalation list — it is the least likely to ever arrive, and it is where the collection effort belongs.
-  </div>
-  <div class="kpis" id="k-aging"></div>
-  <div class="card">
-    <header><h2>Aging profile</h2>
-      <div class="legend">
-        <span><i class="sw" style="background:var(--b1)"></i>0-30</span>
-        <span><i class="sw" style="background:var(--b2)"></i>31-60</span>
-        <span><i class="sw" style="background:var(--b3)"></i>61-90</span>
-        <span><i class="sw" style="background:var(--b4)"></i>&gt;90</span>
-      </div>
-    </header>
-    <div class="pad"><div class="aging-strip" id="strip"></div></div>
-  </div>
-  <div class="grid2">
-    <div class="card">
-      <header><h2>Aging by SPOC</h2><span class="cap">click a row to filter</span></header>
-      <div class="scroll"><table id="t-aging-spoc"><thead><tr>
-        <th data-k="spoc">SPOC</th><th data-k="inv">Inv</th>
-        <th data-k="b0">0-30</th><th data-k="b1">31-60</th><th data-k="b2">61-90</th><th data-k="b3">&gt;90</th>
-        <th data-k="total" class="sorted">Total</th><th data-k="mix">Mix</th>
-      </tr></thead><tbody></tbody></table></div>
-    </div>
-    <div class="card">
-      <header><h2>Worst 14 invoices over 90 days</h2><span class="cap">escalate these</span></header>
-      <div class="pad"><div class="bars" id="b-aging-worst"></div></div>
-    </div>
-  </div>
-</section>
-
-<!-- ===== PAGE 3 ===== -->
-<section class="page" id="p-auto">
-  <div class="note blue">
-    <b>What collects itself versus what somebody has to chase.</b> <i>Autopay Active</i> money arrives without a
-    human touching it. Everything under <i>Manual Payment</i> costs somebody a call, an email and a follow-up
-    every cycle — that recurring cost, not the balance itself, is what this page is for.
-  </div>
-  <div class="kpis" id="k-auto"></div>
-  <div class="grid2">
-    <div class="card">
-      <header><h2>Autopay vs manual by Account Manager</h2></header>
-      <div class="pad"><div class="bars" id="b-auto-am"></div></div>
-    </div>
-    <div class="card">
-      <header><h2>Autopay vs manual by SPOC</h2><span class="cap">top 15 by exposure</span></header>
-      <div class="pad"><div class="bars" id="b-auto-spoc"></div></div>
-    </div>
-  </div>
-  <div class="card">
-    <header><h2>Manual-payment chase list</h2><span class="cap gone" id="cap-auto"></span>
-      <button class="btn" data-export="auto">Export CSV</button></header>
-    <div class="scroll"><table id="t-auto"><thead><tr>
-      <th data-k="cust">Customer</th><th data-k="spoc">SPOC</th><th data-k="am">Acct mgr</th>
-      <th data-k="region">Region</th><th data-k="inv">Invoices</th>
-      <th data-k="oldest">Oldest days</th><th data-k="inr" class="sorted">Outstanding</th>
-      <th data-k="note">Manual remark</th>
-    </tr></thead><tbody></tbody><tfoot></tfoot></table></div>
-  </div>
-</section>
-
-<!-- ===== PAGE 4 ===== -->
-<section class="page" id="p-prod">
-  <div class="note">
-    <b>Studio and Vini, split by the sheet's <i>Item Status</i>.</b> Vini sits on far fewer customers than Studio,
-    so the same rupee of Vini exposure is concentrated in a handful of accounts — worth knowing before you
-    chase it the same way.
-  </div>
-  <div class="kpis" id="k-prod"></div>
-  <div class="grid3">
-    <div class="card">
-      <header><h2>By product</h2></header>
-      <div class="pad"><div class="bars" id="b-prod-split"></div></div>
-    </div>
-    <div class="card">
-      <header><h2>By region</h2></header>
-      <div class="pad"><div class="bars" id="b-prod-region"></div></div>
-    </div>
-    <div class="card">
-      <header><h2>By currency</h2><span class="cap">INR equivalent</span></header>
-      <div class="pad"><div class="bars" id="b-prod-ccy"></div></div>
-    </div>
-  </div>
-  <div class="card">
-    <header><h2>Outstanding by item</h2><span class="cap gone" id="cap-prod"></span>
-      <button class="btn" data-export="prod">Export CSV</button></header>
-    <div class="scroll"><table id="t-prod"><thead><tr>
-      <th data-k="item">Item</th><th data-k="product">Product</th>
-      <th data-k="lines">Lines</th><th data-k="cust">Customers</th>
-      <th data-k="inr" class="sorted">Outstanding</th><th data-k="share">Share</th>
-    </tr></thead><tbody></tbody><tfoot></tfoot></table></div>
-  </div>
-</section>
-
-<!-- ===== PAGE 5 ===== -->
-<section class="page" id="p-cust">
-  <div class="note">
-    <b>One row per customer.</b> The invoice-line grain rolled up, so this is the view to work from when you are
-    deciding who to call rather than which line to query.
-  </div>
-  <div class="kpis" id="k-cust"></div>
-  <div class="card">
-    <header><h2>Customer rollup</h2><span class="cap gone" id="cap-cust"></span>
-      <button class="btn" data-export="cust">Export CSV</button></header>
-    <div class="scroll"><table id="t-cust"><thead><tr>
-      <th data-k="cust">Customer</th><th data-k="spoc">SPOC</th><th data-k="am">Acct mgr</th>
-      <th data-k="region">Region</th><th data-k="acctStatus">Status</th><th data-k="pay">Payment</th>
-      <th data-k="products">Products</th><th data-k="inv">Invoices</th><th data-k="lines">Lines</th>
-      <th data-k="oldest">Oldest days</th>
-      <th data-k="b0">0-30</th><th data-k="b1">31-60</th><th data-k="b2">61-90</th><th data-k="b3">&gt;90</th>
-      <th data-k="inr" class="sorted">Outstanding</th><th data-k="note">Manual remark</th>
     </tr></thead><tbody></tbody><tfoot></tfoot></table></div>
   </div>
 </section>
@@ -776,166 +646,6 @@ const drawPend=mkTable('t-pend',view,[
 ],rows=>['Grand total','','','','','',
   usd(sum(rows,r=>r.usd)),money(sum(rows,r=>r.inr)),noteFoot(rows)]);
 
-function renderAging(){
-  const v=view(), tot=sum(v,r=>r.inr);
-  const b=k=>sum(v.filter(r=>bucketOf(r)===k),r=>r.inr);
-  const over=b('b1')+b('b2')+b('b3');
-  const oldest=v.length?Math.max(...v.map(r=>r.aging)):0;
-  document.getElementById('k-aging').innerHTML=kpiHtml([
-    ['Total outstanding',short(tot),v.length+' lines',''],
-    ['Overdue 30+',short(over),pct(over,tot)+' of book','warn'],
-    ['Over 90 days',short(b('b3')),uniqCount(v.filter(r=>r.aging>90),r=>r.invNo)+' invoices','crit'],
-    ['Oldest item',oldest+' days',oldest>0?'past due':'not yet due','crit'],
-    ['Weighted avg age',(tot?Math.round(sum(v,r=>r.aging*r.inr)/tot):0)+' days','weighted by amount','teal'],
-    ['Current 0-30',short(b('b0')),pct(b('b0'),tot)+' of book','good']
-  ]);
-  document.getElementById('strip').innerHTML=
-    [['0-30',b('b0'),'var(--b1)'],['31-60',b('b1'),'var(--b2)'],
-     ['61-90',b('b2'),'var(--b3)'],['>90',b('b3'),'var(--b4)']]
-    .map(([l,x,c])=>`<div style="background:${c};flex:${Math.max(x,1)}">${l} · ${short(x)} · ${pct(x,tot)}</div>`).join('');
-
-  /* aging by SPOC */
-  const m={};
-  v.forEach(r=>{const s=m[r.spoc]||(m[r.spoc]={spoc:r.spoc,b0:0,b1:0,b2:0,b3:0,total:0,invs:new Set()});
-    s[bucketOf(r)]+=r.inr;s.total+=r.inr;if(r.invNo)s.invs.add(r.invNo);});
-  const list=Object.values(m).map(s=>({...s,inv:s.invs.size,mix:s.total})).sort((a,b2)=>b2.total-a.total);
-  document.getElementById('t-aging-spoc').querySelector('tbody').innerHTML=list.length?list.map(s=>{
-    const t=s.total||1;
-    return `<tr class="clickrow ${s.spoc===F.spoc?'active':''}" data-spoc="${esc(s.spoc)}">
-      <td>${esc(s.spoc)}</td><td>${s.inv}</td>
-      <td>${s.b0?money(s.b0):'<span class=muted>—</span>'}</td>
-      <td>${s.b1?money(s.b1):'<span class=muted>—</span>'}</td>
-      <td>${s.b2?money(s.b2):'<span class=muted>—</span>'}</td>
-      <td style="${s.b3?'color:var(--b4);font-weight:600':''}">${s.b3?money(s.b3):'<span class=muted>—</span>'}</td>
-      <td><b>${money(s.total)}</b> <span class="muted">${pct(s.total,tot)}</span></td>
-      <td><div class="stack">
-        <i style="background:var(--b1);width:${100*s.b0/t}%"></i>
-        <i style="background:var(--b2);width:${100*s.b1/t}%"></i>
-        <i style="background:var(--b3);width:${100*s.b2/t}%"></i>
-        <i style="background:var(--b4);width:${100*s.b3/t}%"></i></div></td></tr>`;}).join('')
-    :'<tr><td colspan="8" class="empty">Nothing matches these filters.</td></tr>';
-  document.querySelectorAll('#t-aging-spoc .clickrow').forEach(tr=>tr.onclick=()=>{
-    F.spoc=(F.spoc===tr.dataset.spoc?'':tr.dataset.spoc);syncFilters();renderAll();});
-
-  /* worst invoices over 90 */
-  const inv={};
-  v.filter(r=>r.aging>90).forEach(r=>{
-    const k=r.invNo||r.cust;
-    const o=inv[k]||(inv[k]={label:(r.invNo?r.invNo+' · ':'')+r.cust,v:0});
-    o.v+=r.inr;});
-  plainBars(document.getElementById('b-aging-worst'),
-    Object.values(inv).sort((a,b2)=>b2.v-a.v).slice(0,14).map(o=>[o.label,o.v]),short,'var(--b4)');
-}
-
-function renderAuto(){
-  const v=view();
-  const auto=v.filter(r=>r.autopay), man=v.filter(r=>!r.autopay);
-  const ta=sum(auto,r=>r.inr), tm=sum(man,r=>r.inr), tot=ta+tm;
-  document.getElementById('k-auto').innerHTML=kpiHtml([
-    ['Chased by hand',short(tm),pct(tm,tot)+' of book','crit'],
-    ['Collects itself',short(ta),pct(ta,tot)+' of book','good'],
-    ['Manual customers',uniqCount(man,r=>r.cust),uniqCount(man,r=>r.invNo)+' invoices','warn'],
-    ['Autopay customers',uniqCount(auto,r=>r.cust),uniqCount(auto,r=>r.invNo)+' invoices','teal'],
-    ['Autopay coverage',pct(uniqCount(auto,r=>r.cust),uniqCount(v,r=>r.cust)),'of customers in view',''],
-    ['Manual over 90 days',short(sum(man.filter(r=>r.aging>90),r=>r.inr)),'oldest manual exposure','crit']
-  ]);
-  const split=(key,n)=>{const m={};
-    v.forEach(r=>{const k=r[key]||'—';(m[k]=m[k]||[0,0])[r.autopay?0:1]+=r.inr;});
-    return Object.entries(m).map(([k,x])=>[k,x[0],x[1]]).sort((a,b2)=>(b2[1]+b2[2])-(a[1]+a[2])).slice(0,n);};
-  splitBars(document.getElementById('b-auto-am'),split('am',8),short);
-  splitBars(document.getElementById('b-auto-spoc'),split('spoc',15),short);
-  const chase=byCustomer(man);
-  document.getElementById('cap-auto').innerHTML=
-    `${chase.length} customers · <b>${short(tm)}</b> to collect by hand`;
-}
-const drawAuto=mkTable('t-auto',()=>byCustomer(view().filter(r=>!r.autopay)),[
-  {k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
-  {k:'spoc',f:r=>esc(r.spoc),txt:1},
-  {k:'am',f:r=>esc(r.am),txt:1,cls:'muted'},
-  {k:'region',f:r=>esc(r.region),txt:1,cls:'muted'},
-  {k:'inv',f:r=>r.inv},
-  {k:'oldest',f:r=>r.oldest,style:r=>r.oldest>90?'color:var(--b4);font-weight:600':r.oldest>60?'color:var(--b3)':''},
-  {k:'inr',sorted:1,f:r=>'<b>'+money(r.inr)+'</b>'},
-  NOTE_COL
-],rows=>['Grand total','','','',plain(sum(rows,r=>r.inv)),'',money(sum(rows,r=>r.inr)),noteFoot(rows)]);
-
-function renderProd(){
-  const v=view(), tot=sum(v,r=>r.inr);
-  const P=k=>v.filter(r=>r.product===k);
-  const studio=P('Studio'), vini=P('Vini');
-  document.getElementById('k-prod').innerHTML=kpiHtml([
-    ['Studio outstanding',short(sum(studio,r=>r.inr)),
-      uniqCount(studio,r=>r.cust)+' customers · '+pct(sum(studio,r=>r.inr),tot),''],
-    ['Vini outstanding',short(sum(vini,r=>r.inr)),
-      uniqCount(vini,r=>r.cust)+' customers · '+pct(sum(vini,r=>r.inr),tot),'purp'],
-    ['Studio per customer',short(uniqCount(studio,r=>r.cust)?sum(studio,r=>r.inr)/uniqCount(studio,r=>r.cust):0),
-      'average balance',''],
-    ['Vini per customer',short(uniqCount(vini,r=>r.cust)?sum(vini,r=>r.inr)/uniqCount(vini,r=>r.cust):0),
-      'average balance — far more concentrated','purp'],
-    ['Vini over 90 days',short(sum(vini.filter(r=>r.aging>90),r=>r.inr)),
-      pct(sum(vini.filter(r=>r.aging>90),r=>r.inr),sum(vini,r=>r.inr))+' of Vini','crit'],
-    ['Studio over 90 days',short(sum(studio.filter(r=>r.aging>90),r=>r.inr)),
-      pct(sum(studio.filter(r=>r.aging>90),r=>r.inr),sum(studio,r=>r.inr))+' of Studio','crit']
-  ]);
-  plainBars(document.getElementById('b-prod-split'),groupSum(v,'product','inr'),short,'var(--p1)');
-  plainBars(document.getElementById('b-prod-region'),groupSum(v,'region','inr'),short,'var(--t1)');
-  plainBars(document.getElementById('b-prod-ccy'),groupSum(v,'ccy','inr',8),short,'var(--g1)');
-  document.getElementById('cap-prod').innerHTML=`<b>${short(tot)}</b> across ${uniqVals(v,'item').length} items`;
-}
-function byItem(rows){
-  const m={};
-  rows.forEach(r=>{const k=r.item+'||'+r.product;
-    const o=m[k]||(m[k]={item:r.item,product:r.product,inr:0,lines:0,custs:new Set()});
-    o.inr+=r.inr;o.lines++;o.custs.add(r.cust);});
-  const tot=sum(Object.values(m),o=>o.inr);
-  return Object.values(m).map(o=>({...o,cust:o.custs.size,share:tot?o.inr/tot:0}));
-}
-const drawProd=mkTable('t-prod',()=>byItem(view()),[
-  {k:'item',f:r=>esc(r.item),cls:'name',title:1,txt:1},
-  {k:'product',f:r=>`<span class="chip">${esc(r.product)}</span>`,txt:1},
-  {k:'lines',f:r=>r.lines,cls:'muted'},
-  {k:'cust',f:r=>r.cust},
-  {k:'inr',sorted:1,f:r=>'<b>'+money(r.inr)+'</b>'},
-  {k:'share',f:r=>(100*r.share).toFixed(1)+'%',cls:'muted'}
-],rows=>['Grand total','',plain(sum(rows,r=>r.lines)),'',money(sum(rows,r=>r.inr)),'']);
-
-function renderCust(){
-  const list=byCustomer(view());
-  const tot=sum(list,c=>c.inr);
-  const top10=[...list].sort((a,b)=>b.inr-a.inr).slice(0,10);
-  document.getElementById('k-cust').innerHTML=kpiHtml([
-    ['Customers',list.length,short(tot)+' outstanding',''],
-    ['Average balance',short(list.length?tot/list.length:0),'per customer',''],
-    ['Top 10 concentration',short(sum(top10,c=>c.inr)),pct(sum(top10,c=>c.inr),tot)+' in 10 accounts','warn'],
-    ['Inactive accounts',short(sum(list.filter(c=>c.acctStatus==='inactive'),c=>c.inr)),
-      list.filter(c=>c.acctStatus==='inactive').length+' customers','crit'],
-    ['Nothing current',list.filter(c=>c.b0===0&&c.b1===0&&c.b2===0&&c.b3>0).length,
-      'customers whose whole balance is past 90 days','crit'],
-    ['On autopay',list.filter(c=>c.pay==='autopay').length,
-      pct(list.filter(c=>c.pay==='autopay').length,list.length)+' of customers','good']
-  ]);
-  document.getElementById('cap-cust').innerHTML=`${list.length} customers · <b>${short(tot)}</b>`;
-}
-const drawCust=mkTable('t-cust',()=>byCustomer(view()),[
-  {k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
-  {k:'spoc',f:r=>esc(r.spoc),txt:1},
-  {k:'am',f:r=>esc(r.am),txt:1,cls:'muted'},
-  {k:'region',f:r=>esc(r.region),txt:1,cls:'muted'},
-  {k:'acctStatus',f:r=>statusChip(r.acctStatus),txt:1},
-  {k:'pay',f:r=>`<span class="chip ${r.pay==='autopay'?'ok':r.pay==='mixed'?'warn':'bad'}">${r.pay}</span>`,txt:1},
-  {k:'products',f:r=>esc(r.products),txt:1,cls:'muted'},
-  {k:'inv',f:r=>r.inv},{k:'lines',f:r=>r.lines,cls:'muted'},
-  {k:'oldest',f:r=>r.oldest,style:r=>r.oldest>90?'color:var(--b4);font-weight:600':r.oldest>60?'color:var(--b3)':''},
-  {k:'b0',f:r=>r.b0?money(r.b0):'<span class=muted>—</span>'},
-  {k:'b1',f:r=>r.b1?money(r.b1):'<span class=muted>—</span>'},
-  {k:'b2',f:r=>r.b2?money(r.b2):'<span class=muted>—</span>'},
-  {k:'b3',f:r=>r.b3?money(r.b3):'<span class=muted>—</span>',style:r=>r.b3?'color:var(--b4);font-weight:600':''},
-  {k:'inr',sorted:1,f:r=>'<b>'+money(r.inr)+'</b>'},
-  NOTE_COL
-],rows=>['Grand total','','','','','','',plain(sum(rows,r=>r.inv)),plain(sum(rows,r=>r.lines)),'',
-  money(sum(rows,r=>r.b0)),money(sum(rows,r=>r.b1)),money(sum(rows,r=>r.b2)),money(sum(rows,r=>r.b3)),
-  money(sum(rows,r=>r.inr)),noteFoot(rows)]);
-
 /* ---------------- shell ---------------- */
 function renderProv(){
   const v=view();
@@ -961,7 +671,6 @@ function renderProv(){
 function setEmptyState(why){
   const has=ALL.length>0;
   document.getElementById('noData').style.display=has?'none':'';
-  document.getElementById('pageNav').style.display=has?'':'none';
   document.querySelectorAll('section.page').forEach(s=>{s.style.display=has?'':'none';});
   document.querySelectorAll('.toolbar')[1].style.display=has?'':'none';
   if(!has&&why) document.getElementById('noDataWhy').textContent=why;
@@ -971,10 +680,6 @@ function renderAll(){
   if(!ALL.length) return;
   renderProv(); renderNoteBar();
   renderPend(); drawPend();
-  renderAging();
-  renderAuto(); drawAuto();
-  renderProd(); drawProd();
-  renderCust(); drawCust();
 }
 function syncFilters(){
   const v=ALL;
@@ -987,10 +692,6 @@ function syncFilters(){
   document.getElementById('fq').value=F.q;
   document.getElementById('fNoAuto').checked=F.noAuto;
 }
-document.querySelectorAll('#pageNav button').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('#pageNav button').forEach(x=>x.setAttribute('aria-selected',String(x===b)));
-  document.querySelectorAll('section.page').forEach(s=>s.classList.toggle('on',s.id==='p-'+b.dataset.p));
-});
 const wire=(id,key,lower)=>{
   const el=document.getElementById(id);
   el.addEventListener(el.type==='search'?'input':'change',()=>{
@@ -1011,15 +712,6 @@ const EXPORT={
     'Aging days','Due USD','Outstanding INR','Manual remark'],
     view().map(r=>[r.cust,r.invNo,r.invDate,r.item,r.product,r.spoc,r.am,r.acctStatus,r.aging,r.usd,r.inr,r.note]),
     'invoice-lines'],
-  auto:()=>[['Customer','SPOC','Account manager','Region','Invoices','Oldest days','Outstanding INR','Manual remark'],
-    byCustomer(view().filter(r=>!r.autopay)).map(c=>[c.cust,c.spoc,c.am,c.region,c.inv,c.oldest,c.inr,c.note]),
-    'manual-chase-list'],
-  prod:()=>[['Item','Product','Lines','Customers','Outstanding INR'],
-    byItem(view()).map(o=>[o.item,o.product,o.lines,o.cust,o.inr]),'by-item'],
-  cust:()=>[['Customer','SPOC','Account manager','Region','Account status','Payment mode','Products','Invoices',
-    'Lines','Oldest days','0-30','31-60','61-90','>90','Outstanding INR','Manual remark'],
-    byCustomer(view()).map(c=>[c.cust,c.spoc,c.am,c.region,c.acctStatus,c.pay,c.products,c.inv,c.lines,
-      c.oldest,c.b0,c.b1,c.b2,c.b3,c.inr,c.note]),'customer-rollup']
 };
 document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>{
   const [head,body,name]=EXPORT[b.dataset.export]();
