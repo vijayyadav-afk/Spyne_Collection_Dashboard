@@ -41,7 +41,6 @@
   .toolbar .sep{width:1px;height:16px;background:var(--line)}
   .toolbar .btn,.toolbar summary.btn{font-size:11.5px;padding:4px 9px}
   .toolbar .status{font-size:11.5px}
-  .toolbar label.chk{font-size:11.5px;color:var(--ink2);display:inline-flex;align-items:center;gap:4px;cursor:pointer}
   button.btn,label.btn{font:inherit;font-size:12px;padding:6px 11px;border:1px solid var(--line);border-radius:7px;
     background:var(--bg);color:var(--ink);cursor:pointer;font-weight:600;display:inline-block}
   button.btn:hover,label.btn:hover{border-color:var(--b1);color:var(--b1)}
@@ -69,7 +68,6 @@
   .toolbar select:has(option:checked:not([value=""])),.toolbar input[type=search]:not(:placeholder-shown){
     background:var(--bar1);border-color:var(--bar1);color:var(--bar1-ink);font-weight:600}
   .toolbar select option{background:var(--card);color:var(--ink);font-weight:400}
-  .toolbar label.chk input{accent-color:var(--bar1)}
   .toolbar #fReset{background:var(--bar1);border-color:var(--bar1);color:var(--bar1-ink)}
   .toolbar #fReset:hover{background:color-mix(in srgb,var(--bar1) 85%,#000);color:var(--bar1-ink)}
 
@@ -235,7 +233,11 @@
     <option value="c">61 - 90 days</option>
     <option value="d">Over 90 days</option>
   </select>
-  <label class="chk"><input type="checkbox" id="fNoAuto"> exclude autopay</label>
+  <select id="fPay">
+    <option value="">All payment modes</option>
+    <option value="auto">Autopay</option>
+    <option value="manual">Manual</option>
+  </select>
   <button class="btn" id="fReset">Reset</button>
   <span class="spacer"></span>
   <span class="status muted gone" id="scopeMsg"></span>
@@ -438,7 +440,7 @@ function buildRows(text,label){
 
 /* ---------------- state ---------------- */
 let ALL=[], provText='', ragged=0;
-const F={q:'',region:'',am:'',spoc:'',product:'',acct:'',band:'',noAuto:false};
+const F={q:'',region:'',am:'',spoc:'',product:'',acct:'',band:'',pay:''};
 
 const BANDS={a:r=>r.aging<=30, b:r=>r.aging>30&&r.aging<=60, c:r=>r.aging>60&&r.aging<=90, d:r=>r.aging>90};
 function view(){
@@ -449,7 +451,7 @@ function view(){
     (!F.spoc || r.spoc===F.spoc) && (!F.product || r.product===F.product) &&
     (!F.acct || r.acctStatus===F.acct) &&
     (!F.band || BANDS[F.band](r)) &&
-    (!F.noAuto || !r.autopay));
+    (!F.pay || (F.pay==='auto'?r.autopay:!r.autopay)));
 }
 const bucketOf=r=>r.aging<=30?'b0':r.aging<=60?'b1':r.aging<=90?'b2':'b3';
 
@@ -656,7 +658,7 @@ function renderProv(){
     uniqCount(ALL,r=>r.cust)+'</b> customers · outstanding in <b>INR</b>'+
     (ragged?' · <span style="color:var(--b4)">'+ragged+' malformed rows skipped</span>':'');
   const bits=[];
-  if(F.noAuto)bits.push('autopay excluded');
+  if(F.pay)bits.push(F.pay==='auto'?'autopay only':'manual only');
   document.getElementById('scopeMsg').textContent=
     (bits.length?bits.join(' · ')+' · ':'')+v.length+' of '+ALL.length+' lines in scope';
   document.getElementById('foot').innerHTML=
@@ -691,7 +693,7 @@ function syncFilters(){
   fillSel('fAcct','Any account status',uniqVals(v,'acctStatus'),F.acct);
   document.getElementById('fBand').value=F.band;
   document.getElementById('fq').value=F.q;
-  document.getElementById('fNoAuto').checked=F.noAuto;
+  document.getElementById('fPay').value=F.pay;
 }
 const wire=(id,key,lower)=>{
   const el=document.getElementById(id);
@@ -701,9 +703,9 @@ const wire=(id,key,lower)=>{
 };
 wire('fq','q',1); wire('fRegion','region'); wire('fAm','am'); wire('fSpoc','spoc');
 wire('fProduct','product'); wire('fAcct','acct'); wire('fBand','band');
-wire('fNoAuto','noAuto');
+wire('fPay','pay');
 document.getElementById('fReset').onclick=()=>{
-  Object.assign(F,{q:'',region:'',am:'',spoc:'',product:'',acct:'',band:'',noAuto:false});
+  Object.assign(F,{q:'',region:'',am:'',spoc:'',product:'',acct:'',band:'',pay:''});
   syncFilters(); renderAll();
 };
 
