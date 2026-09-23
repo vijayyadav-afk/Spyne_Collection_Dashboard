@@ -625,8 +625,8 @@ function renderPend(){
     ['Over 90 days',short(b('b3')),cc(inB('b3')),'crit',prodSplit(v,amt('b3'))],
     ['Customers / invoices',uniqCount(v,r=>r.cust)+' / '+uniqCount(v,r=>r.invNo),'','teal',
       prodSplit(v,rows=>uniqCount(rows,r=>r.cust)+' / '+uniqCount(rows,r=>r.invNo))],
-    ['Autopay / manual customers',pct(pm.autopay,pm.n)+' / '+pct(pm.manual+pm.mixed,pm.n),
-      String(uniqCount(v,r=>r.cust)),'good',
+    ['Autopay / manual',pct(pm.autopay,pm.n)+' / '+pct(pm.manual+pm.mixed,pm.n),
+      '','good',
       prodSplit(v,payLine)]
   ]);
   hBars(document.getElementById('b-pend-am'),groupSum(v,'am','inr'),lakh,
