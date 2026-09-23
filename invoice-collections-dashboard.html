@@ -578,7 +578,7 @@ function mkTable(id,getRows,cols,foot){
   return draw;
 }
 const kpiHtml=items=>items.map(([l,v,h,c,s])=>
-  `<div class="kpi ${c||''}"><div class="lab">${l}</div><div class="row"><div class="val">${v}</div><div class="hint">${h}</div></div>${s?`<div class="split">${s}</div>`:''}</div>`).join('');
+  `<div class="kpi ${c||''}"><div class="lab">${l}</div><div class="row"><div class="val">${v}</div></div>${s?`<div class="split">${s}</div>`:''}</div>`).join('');
 /* Studio / Vini sub-lines under a KPI; f turns a set of rows into the displayed value */
 const prodSplit=(rows,f)=>['Studio','Vini'].map(p=>
   `<div><span>${p}</span><b>${f(rows.filter(r=>r.product===p))}</b></div>`).join('');
