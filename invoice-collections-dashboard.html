@@ -72,6 +72,10 @@
   .kpi .lab{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);font-weight:600}
   .kpi .val{font-size:21px;font-weight:650;margin-top:4px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
   .kpi .hint{font-size:11.5px;color:var(--ink2);margin-top:3px;font-variant-numeric:tabular-nums}
+  .kpi .split{margin-top:7px;padding-top:6px;border-top:1px solid var(--line2);font-size:11.5px;color:var(--ink2);
+    font-variant-numeric:tabular-nums}
+  .kpi .split>div{display:flex;justify-content:space-between;gap:8px;line-height:1.55}
+  .kpi .split b{font-weight:600;color:var(--ink)}
   .kpi.warn .val{color:var(--b3)} .kpi.crit .val{color:var(--b4)}
   .kpi.good .val{color:var(--g1)} .kpi.teal .val{color:var(--t1)} .kpi.purp .val{color:var(--p1)}
 
@@ -677,8 +681,11 @@ function mkTable(id,getRows,cols,foot){
     draw();});
   return draw;
 }
-const kpiHtml=items=>items.map(([l,v,h,c])=>
-  `<div class="kpi ${c||''}"><div class="lab">${l}</div><div class="val">${v}</div><div class="hint">${h}</div></div>`).join('');
+const kpiHtml=items=>items.map(([l,v,h,c,s])=>
+  `<div class="kpi ${c||''}"><div class="lab">${l}</div><div class="val">${v}</div><div class="hint">${h}</div>${s?`<div class="split">${s}</div>`:''}</div>`).join('');
+/* Studio / Vini sub-lines under a KPI; f turns a set of rows into the displayed value */
+const prodSplit=(rows,f)=>['Studio','Vini'].map(p=>
+  `<div><span>${p}</span><b>${f(rows.filter(r=>r.product===p))}</b></div>`).join('');
 const statusChip=s=>`<span class="chip ${s==='active'?'ok':s==='inactive'?'bad':''}">${esc(s)}</span>`;
 
 /* ---------------- rollups ---------------- */
@@ -705,13 +712,24 @@ function renderPend(){
   const v=view();
   const tot=sum(v,r=>r.inr);
   const b=k=>sum(v.filter(r=>bucketOf(r)===k),r=>r.inr);
+  const amt=k=>rows=>short(sum(k?rows.filter(r=>bucketOf(r)===k):rows,r=>r.inr));
+  /* each customer counted once: autopay = every line on autopay, manual = none, mixed = both */
+  const payMix=rows=>{const c={autopay:0,manual:0,mixed:0};byCustomer(rows).forEach(x=>c[x.pay]++);
+    return {...c,n:c.autopay+c.manual+c.mixed};};
+  const pm=payMix(v);
+  const payLine=rows=>{const m=payMix(rows);
+    return m.n?`${pct(m.autopay,m.n)} / ${pct(m.manual+m.mixed,m.n)}`:'—';};
   document.getElementById('k-pend').innerHTML=kpiHtml([
-    ['Total outstanding',short(tot),usd(sum(v,r=>r.usd))+' · '+v.length+' lines',''],
-    ['0 - 30 days',short(b('b0')),pct(b('b0'),tot)+' of book','good'],
-    ['31 - 60 days',short(b('b1')),pct(b('b1'),tot)+' of book','warn'],
-    ['61 - 90 days',short(b('b2')),pct(b('b2'),tot)+' of book','warn'],
-    ['Over 90 days',short(b('b3')),pct(b('b3'),tot)+' of book','crit'],
-    ['Customers / invoices',uniqCount(v,r=>r.cust)+' / '+uniqCount(v,r=>r.invNo),'de-duplicated','teal']
+    ['Total outstanding',short(tot),usd(sum(v,r=>r.usd))+' · '+v.length+' lines','',prodSplit(v,amt())],
+    ['0 - 30 days',short(b('b0')),pct(b('b0'),tot)+' of book','good',prodSplit(v,amt('b0'))],
+    ['31 - 60 days',short(b('b1')),pct(b('b1'),tot)+' of book','warn',prodSplit(v,amt('b1'))],
+    ['61 - 90 days',short(b('b2')),pct(b('b2'),tot)+' of book','warn',prodSplit(v,amt('b2'))],
+    ['Over 90 days',short(b('b3')),pct(b('b3'),tot)+' of book','crit',prodSplit(v,amt('b3'))],
+    ['Customers / invoices',uniqCount(v,r=>r.cust)+' / '+uniqCount(v,r=>r.invNo),'de-duplicated','teal',
+      prodSplit(v,rows=>uniqCount(rows,r=>r.cust)+' / '+uniqCount(rows,r=>r.invNo))],
+    ['Autopay / manual customers',pct(pm.autopay,pm.n)+' / '+pct(pm.manual+pm.mixed,pm.n),
+      `${pm.autopay} autopay · ${pm.manual+pm.mixed} manual`+(pm.mixed?` (${pm.mixed} mixed)`:''),'good',
+      prodSplit(v,payLine)]
   ]);
   hBars(document.getElementById('b-pend-am'),groupSum(v,'am','inr'),lakh,
     k=>{F.am=(F.am===k?'':k);syncFilters();renderAll();},F.am);
