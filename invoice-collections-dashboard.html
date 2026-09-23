@@ -240,10 +240,10 @@
     <option value="d">Over 90 days</option>
   </select>
   <label class="chk"><input type="checkbox" id="fNoAuto"> exclude autopay</label>
+  <button class="btn" id="fReset">Reset</button>
   <span class="spacer"></span>
   <span class="status muted gone" id="scopeMsg"></span>
   <span class="status muted gone" id="liveMini"></span>
-  <button class="btn" id="fReset">Reset</button>
 </div>
 
 <nav class="pages" id="pageNav">
@@ -1038,8 +1038,9 @@ const liveMsg=(cls,txt)=>{
   const m=document.getElementById('liveMsg');
   m.className='status '+cls; m.textContent=txt;
   const mini=document.getElementById('liveMini');
-  if(mini){mini.className='status '+(cls==='err'?'err':'muted');
-    mini.textContent=cls==='err'?('· '+txt):('· '+txt.replace(/^Live · /,''));}
+  /* only errors surface in the filter bar; routine "N lines at hh:mm" stays hidden */
+  if(mini){mini.className='status '+(cls==='err'?'err':'gone');
+    mini.textContent=cls==='err'?('· '+txt):'';}
 };
 let lastLive=0, liveBusy=false, lastReadText='', lastSig=null;
 const hhmm=()=>new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
