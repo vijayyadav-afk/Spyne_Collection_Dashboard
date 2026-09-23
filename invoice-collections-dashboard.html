@@ -585,6 +585,8 @@ const prodSplit=(rows,f)=>['Studio','Vini'].map(p=>
 const statusChip=s=>`<span class="chip ${s==='active'?'ok':s==='inactive'?'bad':''}">${esc(s)}</span>`;
 
 /* ---------------- rollups ---------------- */
+/* a customer is one enterprise_id; fall back to the name if a line has none */
+const ENT=r=>r.entId||r.cust;
 function byCustomer(rows){
   const m={};
   rows.forEach(r=>{
@@ -610,21 +612,22 @@ function renderPend(){
   const b=k=>sum(v.filter(r=>bucketOf(r)===k),r=>r.inr);
   const amt=k=>rows=>short(sum(k?rows.filter(r=>bucketOf(r)===k):rows,r=>r.inr));
   /* each customer counted once: autopay = every line on autopay, manual = none, mixed = both */
-  const payMix=rows=>{const c={autopay:0,manual:0,mixed:0};byCustomer(rows).forEach(x=>c[x.pay]++);
+  const payMix=rows=>{const m={};rows.forEach(r=>{const x=m[ENT(r)]||(m[ENT(r)]={a:0,n:0});r.autopay?x.a++:x.n++;});
+    const c={autopay:0,manual:0,mixed:0};Object.values(m).forEach(x=>c[x.a&&x.n?"mixed":x.a?"autopay":"manual"]++);
     return {...c,n:c.autopay+c.manual+c.mixed};};
   const pm=payMix(v);
   const payLine=rows=>{const m=payMix(rows);
     return m.n?`${pct(m.autopay,m.n)} / ${pct(m.manual+m.mixed,m.n)}`:'—';};
   /* hint beside each value: unique customers behind that box */
-  const inB=k=>v.filter(r=>bucketOf(r)===k), cc=rows=>uniqCount(rows,r=>r.cust)+' customers';
+  const inB=k=>v.filter(r=>bucketOf(r)===k), cc=rows=>uniqCount(rows,ENT)+' customers';
   document.getElementById('k-pend').innerHTML=kpiHtml([
     ['Total outstanding',short(tot),cc(v),'',prodSplit(v,amt())],
     ['0 - 30 days',short(b('b0')),cc(inB('b0')),'good',prodSplit(v,amt('b0'))],
     ['31 - 60 days',short(b('b1')),cc(inB('b1')),'warn',prodSplit(v,amt('b1'))],
     ['61 - 90 days',short(b('b2')),cc(inB('b2')),'warn',prodSplit(v,amt('b2'))],
     ['Over 90 days',short(b('b3')),cc(inB('b3')),'crit',prodSplit(v,amt('b3'))],
-    ['Customers / invoices',uniqCount(v,r=>r.cust)+' / '+uniqCount(v,r=>r.invNo),'','teal',
-      prodSplit(v,rows=>uniqCount(rows,r=>r.cust)+' / '+uniqCount(rows,r=>r.invNo))],
+    ['Customers / invoices',uniqCount(v,ENT)+' / '+uniqCount(v,r=>r.invNo),'','teal',
+      prodSplit(v,rows=>uniqCount(rows,ENT)+' / '+uniqCount(rows,r=>r.invNo))],
     ['Autopay / manual',pct(pm.autopay,pm.n)+' / '+pct(pm.manual+pm.mixed,pm.n),
       '','good',
       prodSplit(v,payLine)]
@@ -657,7 +660,7 @@ function renderProv(){
   document.getElementById('prov').innerHTML=
     'Source <b>Zoho Item Level Invoice Data</b> · tab <b>Combined Invoices</b> · '+provText+
     ' · <b>'+ALL.length+'</b> invoice lines, <b>'+uniqCount(ALL,r=>r.invNo)+'</b> invoices, <b>'+
-    uniqCount(ALL,r=>r.cust)+'</b> customers · outstanding in <b>INR</b>'+
+    uniqCount(ALL,ENT)+'</b> customers · outstanding in <b>INR</b>'+
     (ragged?' · <span style="color:var(--b4)">'+ragged+' malformed rows skipped</span>':'');
   const bits=[];
   if(F.pay)bits.push(F.pay==='auto'?'autopay only':'manual only');
