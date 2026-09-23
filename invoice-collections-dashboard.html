@@ -74,11 +74,13 @@
   section.page{display:none;padding-top:14px}
   section.page.on{display:block}
 
-  .kpis{display:grid;grid-template-columns:repeat(auto-fill,205px);gap:8px;margin:0 0 14px}
+  /* all seven boxes always share one row; only a small window wraps them */
+  .kpis{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin:0 0 14px}
+  @media (max-width:1150px){.kpis{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}}
   /* each box is tinted with its own accent (--acc) and carries a thin accent bar on the left */
   .kpi{--acc:var(--b1);background:color-mix(in srgb,var(--acc) 7%,var(--card));
     border:1px solid color-mix(in srgb,var(--acc) 22%,var(--line));border-left:3px solid var(--acc);
-    border-radius:8px;padding:6px 11px 7px;box-shadow:var(--shadow);height:115px;overflow:hidden}
+    border-radius:8px;padding:6px 11px 7px;box-shadow:var(--shadow);min-height:115px;min-width:0}
   .kpi .lab{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);font-weight:650;
     line-height:1.3}
   .kpi .row{display:flex;flex-direction:column;align-items:flex-start;margin-top:2px}
