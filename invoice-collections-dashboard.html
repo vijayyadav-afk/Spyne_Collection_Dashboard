@@ -10,14 +10,14 @@
     --line:#e3e6ec; --line2:#eef0f4;
     --b1:#3d7dd6; --b2:#e9a33a; --b3:#e3722f; --b4:#cf3f4a;
     --g1:#2f9e6f; --p1:#8a6fd1; --t1:#2aa4b5;
-    --amber:#f0b429; --amber-ink:#3d2c00; --lime:#c9d92e;
+    --bar1:#2c4f7c; --bar1-ink:#fff; --bar2:#5b8cc4;
     --ok:#2f9e6f; --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.04);
   }
   @media (prefers-color-scheme:dark){
     :root{--bg:#10131a;--card:#171b23;--ink:#e9edf4;--ink2:#a4adbb;--ink3:#7b8494;
       --line:#262c37;--line2:#1e242d;--shadow:none;
       --b1:#5b93e0;--b2:#e2ab55;--b3:#e08356;--b4:#e05c68;--g1:#48b085;--p1:#9d86dd;--t1:#45b7c7;
-      --amber:#e3a52a;--amber-ink:#24190a;--lime:#b9c936;}
+      --bar1:#4f79b0;--bar1-ink:#fff;--bar2:#7ea7d6;}
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);
@@ -108,10 +108,13 @@
     display:flex;align-items:center;justify-content:flex-end}
   .hbar .zone{position:relative;height:100%;min-height:26px;border-left:1px solid var(--line);
     background:repeating-linear-gradient(to right,var(--line2) 0 1px,transparent 1px 20%)}
-  .hbar .hfill{position:absolute;left:0;top:0;height:100%;background:var(--amber);
+  .hbar .hfill{position:absolute;left:0;top:0;height:100%;background:var(--bar1);border-radius:0 4px 4px 0;
     display:flex;align-items:center;justify-content:flex-end;padding:0 7px;box-sizing:border-box;
-    font-weight:600;color:var(--amber-ink);white-space:nowrap;font-variant-numeric:tabular-nums}
-  .hbar.hit .hfill{outline:2px solid var(--b1);outline-offset:1px}
+    font-weight:600;color:var(--bar1-ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+  /* bar too short to hold its label: print it just past the end, in body ink */
+  .hbar .hfill.out{justify-content:flex-start;overflow:visible}
+  .hbar .hfill.out span{position:absolute;left:100%;margin-left:6px;color:var(--ink)}
+  .hbar.hit .hfill{outline:2px solid var(--b3);outline-offset:1px}
 
   .vchart{padding:18px 2px 2px;overflow-x:auto}
   .vcols{display:flex;align-items:flex-end;gap:5px;height:180px;min-width:100%;border-bottom:1px solid var(--line);
@@ -119,8 +122,8 @@
   .vcol{flex:1 0 24px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;
     height:100%;position:relative}
   .vcol .vv{position:absolute;top:-15px;font-size:10px;color:var(--ink2);white-space:nowrap;font-variant-numeric:tabular-nums}
-  .vcol .vb{width:72%;background:var(--lime);min-height:2px}
-  .vcol.hit .vb{outline:2px solid var(--b1);outline-offset:1px}
+  .vcol .vb{width:72%;background:var(--bar2);min-height:2px;border-radius:3px 3px 0 0}
+  .vcol.hit .vb{outline:2px solid var(--b3);outline-offset:1px}
   .vlabs{display:flex;gap:5px;min-width:100%;height:32px;margin-top:4px}
   .vlab{flex:1 0 24px;text-align:center;font-size:10px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .vlab.low{transform:translateY(15px)}
@@ -614,7 +617,7 @@ function hBars(el,items,fmt,onClick,activeKey){
   el.innerHTML=items.length?items.map(([k,v])=>
     `<div class="hbar ${k===activeKey?'hit':''}" data-k="${esc(k)}" ${onClick?'style="cursor:pointer"':''}>
        <div class="cat" title="${esc(k)}">${esc(k)}</div>
-       <div class="zone"><div class="hfill" style="width:${Math.max(6,100*v/max)}%">${fmt(v)}</div></div>
+       <div class="zone"><div class="hfill ${100*v/max<18?'out':''}" style="width:${Math.max(6,100*v/max)}%"><span>${fmt(v)}</span></div></div>
      </div>`).join(''):'<span class="muted">No data.</span>';
   if(onClick)el.querySelectorAll('.hbar').forEach(b=>b.onclick=()=>onClick(b.dataset.k));
 }
