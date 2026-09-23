@@ -664,8 +664,8 @@ function renderProv(){
     'industry source, and nothing here should be quoted externally as such. One row per invoice <i>line item</i>, '+
     'so invoice and customer counts are de-duplicated while line counts are not. <i>Total Outstanding</i> is the '+
     'INR figure and <i>Due Amount USD</i> the same balance in USD — never sum the original-currency columns across '+
-    'rows, since the sheet mixes USD, EUR, GBP, INR, AUD, CAD, NOK and ZAR. Negative aging days mean the invoice '+
-    'is not yet due. <i>Manual remark</i> is your own text, held in this browser only and never written back to '+
+    'rows, since the sheet mixes USD, EUR, GBP, INR, AUD, CAD, NOK and ZAR. Lines with negative aging days '+
+    '(not yet due) are left out; only aging 0 days or more is counted. <i>Manual remark</i> is your own text, held in this browser only and never written back to '+
     'the sheet. Customer names and invoice detail are dealer customer data — keep this internal.';
 }
 /* when there is nothing to show, say why instead of rendering five empty pages */
@@ -741,7 +741,8 @@ const typing=()=>document.activeElement&&/^(input|select|textarea)$/i.test(docum
 
 function applyText(text,label){
   const {rows,ragged:rg}=buildRows(text,label);
-  ALL=rows; ragged=rg;
+  /* not-yet-due lines (negative aging days) are out of scope for collections */
+  ALL=rows.filter(r=>r.aging>=0); ragged=rg;
   provText=label+' at <b>'+new Date().toLocaleString('en-GB',
     {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</b>';
   syncFilters(); renderAll();
