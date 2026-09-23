@@ -578,7 +578,7 @@ function mkTable(id,getRows,cols,foot){
   return draw;
 }
 const kpiHtml=items=>items.map(([l,v,h,c,s])=>
-  `<div class="kpi ${c||''}"><div class="lab">${l}</div><div class="row"><div class="val">${v}</div></div>${s?`<div class="split">${s}</div>`:''}</div>`).join('');
+  `<div class="kpi ${c||''}"><div class="lab">${l}</div><div class="row"><div class="val">${v}</div>${h?`<div class="hint">${h}</div>`:""}</div>${s?`<div class="split">${s}</div>`:''}</div>`).join('');
 /* Studio / Vini sub-lines under a KPI; f turns a set of rows into the displayed value */
 const prodSplit=(rows,f)=>['Studio','Vini'].map(p=>
   `<div><span>${p}</span><b>${f(rows.filter(r=>r.product===p))}</b></div>`).join('');
@@ -615,16 +615,18 @@ function renderPend(){
   const pm=payMix(v);
   const payLine=rows=>{const m=payMix(rows);
     return m.n?`${pct(m.autopay,m.n)} / ${pct(m.manual+m.mixed,m.n)}`:'—';};
+  /* hint beside each value: unique customers behind that box */
+  const inB=k=>v.filter(r=>bucketOf(r)===k), cc=rows=>uniqCount(rows,r=>r.cust)+' customers';
   document.getElementById('k-pend').innerHTML=kpiHtml([
-    ['Total outstanding',short(tot),usd(sum(v,r=>r.usd))+' · '+v.length+' lines','',prodSplit(v,amt())],
-    ['0 - 30 days',short(b('b0')),pct(b('b0'),tot)+' of book','good',prodSplit(v,amt('b0'))],
-    ['31 - 60 days',short(b('b1')),pct(b('b1'),tot)+' of book','warn',prodSplit(v,amt('b1'))],
-    ['61 - 90 days',short(b('b2')),pct(b('b2'),tot)+' of book','warn',prodSplit(v,amt('b2'))],
-    ['Over 90 days',short(b('b3')),pct(b('b3'),tot)+' of book','crit',prodSplit(v,amt('b3'))],
-    ['Customers / invoices',uniqCount(v,r=>r.cust)+' / '+uniqCount(v,r=>r.invNo),'de-duplicated','teal',
+    ['Total outstanding',short(tot),cc(v),'',prodSplit(v,amt())],
+    ['0 - 30 days',short(b('b0')),cc(inB('b0')),'good',prodSplit(v,amt('b0'))],
+    ['31 - 60 days',short(b('b1')),cc(inB('b1')),'warn',prodSplit(v,amt('b1'))],
+    ['61 - 90 days',short(b('b2')),cc(inB('b2')),'warn',prodSplit(v,amt('b2'))],
+    ['Over 90 days',short(b('b3')),cc(inB('b3')),'crit',prodSplit(v,amt('b3'))],
+    ['Customers / invoices',uniqCount(v,r=>r.cust)+' / '+uniqCount(v,r=>r.invNo),'','teal',
       prodSplit(v,rows=>uniqCount(rows,r=>r.cust)+' / '+uniqCount(rows,r=>r.invNo))],
     ['Autopay / manual customers',pct(pm.autopay,pm.n)+' / '+pct(pm.manual+pm.mixed,pm.n),
-      `${pm.autopay} / ${pm.manual+pm.mixed}`+(pm.mixed?` (${pm.mixed} mixed)`:''),'good',
+      String(uniqCount(v,r=>r.cust)),'good',
       prodSplit(v,payLine)]
   ]);
   hBars(document.getElementById('b-pend-am'),groupSum(v,'am','inr'),lakh,
