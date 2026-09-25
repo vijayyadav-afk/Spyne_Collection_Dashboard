@@ -1,11 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/", "destination": "/spoc-collections-dashboard.html" }
+    { "source": "/", "destination": "/spoc-collections-dashboard.html" },
+    { "source": "/collections-pending", "destination": "/collections-pending.html" }
   ],
   "headers": [
     {
-      "source": "/spoc-collections-dashboard.html",
+      "source": "/(spoc-collections-dashboard.html|collections-pending|collections-pending.html)",
       "headers": [
         { "key": "Cache-Control", "value": "no-store, max-age=0, must-revalidate" },
         { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" },
