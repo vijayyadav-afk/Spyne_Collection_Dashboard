@@ -253,7 +253,7 @@
     <div id="noDataWhy" style="max-width:620px;margin:0 auto 14px"></div>
     <div style="max-width:620px;margin:0 auto 14px;color:var(--ink3);font-size:12px">
       This dashboard reads the sheet live and keeps no copy of its own. Google refuses that request from a page
-      opened off the disk, so open it from your Vercel URL — or load the <i>Combined Invoices</i> tab as a CSV here.
+      opened off the disk, so open it from your Vercel URL — or load the <i>Data</i> tab as a CSV here.
     </div>
     <label class="btn primary" for="csvFile">Load invoice CSV…</label>
   </div>
@@ -301,15 +301,15 @@
 <script>
 /* =====================================================================
    Item Level Collection Pending Dashboard
-   Source: "Zoho Item Level Invoice Data", tab "Combined Invoices"
-           (gid 1578042790) — one row per invoice LINE ITEM.
+   Source: "Zoho Item Level Invoice Data", tab "Data"
+           (gid 0) — one row per invoice LINE ITEM.
 
    Reads the sheet live in the browser on load; no data is embedded in this
    file, so it needs the sheet to stay link-viewable and must be served over
    http(s) (a page opened from disk sends a null origin, which Google refuses).
    ===================================================================== */
-const SHEET_ID='1y2Xs0HsJtwO4DRkUoWA7a_2KP-ygXXTO4iue6looDws';
-const GID='1578042790';
+const SHEET_ID='10A5kLP9hWZeMaRNbLsplLj43U0YljsreS_c0qDlgfK8';
+const GID='0';
 const SHEET_BASE='https://docs.google.com/spreadsheets/d/'+SHEET_ID;
 /* Ask Google for only the 20 columns this dashboard uses instead of all 40:
    272 KB -> 181 KB, 2.2s -> 0.9s. Column letters are positional, so if the
@@ -660,7 +660,7 @@ const drawPend=mkTable('t-pend',view,[
 function renderProv(){
   const v=view();
   document.getElementById('prov').innerHTML=
-    'Source <b>Zoho Item Level Invoice Data</b> · tab <b>Combined Invoices</b> · '+provText+
+    'Source <b>Zoho Item Level Invoice Data</b> · tab <b>Data</b> · '+provText+
     ' · <b>'+ALL.length+'</b> invoice lines, <b>'+uniqCount(ALL,r=>r.invNo)+'</b> invoices, <b>'+
     uniqCount(ALL,ENT)+'</b> customers · outstanding in <b>INR</b>'+
     (ragged?' · <span style="color:var(--b4)">'+ragged+' malformed rows skipped</span>':'');
@@ -788,7 +788,7 @@ async function refreshLive(){
     liveMsg('err','Could not read the sheet: '+e.message+(ALL.length?' — showing the last good read.':''));
     if(!ALL.length){
       document.getElementById('prov').innerHTML=
-        'Source <b>Zoho Item Level Invoice Data</b> · tab <b>Combined Invoices</b> · '+
+        'Source <b>Zoho Item Level Invoice Data</b> · tab <b>Data</b> · '+
         '<span style="color:var(--b4)">no data loaded</span>';
       setEmptyState('The live read failed — '+e.message);
     }
