@@ -42,15 +42,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-o
 .date input{width:auto;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:7px 10px}
 .date button{font:inherit;font-weight:500;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:7px 12px;cursor:pointer}
 
-.tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:18px}
 #tiles2{grid-template-columns:repeat(5,minmax(0,1fr))}
 @media (max-width:1100px){.tiles,#tiles2{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:600px){.tiles,#tiles2{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.tile{border-radius:12px;color:#fff;padding:16px 16px 14px;min-width:0;display:flex;flex-direction:column;gap:2px}
-.tile .k{font-size:12px;letter-spacing:.07em;text-transform:uppercase;opacity:.88;font-weight:600}
-.tile .v{font-family:var(--font-num);font-size:clamp(19px,1.9vw,26px);font-weight:700;font-variant-numeric:tabular-nums;margin-top:4px;overflow-wrap:anywhere}
-.tile .n{font-size:12.5px;opacity:.92;margin-top:2px}
-.tile .d{display:inline-block;margin-top:8px;font-size:12px;font-weight:600;background:rgba(255,255,255,.18);border-radius:999px;padding:2px 9px;align-self:flex-start}
+.tile{border-radius:18px;color:#fff;padding:24px 16px 22px;min-height:218px;min-width:0;display:flex;flex-direction:column;justify-content:space-between;gap:2px}
+.tile .k{font-size:13px;letter-spacing:.07em;text-transform:uppercase;opacity:.88;font-weight:600}
+.tile .v{font-family:var(--font-num);font-size:clamp(20px,2vw,27px);font-weight:700;font-variant-numeric:tabular-nums;margin-top:6px;overflow-wrap:anywhere}
+.tile .n{font-size:13.5px;opacity:.92;margin-top:2px}
+.tile .d{display:inline-block;margin-top:12px;font-size:12px;font-weight:600;background:rgba(255,255,255,.18);border-radius:999px;padding:3px 10px;align-self:flex-start}
 .t1{background:var(--t1)}.t2{background:var(--t2)}.t3{background:var(--t3)}.t4{background:var(--t4)}.t5{background:var(--t5)}.t6{background:var(--t6)}
 
 .grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
