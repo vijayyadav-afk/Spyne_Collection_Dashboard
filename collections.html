@@ -79,17 +79,18 @@ td.neg{color:var(--bad)}
 .note{color:var(--muted);font-size:10.5px}
 .more{font:inherit;font-weight:500;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:4px 10px;cursor:pointer}
 .more:hover{background:var(--soft)}
-thead th{position:sticky;top:0;background:var(--panel)}
+thead th{background:var(--panel)}
 td.l{text-align:left}
 #det th:nth-child(-n+7){text-align:left}
 .empty{color:var(--muted);padding:20px 0;text-align:center}
 [hidden]{display:none!important}
 .tilerow{display:flex;flex-direction:column;gap:12px}
 html,body{height:100%}
-#drawer{position:fixed;left:12px;right:12px;bottom:12px;max-height:62vh;overflow:auto;z-index:30;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+.dash{display:contents}
 @media (min-width:1000px) and (min-height:540px){
- body{padding:8px 12px;overflow:hidden}
- .wrap{max-width:none;height:100%;gap:6px}
+ body{padding:8px 12px}
+ .wrap{max-width:none;height:auto;gap:6px}
+ .dash{display:flex;flex-direction:column;gap:6px;height:calc(100vh - 16px);min-height:540px}
  header{gap:4px 14px;align-items:flex-end}
  .hd h1{font-size:19px}
  .sub{font-size:10.5px;margin-top:0}
@@ -121,7 +122,7 @@ html,body{height:100%}
 </style>
 
 <div class="wrap">
-  <header>
+  <div class="dash"><header>
     <div class="hd"><h1>Spyne Collections Dashboard</h1><div class="sub"><span id="sub"></span> · <span id="scopeNote"></span></div></div>
     <div class="controls">
       <div class="ctl"><span>Account manager</span><div class="seg" id="segAm" role="group" aria-label="Account manager"></div></div>
@@ -132,7 +133,7 @@ html,body{height:100%}
       <div class="ctl"><span>Entity</span><div class="seg" id="segEnt" role="group" aria-label="Entity">
         <button data-v="-1" aria-pressed="true">All</button><button data-v="0" aria-pressed="false">US</button><button data-v="1" aria-pressed="false">India</button></div></div>
       <div class="ctl"><span>Period</span><div class="seg" id="segScope" role="group" aria-label="Period"><button data-v="day" aria-pressed="false">Daily</button><button data-v="week" aria-pressed="false">Weekly</button><button data-v="mtd" aria-pressed="true">MTD</button></div></div>
-      <div class="ctl"><span>As of</span><div class="date"><input type="date" id="asof" aria-label="As of date"><button id="latest" type="button">Latest</button><button id="reset" type="button">Reset filters</button><button id="btnDetails" type="button">Details table</button></div></div>
+      <div class="ctl"><span>As of</span><div class="date"><input type="date" id="asof" aria-label="As of date"><button id="latest" type="button">Latest</button><button id="reset" type="button">Reset filters</button><button id="btnDetails" type="button">Details table ↓</button></div></div>
     </div>
   </header>
 
@@ -150,8 +151,9 @@ html,body{height:100%}
     <section class="panel s5"><h2>Weekly collections</h2><div class="cap">Last 13 weeks, Monday to Sunday. The latest week is week to date.</div><div class="ch" style="height:235px"><canvas id="cWeek" role="img" aria-label="Weekly collections"></canvas></div></section>
     <section class="panel s6"><h2 id="yearTitle">Collections by month</h2><div class="cap">Net collected each month this year, Studio and Vini</div><div class="ch"><canvas id="cYear" role="img" aria-label="Collections by month this year"></canvas></div></section>
 
-    <section class="panel s12" id="drawer" hidden><div class="scopebar"><div><h2>Details table view</h2><div class="note" id="detNote"></div></div><button class="more" id="closeDrawer" type="button">Close</button></div><div class="tw" style="margin-top:10px;max-height:300px;overflow-y:auto"><table id="det"></table></div><div style="margin-top:10px"><button class="more" id="more" type="button">Show 100 more</button></div></section>
-  </div>
+  </div></div>
+  <section class="panel s12" id="details"><div class="scopebar"><div><h2>Details table view</h2><div class="note" id="detNote"></div></div></div><div class="tw" style="margin-top:6px;overflow-x:auto"><table id="det"></table></div><div style="margin-top:10px"><button class="more" id="more" type="button">Show 100 more</button></div></section>
+
 
   <p class="note" id="foot"></p>
 </div>
@@ -367,9 +369,7 @@ clickHandlers.cAm=function(i){var n=H.av[i].n,ids=[];D.am.forEach(function(o,j){
 clickHandlers.cDaily=function(i){var d=H.dms+i;if(d>MAXD)return;act(function(){st.asof=d;st.scope="day"})};
 clickHandlers.cWeek=function(i){var e=H.weekEnds[i];act(function(){st.asof=e;st.scope="week"})};
 clickHandlers.cMonth=function(i){var e=H.monthEnds[i];act(function(){st.asof=e;st.scope="mtd"})};
-document.getElementById("reset").addEventListener("click",function(){act(function(){st.prod=st.ent=st.am=st.mode=st.cust=-1;st.amSet=null;st.amLabel="";st.asof=MAXD;st.scope="mtd"})});document.getElementById("btnDetails").addEventListener("click",function(){var d=document.getElementById("drawer");d.hidden=!d.hidden});
-document.getElementById("closeDrawer").addEventListener("click",function(){document.getElementById("drawer").hidden=true});
-document.addEventListener("keydown",function(e){if(e.key==="Escape")document.getElementById("drawer").hidden=true});
+document.getElementById("reset").addEventListener("click",function(){act(function(){st.prod=st.ent=st.am=st.mode=st.cust=-1;st.amSet=null;st.amLabel="";st.asof=MAXD;st.scope="mtd"})});document.getElementById("btnDetails").addEventListener("click",function(){document.getElementById("details").scrollIntoView({behavior:"smooth"})});
 render();
 })();
 </script>
