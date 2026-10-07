@@ -46,7 +46,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-o
 .date button{font:inherit;font-weight:500;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:3px 10px;cursor:pointer}
 
 .tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
-#tiles2{grid-template-columns:repeat(4,minmax(0,1fr))}
+#tiles2{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media (max-width:1100px){.tiles,#tiles2{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:600px){.tiles,#tiles2{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .tile{border-radius:8px;color:#fff;padding:8px 12px 8px;min-width:0;display:flex;flex-direction:column;gap:2px}
@@ -133,7 +133,7 @@ html,body{height:100%}
  .ch,.ch.tall,.ch.short{flex:1 1 0;min-height:0;height:auto!important}
  .legend{margin-top:1px;font-size:9.5px}
  #foot{display:none}
- .tilerow{display:grid;grid-template-columns:6fr 4fr;gap:6px}
+ .tilerow{display:grid;grid-template-columns:6fr 2fr;gap:6px}
  .tile .sv{flex-direction:column;flex-wrap:nowrap;gap:0}
  .tile .sv span{display:flex;justify-content:space-between;gap:6px}
 }
@@ -241,14 +241,11 @@ function renderTiles(){
    ["t6","Rolling 90 days",short(r90),lbl(a-90)+" to "+lbl(a),spl(a-90,a)]];
   document.getElementById("tiles").innerHTML=T1.map(function(t){return tile(t[0],t[1],t[2],t[3],t[4])}).join("");
   var today=sum(a,a), wtd=sum(w,a);
-  var mp=spl(m,a), stu=mp[0], vin=mp[1], tot=(stu+vin)||1;
 
 
   var T2=[
    ["t2",a===MAXD?"Latest day":"Selected day",short(today),lblY(a),spl(a,a)],
-   ["t3","Week to date",short(wtd),lbl(w)+" to "+lbl(a),spl(w,a)],
-   ["tS","Studio MTD",short(stu),Math.round(stu/tot*100)+"% of Studio + Vini",mp],
-   ["tV","Vini MTD",short(vin),Math.round(vin/tot*100)+"% of Studio + Vini",mp]];
+   ["t3","Week to date",short(wtd),lbl(w)+" to "+lbl(a),spl(w,a)]];
   document.getElementById("tiles2").innerHTML=T2.map(function(t){return tile(t[0],t[1],t[2],t[3],t[4])}).join("");
 }var centerText={id:"centerText",afterDraw:function(c){var o=c.options.plugins&&c.options.plugins.centerText,e=c.getDatasetMeta(0).data[0];if(!o||!e||e.innerRadius<26)return;var x=c.ctx;x.save();x.textAlign="center";x.textBaseline="middle";x.fillStyle=css("--ink");x.font="700 11px "+css("--font-num");x.fillText(o.text,e.x,e.y-5);x.fillStyle=css("--muted");x.font="500 8px "+css("--font-ui");x.fillText("Net",e.x,e.y+8);x.restore()}};
 var barLabels={id:"barLabels",afterDatasetsDraw:function(c){var x=c.ctx;x.save();x.fillStyle=css("--ink");x.font="600 10px "+css("--font-ui");x.textAlign="center";x.textBaseline="bottom";c.getDatasetMeta(0).data.forEach(function(b,i){x.fillText(short(c.data.datasets[0].data[i]),b.x,b.y-3)});x.restore()}};
