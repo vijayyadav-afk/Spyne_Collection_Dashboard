@@ -92,6 +92,9 @@ td.l{text-align:left}
 .pager{display:flex;align-items:center;gap:10px;margin-top:6px;font-size:11px;color:var(--muted)}
 .pager .more{padding:2px 10px;font-size:11px}
 .pager .more:disabled{opacity:.45;cursor:default}
+.live{font-size:10.5px;color:var(--muted);white-space:nowrap;align-self:flex-end;padding:0 0 4px 4px}
+.live.ok{color:var(--good)}
+.live.bad{color:var(--bad)}
 .empty{color:var(--muted);padding:20px 0;text-align:center}
 [hidden]{display:none!important}
 .tilerow{display:flex;flex-direction:column;gap:12px}
@@ -150,6 +153,7 @@ html,body{height:100%}
       <div class="ctl"><span>Period</span><div class="seg" id="segScope" role="group" aria-label="Period"><button data-v="day" aria-pressed="false">Daily</button><button data-v="week" aria-pressed="false">Weekly</button><button data-v="mtd" aria-pressed="true">MTD</button></div></div>
       <div class="ctl"><span>As of</span><div class="date"><input type="date" id="asof" aria-label="As of date"><button id="latest" type="button">Latest</button><button id="reset" type="button">Reset filters</button><button id="btnDetails" type="button">Details table ↓</button></div></div>
       <div class="ctl"><span>Theme</span><div class="seg" id="segTheme" role="group" aria-label="Theme"><button data-v="light" aria-pressed="false">Light</button><button data-v="dark" aria-pressed="false">Dark</button></div></div>
+      <span id="liveTag" class="live">● Connecting…</span>
     </div>
   </header>
 
@@ -379,7 +383,7 @@ seg("segAm","am",Number);seg("segProd","prod",Number);seg("segEnt","ent",Number)
 var inp=document.getElementById("asof");inp.min=iso(0);inp.max=iso(MAXD);inp.value=iso(MAXD);
 inp.addEventListener("change",function(){if(!inp.value)return;var d=fromIso(inp.value);st.asof=Math.max(0,Math.min(MAXD,d));render()});
 document.getElementById("latest").addEventListener("click",function(){st.asof=MAXD;inp.value=iso(MAXD);render()});
-document.getElementById("foot").textContent="Source: Google Sheet, tab “0”, column Collected Amount (INR), by Date of Collection. Refunds are negative entries and are netted into every figure. Figures are company-reported collections, not audited. This page is a snapshot taken on "+lblY(MAXD)+"; ask Claude to republish it to refresh.";
+document.getElementById("foot").textContent="Source: Google Sheet, tab “0”, column Collected Amount (INR), by Date of Collection. Refunds are negative entries and are netted into every figure. Figures are company-reported collections, not audited. Data refreshes automatically from the sheet every minute.";
 if(window.matchMedia)window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",render);
 new MutationObserver(render).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
 function setSeg(id,v){var el=document.getElementById(id);Array.prototype.forEach.call(el.querySelectorAll("button"),function(b){b.setAttribute("aria-pressed",b.getAttribute("data-v")===String(v)?"true":"false")})}
@@ -399,6 +403,39 @@ function effTheme(){var d=document.documentElement.getAttribute("data-theme");if
 document.getElementById("segTheme").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;var v=b.getAttribute("data-v");document.documentElement.setAttribute("data-theme",v);try{localStorage.setItem("spyneTheme",v)}catch(x){}setSeg("segTheme",v)});
 if(window.matchMedia)matchMedia("(prefers-color-scheme: dark)").addEventListener("change",function(){setSeg("segTheme",effTheme())});
 setSeg("segTheme",effTheme());
+function buildLists(){
+  amSeg.innerHTML='<button data-v="-1" aria-pressed="true">All</button>'+D.am.map(function(n,i){return{n:n,i:i}}).filter(function(x){return x.n!=="#N/A"}).concat(D.am.indexOf("#N/A")>=0?[{n:"#N/A",i:D.am.indexOf("#N/A")}]:[]).map(function(x){return'<button data-v="'+x.i+'" aria-pressed="false">'+(x.n==="#N/A"?"Unmapped":x.n)+"</button>"}).join("");
+  sm.innerHTML='<option value="-1">All modes</option>'+D.modes.map(function(m,i){return'<option value="'+i+'">'+MODE_LABEL(m)+"</option>"}).join("");
+  document.getElementById("custList").innerHTML=D.cust.map(function(c){return"<option value=\""+esc(c)+"\">"}).join("");
+  inp.min=iso(0);inp.max=iso(MAXD);
+}
+function applyData(nd){
+  var keep={mode:st.mode>=0?D.modes[st.mode]:null,cust:st.cust>=0?D.cust[st.cust]:null,am:st.am>=0?D.am[st.am]:null,set:st.amSet?st.amSet.map(function(i){return D.am[i]}):null};
+  var wasLatest=st.asof>=MAXD;
+  D=nd;
+  R=D.rows.map(function(r,i){return{i:i,d:r[0],p:r[1],m:r[2],e:r[3],c:r[5],a:r[6],am:r[7],ae:r[8],dp:r[9],cu:r[10],o:r[11]}});
+  MAXD=0;R.forEach(function(r){if(r.d>MAXD)MAXD=r.d});
+  st.mode=keep.mode===null?-1:D.modes.indexOf(keep.mode);
+  st.cust=keep.cust===null?-1:D.cust.indexOf(keep.cust);
+  st.am=keep.am===null?-1:D.am.indexOf(keep.am);
+  if(keep.set){st.amSet=keep.set.map(function(n){return D.am.indexOf(n)}).filter(function(i){return i>=0});if(st.amSet.length)st.am=-2;else{st.amSet=null;st.amLabel="";st.am=-1}}
+  if(wasLatest||st.asof>MAXD)st.asof=MAXD;
+  buildLists();syncUI();render();
+}
+var liveSig="";
+function setLive(ok,msg){var e=document.getElementById("liveTag");e.className="live "+(ok?"ok":"bad");e.textContent=ok?"● Live · updated "+msg:"● Offline · showing saved data"}
+function hhmm(){var d=new Date(),h=d.getHours(),m=d.getMinutes();return(h<10?"0":"")+h+":"+(m<10?"0":"")+m}
+function sig(t){var h=0;for(var i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))|0;return t.length+":"+h}
+function liveRefresh(){
+  return fetch("/api/sheet",{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.text()}).then(function(text){
+    var s=sig(text);
+    if(s!==liveSig){var nd=JSON.parse(text);if(!nd.rows||!nd.rows.length)throw new Error("no rows");liveSig=s;applyData(nd)}
+    setLive(true,hhmm());
+  }).catch(function(){setLive(false)});
+}
+setInterval(function(){if(!document.hidden)liveRefresh()},60000);
+document.addEventListener("visibilitychange",function(){if(!document.hidden)liveRefresh()});
 render();
+liveRefresh();
 })();
 </script>
