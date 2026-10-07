@@ -92,7 +92,7 @@ td.l{text-align:left}
 .pager{display:flex;align-items:center;gap:10px;margin-top:6px;font-size:11px;color:var(--muted)}
 .pager .more{padding:2px 10px;font-size:11px}
 .pager .more:disabled{opacity:.45;cursor:default}
-.live{font-size:10.5px;color:var(--muted);white-space:nowrap;align-self:flex-end;padding:0 0 4px 4px}
+.live{font-size:10.5px;color:var(--muted);white-space:nowrap;align-self:flex-end;padding:0 0 4px 4px;max-width:200px;overflow:hidden;text-overflow:ellipsis}
 .live.ok{color:var(--good)}
 .live.bad{color:var(--bad)}
 .empty{color:var(--muted);padding:20px 0;text-align:center}
@@ -422,14 +422,15 @@ function applyData(nd){
   if(wasLatest||st.asof>MAXD)st.asof=MAXD;
   buildLists();syncUI();render();
 }
-var liveSig="";
+var liveSig="",lowHits=0;
+function setWarn(n){var e=document.getElementById("liveTag");e.className="live bad";e.textContent="● Sheet: "+n+" rows only · old data kept";e.title="The sheet returned only "+n+" rows, far fewer than before. Keeping the previous data and re-checking every minute."}
 function setLive(ok,msg){var e=document.getElementById("liveTag");e.className="live "+(ok?"ok":"bad");e.textContent=ok?"● Live · updated "+msg:"● Offline · showing saved data"}
 function hhmm(){var d=new Date(),h=d.getHours(),m=d.getMinutes();return(h<10?"0":"")+h+":"+(m<10?"0":"")+m}
 function sig(t){var h=0;for(var i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))|0;return t.length+":"+h}
 function liveRefresh(){
   return fetch("/api/sheet",{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.text()}).then(function(text){
     var s=sig(text);
-    if(s!==liveSig){var nd=JSON.parse(text);if(!nd.rows||!nd.rows.length)throw new Error("no rows");liveSig=s;applyData(nd)}
+    if(s!==liveSig){var nd=JSON.parse(text);if(!nd.rows||!nd.rows.length)throw new Error("no rows");if(R.length>200&&nd.rows.length<R.length*0.5&&lowHits<3){lowHits++;setWarn(nd.rows.length);return}lowHits=0;liveSig=s;applyData(nd)}
     setLive(true,hhmm());
   }).catch(function(){setLive(false)});
 }
