@@ -43,7 +43,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-o
 .date button{font:inherit;font-weight:500;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:3px 10px;cursor:pointer}
 
 .tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
-#tiles2{grid-template-columns:repeat(5,minmax(0,1fr))}
+#tiles2{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media (max-width:1100px){.tiles,#tiles2{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:600px){.tiles,#tiles2{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .tile{border-radius:8px;color:#fff;padding:8px 12px 8px;min-width:0;display:flex;flex-direction:column;gap:2px}
@@ -193,16 +193,15 @@ function renderTiles(){
    ["t5","Rolling 30 days",short(r30),lbl(a-30)+" to "+lbl(a),spl(a-30,a)],
    ["t6","Rolling 90 days",short(r90),lbl(a-90)+" to "+lbl(a),spl(a-90,a)]];
   document.getElementById("tiles").innerHTML=T1.map(function(t){return tile(t[0],t[1],t[2],t[3],t[4])}).join("");
-  var today=sum(a,a), wtd=sum(w,a), ref=sum(m,a,function(r){return r.a<0}), refN=0;
+  var today=sum(a,a), wtd=sum(w,a);
   var mp=spl(m,a), stu=mp[0], vin=mp[1], tot=(stu+vin)||1;
-  R.forEach(function(r){if(r.d>=m&&r.d<=a&&r.a<0&&ok(r))refN++});
-  var neg=function(r){return r.a<0};
+
+
   var T2=[
    ["t2",a===MAXD?"Latest day":"Selected day",short(today),lblY(a),spl(a,a)],
    ["t3","Week to date",short(wtd),lbl(w)+" to "+lbl(a),spl(w,a)],
    ["t4","Studio MTD",short(stu),Math.round(stu/tot*100)+"% of Studio + Vini",mp],
-   ["t5","Vini MTD",short(vin),Math.round(vin/tot*100)+"% of Studio + Vini",mp],
-   ["t6","Refunds MTD",short(ref),refN+" refund entr"+(refN===1?"y":"ies"),spl(m,a,neg)]];
+   ["t5","Vini MTD",short(vin),Math.round(vin/tot*100)+"% of Studio + Vini",mp]];
   document.getElementById("tiles2").innerHTML=T2.map(function(t){return tile(t[0],t[1],t[2],t[3],t[4])}).join("");
 }var centerText={id:"centerText",afterDraw:function(c){var o=c.options.plugins&&c.options.plugins.centerText,e=c.getDatasetMeta(0).data[0];if(!o||!e)return;var x=c.ctx;x.save();x.textAlign="center";x.textBaseline="middle";x.fillStyle=css("--ink");x.font="700 11px "+css("--font-num");x.fillText(o.text,e.x,e.y-5);x.fillStyle=css("--muted");x.font="500 8px "+css("--font-ui");x.fillText("Net",e.x,e.y+8);x.restore()}};
 var barLabels={id:"barLabels",afterDatasetsDraw:function(c){var x=c.ctx;x.save();x.fillStyle=css("--ink");x.font="600 10px "+css("--font-ui");x.textAlign="center";x.textBaseline="bottom";c.getDatasetMeta(0).data.forEach(function(b,i){x.fillText(short(c.data.datasets[0].data[i]),b.x,b.y-3)});x.restore()}};
