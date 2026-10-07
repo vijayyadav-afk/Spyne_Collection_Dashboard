@@ -247,7 +247,9 @@ function renderScope(){
     options:Object.assign(baseOpts(),{indexAxis:"y",plugins:{legend:{display:false},tooltip:{callbacks:{title:function(c){return cs[c[0].dataIndex][0]},label:function(c){return" "+inr(c.parsed.x)}}}},
       scales:{x:{grace:"16%",grid:{color:line},ticks:{color:muted,callback:axs}},y:{grid:{display:false},ticks:{color:muted,font:{size:9}}}}})});
   // account manager
-  var av=without("am",function(){return D.am.map(function(n,i){return{n:n,v:sum(a,b,function(r){return r.am===i})}})}).filter(function(x){return x.v!==0}).sort(function(x,y){return y.v-x.v});
+  var amName={Partner:"Reseller",Sales:"D2D","#N/A":"CS"},avm={},avo=[];
+  without("am",function(){D.am.forEach(function(n,i){var d=amName[n]||n;if(!(d in avm)){avm[d]=0;avo.push(d)}avm[d]+=sum(a,b,function(r){return r.am===i})})});
+  var av=avo.map(function(n){return{n:n,v:avm[n]}}).filter(function(x){return x.v!==0}).sort(function(x,y){return y.v-x.v});
   mk("cAm",{plugins:[barLabels],type:"bar",data:{labels:av.map(function(x){return x.n}),datasets:[{data:av.map(function(x){return x.v}),backgroundColor:P[3],borderRadius:4,maxBarThickness:46}]},
     options:Object.assign(baseOpts(),{plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return" "+inr(c.parsed.y)}}}},
       scales:{x:{grid:{display:false},ticks:{color:muted}},y:{grace:"15%",grid:{color:line},ticks:{color:muted,callback:axs}}}})});
