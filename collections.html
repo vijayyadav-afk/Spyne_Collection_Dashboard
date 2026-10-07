@@ -115,7 +115,7 @@ td.l{text-align:left}
   </section>
 
   <div class="grid">
-    <section class="panel s4"><h2>Product split</h2><div class="cap">Studio and Vini, net collected</div><div class="ch short"><canvas id="cProd" role="img" aria-label="Product split"></canvas></div><div class="legend" id="lgProd"></div></section>
+    <section class="panel s4"><h2>Product split</h2><div class="cap" id="capProd">MTD Studio and Vini, net collected</div><div class="ch short"><canvas id="cProd" role="img" aria-label="Product split"></canvas></div><div class="legend" id="lgProd"></div></section>
     <section class="panel s4"><h2>Payment mode</h2><div class="cap">Share of net collected by mode</div><div class="ch short"><canvas id="cMode" role="img" aria-label="Payment mode split"></canvas></div><div class="legend" id="lgMode"></div></section>
     <section class="panel s4"><h2>Account manager collections</h2><div class="cap">Net collected by account manager</div><div class="ch short"><canvas id="cAm" role="img" aria-label="Account manager collections"></canvas></div></section>
 
@@ -227,6 +227,7 @@ function palette(){return[css("--teal"),css("--violet"),css("--amber"),css("--bl
 function renderScope(){
   var rg=rangeOf(st.scope,st.asof), a=rg[0], b=rg[1];
   document.getElementById("scopeNote").textContent=rg[2]+filterText();
+  document.getElementById("capProd").textContent=({day:"Daily",week:"Weekly",mtd:"MTD"})[st.scope]+" Studio and Vini, net collected";
   var P=palette(), muted=css("--muted"), line=css("--line"), panel=css("--panel");
   // product
   var pv=[sum(a,b,function(r){return r.p===0}),sum(a,b,function(r){return r.p===1})], pt=pv[0]+pv[1];
