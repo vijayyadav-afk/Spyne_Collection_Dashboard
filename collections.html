@@ -4,23 +4,24 @@
 <style>
 /* Layout: filter bar, six period tiles (day / week / MTD / Studio / Vini / refunds), then chart panels that follow the Day-Week-MTD scope. */
 :root{
-  --bg:#edf0f4; --panel:#ffffff; --ink:#1b2333; --muted:#5b6678; --line:#dfe4ec; --soft:#f4f6f9;
-  --teal:#0b8f82; --violet:#6552b5; --blue:#2f7fc1; --amber:#cf8f16; --rose:#c4577a;
-  --t1:#0a7a70; --t2:#1b6c96; --t3:#3a5ca3; --t4:#5a4ca0; --t5:#78499c; --t6:#a9473f;
-  --good:#0a7d4f; --bad:#b4392f; --chip-bg:#e6f4f2;
+  --bg:#edf1f7; --panel:#ffffff; --ink:#0f1d33; --muted:#586a84; --line:#d9e1ec; --soft:#f2f5fa;
+  /* --teal is the Studio colour (blue) and --violet is the Vini colour (gold); names kept so the charts keep working */
+  --teal:#2563eb; --violet:#cf7f00; --blue:#5b7fb8; --amber:#0d9488; --rose:#be3a5b;
+  --t1:#0b2545; --t2:#13406b; --t3:#1a5589; --t4:#1f6aa5; --t5:#0f766e; --t6:#7a2e4b; --tS:#1d4ed8; --tV:#b86e00;
+  --good:#0a7d4f; --bad:#b4392f; --chip-bg:#e7efff;
   --font-ui:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --font-num:"Sora","DM Sans",system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#0f141d; --panel:#171e2b; --ink:#e8ecf3; --muted:#9aa6ba; --line:#263044; --soft:#1d2636;
-  --teal:#2fc0b0; --violet:#9d8cf0; --blue:#5aa8e6; --amber:#e8b24a; --rose:#e48aa8;
-  --t1:#0d6f66; --t2:#1a5f85; --t3:#344f93; --t4:#4d4190; --t5:#693f8a; --t6:#96403a;
-  --good:#4cc99a; --bad:#f08a80; --chip-bg:#16332f; color-scheme:dark; } }
+  --bg:#0a1220; --panel:#111c30; --ink:#e6edf8; --muted:#93a4bf; --line:#1f2e48; --soft:#16233a;
+  --teal:#5b9bff; --violet:#f5a524; --blue:#8aa6d9; --amber:#2dd4bf; --rose:#f0809b;
+  --t1:#0e2f57; --t2:#16466f; --t3:#1b5688; --t4:#216a9c; --t5:#12706a; --t6:#8a3555; --tS:#2a5fd0; --tV:#a86400;
+  --good:#4cc99a; --bad:#f08a80; --chip-bg:#15294a; color-scheme:dark; } }
 :root[data-theme="dark"]{
-  --bg:#0f141d; --panel:#171e2b; --ink:#e8ecf3; --muted:#9aa6ba; --line:#263044; --soft:#1d2636;
-  --teal:#2fc0b0; --violet:#9d8cf0; --blue:#5aa8e6; --amber:#e8b24a; --rose:#e48aa8;
-  --t1:#0d6f66; --t2:#1a5f85; --t3:#344f93; --t4:#4d4190; --t5:#693f8a; --t6:#96403a;
-  --good:#4cc99a; --bad:#f08a80; --chip-bg:#16332f; color-scheme:dark; }
+  --bg:#0a1220; --panel:#111c30; --ink:#e6edf8; --muted:#93a4bf; --line:#1f2e48; --soft:#16233a;
+  --teal:#5b9bff; --violet:#f5a524; --blue:#8aa6d9; --amber:#2dd4bf; --rose:#f0809b;
+  --t1:#0e2f57; --t2:#16466f; --t3:#1b5688; --t4:#216a9c; --t5:#12706a; --t6:#8a3555; --tS:#2a5fd0; --tV:#a86400;
+  --good:#4cc99a; --bad:#f08a80; --chip-bg:#15294a; color-scheme:dark; }
 
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:12px;line-height:1.4;padding-inline:clamp(12px,2vw,20px);padding-block:12px 24px}
@@ -52,7 +53,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-o
 .tile .n{font-size:10.5px;opacity:.92;margin-top:2px}
 .tile .sv{display:flex;flex-wrap:wrap;justify-content:space-between;gap:1px 10px;margin-top:5px;padding-top:4px;border-top:1px solid rgba(255,255,255,.28);font-size:10.5px}
 .tile .sv b{font-weight:700}
-.t1{background:var(--t1)}.t2{background:var(--t2)}.t3{background:var(--t3)}.t4{background:var(--t4)}.t5{background:var(--t5)}.t6{background:var(--t6)}
+.tS{background:var(--tS)}.tV{background:var(--tV)}.t1{background:var(--t1)}.t2{background:var(--t2)}.t3{background:var(--t3)}.t4{background:var(--t4)}.t5{background:var(--t5)}.t6{background:var(--t6)}
 
 .grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;min-width:0}
@@ -233,8 +234,8 @@ function renderTiles(){
   var T2=[
    ["t2",a===MAXD?"Latest day":"Selected day",short(today),lblY(a),spl(a,a)],
    ["t3","Week to date",short(wtd),lbl(w)+" to "+lbl(a),spl(w,a)],
-   ["t4","Studio MTD",short(stu),Math.round(stu/tot*100)+"% of Studio + Vini",mp],
-   ["t5","Vini MTD",short(vin),Math.round(vin/tot*100)+"% of Studio + Vini",mp]];
+   ["tS","Studio MTD",short(stu),Math.round(stu/tot*100)+"% of Studio + Vini",mp],
+   ["tV","Vini MTD",short(vin),Math.round(vin/tot*100)+"% of Studio + Vini",mp]];
   document.getElementById("tiles2").innerHTML=T2.map(function(t){return tile(t[0],t[1],t[2],t[3],t[4])}).join("");
 }var centerText={id:"centerText",afterDraw:function(c){var o=c.options.plugins&&c.options.plugins.centerText,e=c.getDatasetMeta(0).data[0];if(!o||!e||e.innerRadius<26)return;var x=c.ctx;x.save();x.textAlign="center";x.textBaseline="middle";x.fillStyle=css("--ink");x.font="700 11px "+css("--font-num");x.fillText(o.text,e.x,e.y-5);x.fillStyle=css("--muted");x.font="500 8px "+css("--font-ui");x.fillText("Net",e.x,e.y+8);x.restore()}};
 var barLabels={id:"barLabels",afterDatasetsDraw:function(c){var x=c.ctx;x.save();x.fillStyle=css("--ink");x.font="600 10px "+css("--font-ui");x.textAlign="center";x.textBaseline="bottom";c.getDatasetMeta(0).data.forEach(function(b,i){x.fillText(short(c.data.datasets[0].data[i]),b.x,b.y-3)});x.restore()}};
