@@ -104,12 +104,17 @@ html,body{height:100%}
  header{gap:4px 14px;align-items:flex-end}
  .hd h1{font-size:19px}
  .sub{font-size:10.5px;margin-top:0}
- .controls{gap:4px 10px}
+ .controls{gap:4px 8px;flex-wrap:nowrap}
+ .hd{flex:1 1 100%}
+ .controls .seg button,.controls .date button{padding:2px 6px;font-size:10.5px}
+ .ctl select{width:105px}
+ .ctl input{width:100px}
+ .date{gap:4px}
  .ctl>span{font-size:8.5px}
  .ctl{gap:1px}
  .seg button{padding:2px 8px;font-size:11px}
  .ctl select,.ctl input{padding:3px 6px;font-size:11px;width:130px}
- .date input{padding:2px 6px;font-size:11px;width:auto}
+ .date input{padding:2px 6px;font-size:11px;width:112px}
  .date button{padding:2px 8px;font-size:11px}
  .tiles{gap:6px}
  .tile{padding:5px 10px;border-radius:7px}
@@ -143,8 +148,8 @@ html,body{height:100%}
       <div class="ctl"><span>Entity</span><div class="seg" id="segEnt" role="group" aria-label="Entity">
         <button data-v="-1" aria-pressed="true">All</button><button data-v="0" aria-pressed="false">US</button><button data-v="1" aria-pressed="false">India</button></div></div>
       <div class="ctl"><span>Period</span><div class="seg" id="segScope" role="group" aria-label="Period"><button data-v="day" aria-pressed="false">Daily</button><button data-v="week" aria-pressed="false">Weekly</button><button data-v="mtd" aria-pressed="true">MTD</button></div></div>
-      <div class="ctl"><span>Theme</span><div class="seg" id="segTheme" role="group" aria-label="Theme"><button data-v="light" aria-pressed="false">Light</button><button data-v="dark" aria-pressed="false">Dark</button></div></div>
       <div class="ctl"><span>As of</span><div class="date"><input type="date" id="asof" aria-label="As of date"><button id="latest" type="button">Latest</button><button id="reset" type="button">Reset filters</button><button id="btnDetails" type="button">Details table ↓</button></div></div>
+      <div class="ctl"><span>Theme</span><div class="seg" id="segTheme" role="group" aria-label="Theme"><button data-v="light" aria-pressed="false">Light</button><button data-v="dark" aria-pressed="false">Dark</button></div></div>
     </div>
   </header>
 
