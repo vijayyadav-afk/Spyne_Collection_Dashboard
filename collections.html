@@ -119,7 +119,7 @@ td.l{text-align:left}
     <section class="panel s4"><h2>Payment mode</h2><div class="cap">Share of net collected by mode</div><div class="ch short"><canvas id="cMode" role="img" aria-label="Payment mode split"></canvas></div><div class="legend" id="lgMode"></div></section>
     <section class="panel s4"><h2>Account manager collections</h2><div class="cap">Net collected by account manager</div><div class="ch short"><canvas id="cAm" role="img" aria-label="Account manager collections"></canvas></div></section>
 
-    <section class="panel s5"><h2>Top customers</h2><div class="cap">Largest net collections in the period</div><div class="ch tall" style="height:235px"><canvas id="cCust" role="img" aria-label="Top customers"></canvas></div></section>
+    <section class="panel s5"><h2 id="yearTitle">Collections by month</h2><div class="cap">Net collected each month this year, Studio and Vini</div><div class="ch tall" style="height:235px"><canvas id="cYear" role="img" aria-label="Collections by month this year"></canvas></div></section>
 
 
     <section class="panel s7"><h2 id="dailyTitle">Daily collections</h2><div class="cap">Bars show each day. Lines show the running month total against the previous month.</div><div class="ch tall" style="height:235px"><canvas id="cDaily" role="img" aria-label="Daily collections for the month"></canvas></div></section>
@@ -209,7 +209,7 @@ var barLabels={id:"barLabels",afterDatasetsDraw:function(c){var x=c.ctx;x.save()
 var lab=function(v){return short(v).replace("₹","")};
 var onBar=function(){var d=document.documentElement.getAttribute("data-theme");return(d==="dark"||(!d&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches))?"#0f141d":"#fff"};
 var hLabels={id:"hLabels",afterDatasetsDraw:function(c){var x=c.ctx;x.save();x.fillStyle=css("--ink");x.font="600 9px "+css("--font-ui");x.textAlign="left";x.textBaseline="middle";c.getDatasetMeta(0).data.forEach(function(b,i){x.fillText(lab(c.data.datasets[0].data[i]),b.x+4,b.y)});x.restore()}};
-var stackLabels={id:"stackLabels",afterDatasetsDraw:function(c){var x=c.ctx,m0=c.getDatasetMeta(0).data,m1=c.getDatasetMeta(1).data,d0=c.data.datasets[0].data,d1=c.data.datasets[1].data;x.save();x.textAlign="center";m0.forEach(function(b0,i){var b1=m1[i],s=d0[i]||0,v=d1[i]||0,up=Math.min(b0.y,b1.y)-2;x.font="600 8px "+css("--font-ui");x.textBaseline="middle";
+var stackLabels={id:"stackLabels",afterDatasetsDraw:function(c){var x=c.ctx,m0=c.getDatasetMeta(0).data,m1=c.getDatasetMeta(1).data,d0=c.data.datasets[0].data,d1=c.data.datasets[1].data;x.save();x.textAlign="center";m0.forEach(function(b0,i){if(d0[i]==null&&d1[i]==null)return;var b1=m1[i],s=d0[i]||0,v=d1[i]||0,up=Math.min(b0.y,b1.y)-2;x.font="600 8px "+css("--font-ui");x.textBaseline="middle";
  if(s!==0&&Math.abs(b0.base-b0.y)>=11){x.fillStyle=onBar();x.fillText(lab(s),b0.x,(b0.y+b0.base)/2)}
  if(v!==0){if(Math.abs(b1.base-b1.y)>=11){x.fillStyle=onBar();x.fillText(lab(v),b1.x,(b1.y+b1.base)/2)}else{x.fillStyle=css("--violet");x.textBaseline="bottom";x.fillText(lab(v),b1.x,up);up-=10}}
  x.fillStyle=css("--ink");x.font="700 9px "+css("--font-ui");x.textBaseline="bottom";x.fillText(lab(s+v),b0.x,up)});x.restore()}};
@@ -240,12 +240,6 @@ function renderScope(){
   mk("cMode",{plugins:[centerText,sliceLabels],type:"doughnut",data:{labels:ms.map(function(x){return x.n}),datasets:[{data:ms.map(function(x){return Math.max(x.v,0)}),backgroundColor:ms.map(function(x,k){return P[k%P.length]}),borderColor:panel,borderWidth:3}]},
     options:Object.assign(baseOpts(),{cutout:"50%",layout:{padding:{top:16,bottom:2,left:60,right:60}},plugins:{legend:{display:false},sliceLabels:{values:ms.map(function(x){return x.v})},centerText:{text:short(ms.reduce(function(s,x){return s+x.v},0))},tooltip:{callbacks:{label:function(c){return" "+ms[c.dataIndex].n+": "+inr(ms[c.dataIndex].v)}}}}})});
   document.getElementById("lgMode").innerHTML=ms.length?ms.map(function(x,k){return'<span><i style="background:'+P[k%P.length]+'"></i>'+x.n+" "+short(x.v)+(mt>0?" ("+Math.round(Math.max(x.v,0)/mt*100)+"%)":"")+"</span>"}).join(""):"";
-  // customers
-  var cm={};for(var i=0;i<R.length;i++){var r=R[i];if(r.d>=a&&r.d<=b&&ok(r))cm[r.c]=(cm[r.c]||0)+r.a}
-  var cs=Object.keys(cm).map(function(k){return[D.cust[k],cm[k],+k]}).sort(function(x,y){return y[1]-x[1]}).slice(0,8);
-  mk("cCust",{plugins:[hLabels],type:"bar",data:{labels:cs.map(function(x){return x[0].length>24?x[0].slice(0,23)+"…":x[0]}),datasets:[{data:cs.map(function(x){return x[1]}),backgroundColor:P[0],borderRadius:4,barThickness:8}]},
-    options:Object.assign(baseOpts(),{indexAxis:"y",plugins:{legend:{display:false},tooltip:{callbacks:{title:function(c){return cs[c[0].dataIndex][0]},label:function(c){return" "+inr(c.parsed.x)}}}},
-      scales:{x:{grace:"16%",grid:{color:line},ticks:{color:muted,callback:axs}},y:{grid:{display:false},ticks:{color:muted,font:{size:9}}}}})});
   // account manager
   var avm={},avo=[];
   without("am",function(){D.am.forEach(function(n,i){var d=amName[n]||n;if(!(d in avm)){avm[d]=0;avo.push(d)}avm[d]+=sum(a,b,function(r){return r.am===i})})});
@@ -253,7 +247,7 @@ function renderScope(){
   mk("cAm",{plugins:[barLabels],type:"bar",data:{labels:av.map(function(x){return x.n}),datasets:[{data:av.map(function(x){return x.v}),backgroundColor:av.map(function(x){var sn=st.amSet?st.amLabel:(st.am>=0?(amName[D.am[st.am]]||D.am[st.am]):null);return sn===null||x.n===sn?P[3]:P[3]+"55"}),borderRadius:4,maxBarThickness:46}]},
     options:Object.assign(baseOpts(),{plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return" "+inr(c.parsed.y)}}}},
       scales:{x:{grid:{display:false},ticks:{color:muted}},y:{grace:"15%",grid:{color:line},ticks:{color:muted,callback:axs}}}})});
-  H.mrows=ms;H.cs=cs;H.av=av;
+  H.mrows=ms;H.av=av;
   renderDetails(a,b);
 }
 function renderDetails(a,b){
@@ -295,6 +289,12 @@ function renderTime(){
   var ml=[],mS=[],mV=[],me=[];
   for(var j=11;j>=0;j--){var yy=y,mm=mo-j;while(mm<0){mm+=12;yy--}var s1=idx(yy,mm,1),e1=Math.min(idx(yy,mm,dim(yy,mm)),a);ml.push(MON[mm]+" "+String(yy).slice(2)+(j===0?" (MTD)":""));me.push(e1);mS.push(sum(s1,e1,function(r){return r.p===0}));mV.push(sum(s1,e1,function(r){return r.p===1}))}
   H.monthEnds=me;stackChart("cMonth",ml,mS,mV,P,muted,line);
+  // current year, month by month
+  var yl=[],yS=[],yV=[],ye=[];
+  for(var qq=0;qq<12;qq++){var s2=idx(y,qq,1),e2=Math.min(idx(y,qq,dim(y,qq)),a);yl.push(MON[qq]+(qq===mo?" (MTD)":""));ye.push(e2);if(s2>a){yS.push(null);yV.push(null)}else{yS.push(sum(s2,e2,function(r){return r.p===0}));yV.push(sum(s2,e2,function(r){return r.p===1}))}}
+  document.getElementById("yearTitle").textContent="Collections by month, "+y;
+  H.yearEnds=ye;H.yearY=y;
+  stackChart("cYear",yl,yS,yV,P,muted,line);
 }
 function stackChart(id,labels,s,v,P,muted,line){
   var lines=st.prod;
@@ -337,7 +337,7 @@ function syncUI(){setSeg("segProd",st.prod);setSeg("segEnt",st.ent);setSeg("segA
 function act(fn){fn();st.rows=100;syncUI();render()}
 clickHandlers.cProd=function(i){act(function(){st.prod=st.prod===i?-1:i})};
 clickHandlers.cMode=function(i){var m=H.mrows[i].i;act(function(){st.mode=st.mode===m?-1:m})};
-clickHandlers.cCust=function(i){var k=H.cs[i][2];act(function(){st.cust=st.cust===k?-1:k})};
+clickHandlers.cYear=function(i){if(idx(H.yearY,i,1)>MAXD)return;var e=H.yearEnds[i];act(function(){st.asof=e;st.scope="mtd"})};
 clickHandlers.cAm=function(i){var n=H.av[i].n,ids=[];D.am.forEach(function(o,j){if((amName[o]||o)===n)ids.push(j)});act(function(){var same=st.amSet?st.amSet.join()===ids.join():(ids.length===1&&st.am===ids[0]);if(same){st.am=-1;st.amSet=null;st.amLabel=""}else if(ids.length===1){st.am=ids[0];st.amSet=null;st.amLabel=""}else{st.am=-2;st.amSet=ids;st.amLabel=n}})};
 clickHandlers.cDaily=function(i){var d=H.dms+i;if(d>MAXD)return;act(function(){st.asof=d;st.scope="day"})};
 clickHandlers.cWeek=function(i){var e=H.weekEnds[i];act(function(){st.asof=e;st.scope="week"})};
