@@ -138,8 +138,9 @@ td.l{text-align:left}
 <script>
 (function(){
 var D=window.DATA, PRODS=["Studio","Vini"], ENTS=["US","India"];
+var amU=[],amIdx=D.am.map(function(n){var m=({Partner:"Reseller",Sales:"D2D","#N/A":"CS"})[n]||n,i=amU.indexOf(m);if(i<0){amU.push(m);i=amU.length-1}return i});D.am=amU;
 var MODE_LABEL=function(m){return m==="Bank Remittance - Check"?"Bank (cheque)":m==="Bank Remittance"?"Bank remittance":m};
-var R=D.rows.map(function(r,i){return{i:i,d:r[0],p:r[1],m:r[2],e:r[3],c:r[5],a:r[6],am:r[7],ae:r[8],dp:r[9],cu:r[10],o:r[11]}});
+var R=D.rows.map(function(r,i){return{i:i,d:r[0],p:r[1],m:r[2],e:r[3],c:r[5],a:r[6],am:amIdx[r[7]],ae:r[8],dp:r[9],cu:r[10],o:r[11]}});
 var MAXD=0;R.forEach(function(r){if(r.d>MAXD)MAXD=r.d});
 var MS=864e5, EPOCH=Date.UTC(2023,0,1);
 var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -307,7 +308,7 @@ function render(){
 }
 
 var amSeg=document.getElementById("segAm");
-amSeg.innerHTML='<button data-v="-1" aria-pressed="true">All</button>'+D.am.map(function(n,i){return{n:n,i:i}}).filter(function(x){return x.n!=="#N/A"}).concat([{n:"#N/A",i:D.am.indexOf("#N/A")}]).map(function(x){return'<button data-v="'+x.i+'" aria-pressed="false">'+(x.n==="#N/A"?"Unmapped":x.n)+"</button>"}).join("");
+amSeg.innerHTML='<button data-v="-1" aria-pressed="true">All</button>'+D.am.map(function(n,i){return{n:n,i:i}}).filter(function(x){return x.n!=="#N/A"}).map(function(x){return'<button data-v="'+x.i+'" aria-pressed="false">'+(x.n==="#N/A"?"Unmapped":x.n)+"</button>"}).join("");
 var sm=document.getElementById("selMode");
 sm.innerHTML='<option value="-1">All modes</option>'+D.modes.map(function(m,i){return'<option value="'+i+'">'+MODE_LABEL(m)+"</option>"}).join("");
 sm.addEventListener("change",function(){st.mode=+sm.value;st.rows=100;render()});
