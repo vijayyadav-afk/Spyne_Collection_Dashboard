@@ -115,16 +115,14 @@ td.l{text-align:left}
   </section>
 
   <div class="grid">
-    <section class="panel s4"><h2>Product split</h2><div class="cap">Studio and Vini, net collected</div><div class="ch short"><canvas id="cProd" role="img" aria-label="Product split"></canvas></div><div class="legend" id="lgProd"></div></section>
+    <section class="panel s4"><h2>Product split</h2><div class="cap" id="capProd">MTD Studio and Vini, net collected</div><div class="ch short"><canvas id="cProd" role="img" aria-label="Product split"></canvas></div><div class="legend" id="lgProd"></div></section>
     <section class="panel s4"><h2>Payment mode</h2><div class="cap">Share of net collected by mode</div><div class="ch short"><canvas id="cMode" role="img" aria-label="Payment mode split"></canvas></div><div class="legend" id="lgMode"></div></section>
     <section class="panel s4"><h2>Account manager collections</h2><div class="cap">Net collected by account manager</div><div class="ch short"><canvas id="cAm" role="img" aria-label="Account manager collections"></canvas></div></section>
 
-    <section class="panel s5"><h2>Top customers</h2><div class="cap">Largest net collections in the period</div><div class="ch tall"><canvas id="cCust" role="img" aria-label="Top customers"></canvas></div></section>
+    <section class="panel s5"><h2>Top customers</h2><div class="cap">Largest net collections in the period</div><div class="ch tall" style="height:235px"><canvas id="cCust" role="img" aria-label="Top customers"></canvas></div></section>
 
-    <section class="panel s7"><h2>Payment mode by product</h2><div class="cap" id="matCap"></div><div class="tw"><table id="mat"></table></div></section>
 
-    <section class="panel s8"><h2 id="dailyTitle">Daily collections</h2><div class="cap">Bars show each day. Lines show the running month total against the previous month.</div><div class="ch tall" style="height:235px"><canvas id="cDaily" role="img" aria-label="Daily collections for the month"></canvas></div></section>
-    <section class="panel s4"><h2>Last 7 days</h2><div class="cap">Net collected per day</div><div class="tw"><table id="last7"></table></div></section>
+    <section class="panel s7"><h2 id="dailyTitle">Daily collections</h2><div class="cap">Bars show each day. Lines show the running month total against the previous month.</div><div class="ch tall" style="height:235px"><canvas id="cDaily" role="img" aria-label="Daily collections for the month"></canvas></div></section>
 
     <section class="panel s6"><h2>Weekly collections</h2><div class="cap">Last 13 weeks, Monday to Sunday. The latest week is week to date.</div><div class="ch"><canvas id="cWeek" role="img" aria-label="Weekly collections"></canvas></div></section>
     <section class="panel s6"><h2>Rolling 12 month collections</h2><div class="cap">Last 12 months. The latest month is month to date.</div><div class="ch"><canvas id="cMonth" role="img" aria-label="Rolling 12 month collections"></canvas></div></section>
@@ -229,6 +227,7 @@ function palette(){return[css("--teal"),css("--violet"),css("--amber"),css("--bl
 function renderScope(){
   var rg=rangeOf(st.scope,st.asof), a=rg[0], b=rg[1];
   document.getElementById("scopeNote").textContent=rg[2]+filterText();
+  document.getElementById("capProd").textContent=({day:"Daily",week:"Weekly",mtd:"MTD"})[st.scope]+" Studio and Vini, net collected";
   var P=palette(), muted=css("--muted"), line=css("--line"), panel=css("--panel");
   // product
   var pv=[sum(a,b,function(r){return r.p===0}),sum(a,b,function(r){return r.p===1})], pt=pv[0]+pv[1];
@@ -247,18 +246,10 @@ function renderScope(){
   mk("cCust",{plugins:[hLabels],type:"bar",data:{labels:cs.map(function(x){return x[0].length>24?x[0].slice(0,23)+"…":x[0]}),datasets:[{data:cs.map(function(x){return x[1]}),backgroundColor:P[0],borderRadius:4,barThickness:8}]},
     options:Object.assign(baseOpts(),{indexAxis:"y",plugins:{legend:{display:false},tooltip:{callbacks:{title:function(c){return cs[c[0].dataIndex][0]},label:function(c){return" "+inr(c.parsed.x)}}}},
       scales:{x:{grace:"16%",grid:{color:line},ticks:{color:muted,callback:axs}},y:{grid:{display:false},ticks:{color:muted,font:{size:9}}}}})});
-  // matrix
-  var mrows=D.modes.map(function(m,i){return{n:MODE_LABEL(m),s:sum(a,b,function(r){return r.m===i&&r.p===0}),v:sum(a,b,function(r){return r.m===i&&r.p===1})}}).filter(function(x){return x.s!==0||x.v!==0}).sort(function(x,y){return(y.s+y.v)-(x.s+x.v)});
-  var ts=0,tv=0;
-  var html="<thead><tr><th>Payment mode</th><th>Studio</th><th>Vini</th><th>Total</th><th>Share</th></tr></thead><tbody>";
-  mrows.forEach(function(x,k){ts+=x.s;tv+=x.v});
-  mrows.forEach(function(x,k){var t=x.s+x.v;html+='<tr><td><span class="dot" style="background:'+P[k%P.length]+'"></span>'+x.n+"</td><td"+(x.s<0?' class="neg"':"")+">"+inr(x.s)+"</td><td"+(x.v<0?' class="neg"':"")+">"+inr(x.v)+"</td><td>"+inr(t)+"</td><td>"+((ts+tv)?(t/(ts+tv)*100).toFixed(1)+"%":"–")+"</td></tr>"});
-  html+="</tbody><tfoot><tr><td>Total</td><td>"+inr(ts)+"</td><td>"+inr(tv)+"</td><td>"+inr(ts+tv)+"</td><td>100%</td></tr></tfoot>";
-  if(!mrows.length)html='<tbody><tr><td class="empty" colspan="5">No collections in this period.</td></tr></tbody>';
-  document.getElementById("mat").innerHTML=html;
-  document.getElementById("matCap").textContent=rg[2]+filterText()+". Refunds show as negative amounts.";
   // account manager
-  var av=without("am",function(){return D.am.map(function(n,i){return{n:n,v:sum(a,b,function(r){return r.am===i})}})}).filter(function(x){return x.v!==0}).sort(function(x,y){return y.v-x.v});
+  var amName={Partner:"Reseller",Sales:"D2D","#N/A":"CS"},avm={},avo=[];
+  without("am",function(){D.am.forEach(function(n,i){var d=amName[n]||n;if(!(d in avm)){avm[d]=0;avo.push(d)}avm[d]+=sum(a,b,function(r){return r.am===i})})});
+  var av=avo.map(function(n){return{n:n,v:avm[n]}}).filter(function(x){return x.v!==0}).sort(function(x,y){return y.v-x.v});
   mk("cAm",{plugins:[barLabels],type:"bar",data:{labels:av.map(function(x){return x.n}),datasets:[{data:av.map(function(x){return x.v}),backgroundColor:P[3],borderRadius:4,maxBarThickness:46}]},
     options:Object.assign(baseOpts(),{plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return" "+inr(c.parsed.y)}}}},
       scales:{x:{grid:{display:false},ticks:{color:muted}},y:{grace:"15%",grid:{color:line},ticks:{color:muted,callback:axs}}}})});
@@ -295,10 +286,6 @@ function renderTime(){
     {type:"line",label:MON[pm]+" running total",data:pcum,borderColor:P[2],backgroundColor:P[2],pointRadius:0,borderWidth:2,borderDash:[5,4],tension:.25,yAxisID:"y2",order:2}]},
    options:Object.assign(baseOpts(),{interaction:{mode:"index",intersect:false},plugins:{legend:{display:true,position:"bottom",labels:{color:muted,boxWidth:7,usePointStyle:true}},tooltip:{callbacks:{title:function(c){return c[0].label+" "+MON[mo]},label:function(c){return" "+c.dataset.label+": "+inr(c.parsed.y)}}}},
      scales:{x:{stacked:true,grid:{display:false},ticks:{color:muted,maxRotation:0,autoSkip:true}},y:{stacked:true,grace:"40%",position:"left",grid:{color:line},ticks:{color:muted,callback:axs}},y2:{position:"right",grid:{display:false},ticks:{color:muted,callback:axs}}}})});
-  // last 7
-  var h="<thead><tr><th>Date</th><th>Studio</th><th>Vini</th><th>Total</th></tr></thead><tbody>";
-  for(var k=0;k<7;k++){var dd=a-k,s0=sum(dd,dd,function(r){return r.p===0}),v0=sum(dd,dd,function(r){return r.p===1});h+="<tr><td>"+lbl(dd)+" <span class='note'>"+["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dt(dd).getUTCDay()]+"</span></td><td>"+short(s0)+"</td><td>"+short(v0)+"</td><td><b>"+short(s0+v0)+"</b></td></tr>"}
-  document.getElementById("last7").innerHTML=h+"</tbody>";
   // weekly
   var wl=[],ws=[],wv=[],w0=monday(a);
   for(var i=12;i>=0;i--){var s=w0-7*i,e=Math.min(s+6,a);wl.push(lbl(s)+(i===0?" (WTD)":""));ws.push(sum(s,e,function(r){return r.p===0}));wv.push(sum(s,e,function(r){return r.p===1}))}
