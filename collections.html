@@ -123,7 +123,7 @@ td.l{text-align:left}
 
     <section class="panel s7"><h2>Payment mode by product</h2><div class="cap" id="matCap"></div><div class="tw"><table id="mat"></table></div></section>
 
-    <section class="panel s8"><h2 id="dailyTitle">Daily collections</h2><div class="cap">Bars show each day. Lines show the running month total against the previous month.</div><div class="ch tall"><canvas id="cDaily" role="img" aria-label="Daily collections for the month"></canvas></div></section>
+    <section class="panel s8"><h2 id="dailyTitle">Daily collections</h2><div class="cap">Bars show each day. Lines show the running month total against the previous month.</div><div class="ch tall" style="height:235px"><canvas id="cDaily" role="img" aria-label="Daily collections for the month"></canvas></div></section>
     <section class="panel s4"><h2>Last 7 days</h2><div class="cap">Net collected per day</div><div class="tw"><table id="last7"></table></div></section>
 
     <section class="panel s6"><h2>Weekly collections</h2><div class="cap">Last 13 weeks, Monday to Sunday. The latest week is week to date.</div><div class="ch"><canvas id="cWeek" role="img" aria-label="Weekly collections"></canvas></div></section>
@@ -208,6 +208,14 @@ function renderTiles(){
   document.getElementById("tiles2").innerHTML=T2.map(function(t){return tile(t[0],t[1],t[2],t[3],t[4])}).join("");
 }var centerText={id:"centerText",afterDraw:function(c){var o=c.options.plugins&&c.options.plugins.centerText,e=c.getDatasetMeta(0).data[0];if(!o||!e)return;var x=c.ctx;x.save();x.textAlign="center";x.textBaseline="middle";x.fillStyle=css("--ink");x.font="700 11px "+css("--font-num");x.fillText(o.text,e.x,e.y-5);x.fillStyle=css("--muted");x.font="500 8px "+css("--font-ui");x.fillText("Net",e.x,e.y+8);x.restore()}};
 var barLabels={id:"barLabels",afterDatasetsDraw:function(c){var x=c.ctx;x.save();x.fillStyle=css("--ink");x.font="600 10px "+css("--font-ui");x.textAlign="center";x.textBaseline="bottom";c.getDatasetMeta(0).data.forEach(function(b,i){x.fillText(short(c.data.datasets[0].data[i]),b.x,b.y-3)});x.restore()}};
+var lab=function(v){return short(v).replace("₹","")};
+var onBar=function(){var d=document.documentElement.getAttribute("data-theme");return(d==="dark"||(!d&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches))?"#0f141d":"#fff"};
+var hLabels={id:"hLabels",afterDatasetsDraw:function(c){var x=c.ctx;x.save();x.fillStyle=css("--ink");x.font="600 9px "+css("--font-ui");x.textAlign="left";x.textBaseline="middle";c.getDatasetMeta(0).data.forEach(function(b,i){x.fillText(lab(c.data.datasets[0].data[i]),b.x+4,b.y)});x.restore()}};
+var stackLabels={id:"stackLabels",afterDatasetsDraw:function(c){var x=c.ctx,m0=c.getDatasetMeta(0).data,m1=c.getDatasetMeta(1).data,d0=c.data.datasets[0].data,d1=c.data.datasets[1].data;x.save();x.textAlign="center";m0.forEach(function(b0,i){var b1=m1[i],s=d0[i]||0,v=d1[i]||0,up=Math.min(b0.y,b1.y)-2;x.font="600 8px "+css("--font-ui");x.textBaseline="middle";
+ if(s!==0&&Math.abs(b0.base-b0.y)>=11){x.fillStyle=onBar();x.fillText(lab(s),b0.x,(b0.y+b0.base)/2)}
+ if(v!==0){if(Math.abs(b1.base-b1.y)>=11){x.fillStyle=onBar();x.fillText(lab(v),b1.x,(b1.y+b1.base)/2)}else{x.fillStyle=css("--violet");x.textBaseline="bottom";x.fillText(lab(v),b1.x,up);up-=10}}
+ x.fillStyle=css("--ink");x.font="700 9px "+css("--font-ui");x.textBaseline="bottom";x.fillText(lab(s+v),b0.x,up)});x.restore()}};
+var dayLabels={id:"dayLabels",afterDatasetsDraw:function(c){var x=c.ctx,m0=c.getDatasetMeta(0).data,m1=c.getDatasetMeta(1).data,d0=c.data.datasets[0].data,d1=c.data.datasets[1].data;x.save();x.fillStyle=css("--ink");x.font="600 8px "+css("--font-ui");x.textAlign="left";x.textBaseline="middle";m0.forEach(function(b0,i){if(d0[i]===null)return;var t=d0[i]+d1[i];if(!t)return;x.save();x.translate(b0.x,Math.min(b0.y,m1[i].y)-3);x.rotate(-Math.PI/2);x.fillText(lab(t),0,0);x.restore()});x.restore()}};
 function mk(id,cfg){if(charts[id])charts[id].destroy();charts[id]=new Chart(document.getElementById(id),cfg)}
 function baseOpts(){
   return{responsive:true,maintainAspectRatio:false,animation:{duration:250},plugins:{legend:{display:false},tooltip:{callbacks:{}}},
@@ -233,9 +241,9 @@ function renderScope(){
   // customers
   var cm={};for(var i=0;i<R.length;i++){var r=R[i];if(r.d>=a&&r.d<=b&&ok(r))cm[r.c]=(cm[r.c]||0)+r.a}
   var cs=Object.keys(cm).map(function(k){return[D.cust[k],cm[k]]}).sort(function(x,y){return y[1]-x[1]}).slice(0,8);
-  mk("cCust",{type:"bar",data:{labels:cs.map(function(x){return x[0].length>24?x[0].slice(0,23)+"…":x[0]}),datasets:[{data:cs.map(function(x){return x[1]}),backgroundColor:P[0],borderRadius:4,barThickness:8}]},
+  mk("cCust",{plugins:[hLabels],type:"bar",data:{labels:cs.map(function(x){return x[0].length>24?x[0].slice(0,23)+"…":x[0]}),datasets:[{data:cs.map(function(x){return x[1]}),backgroundColor:P[0],borderRadius:4,barThickness:8}]},
     options:Object.assign(baseOpts(),{indexAxis:"y",plugins:{legend:{display:false},tooltip:{callbacks:{title:function(c){return cs[c[0].dataIndex][0]},label:function(c){return" "+inr(c.parsed.x)}}}},
-      scales:{x:{grid:{color:line},ticks:{color:muted,callback:axs}},y:{grid:{display:false},ticks:{color:muted,font:{size:9}}}}})});
+      scales:{x:{grace:"16%",grid:{color:line},ticks:{color:muted,callback:axs}},y:{grid:{display:false},ticks:{color:muted,font:{size:9}}}}})});
   // matrix
   var mrows=D.modes.map(function(m,i){return{n:MODE_LABEL(m),s:sum(a,b,function(r){return r.m===i&&r.p===0}),v:sum(a,b,function(r){return r.m===i&&r.p===1})}}).filter(function(x){return x.s!==0||x.v!==0}).sort(function(x,y){return(y.s+y.v)-(x.s+x.v)});
   var ts=0,tv=0;
@@ -271,19 +279,19 @@ function renderTime(){
   var a=st.asof, P=palette(), muted=css("--muted"), line=css("--line"), panel=css("--panel");
   var x=dt(a), y=x.getUTCFullYear(), mo=x.getUTCMonth(), ms=idx(y,mo,1), n=dim(y,mo), cur=a-ms+1;
   document.getElementById("dailyTitle").textContent="Daily collections, "+MON[mo]+" "+y;
-  var labels=[],bars=[],cum=[],pcum=[],run=0,prun=0;
+  var labels=[],bars=[],bs=[],bv=[],cum=[],pcum=[],run=0,prun=0;
   var py=y,pm=mo-1;if(pm<0){pm=11;py--}var pms=idx(py,pm,1),pn=dim(py,pm);
   for(var d=1;d<=n;d++){
     labels.push(d);
-    if(d<=cur){var v=sum(ms+d-1,ms+d-1);bars.push(v);run+=v;cum.push(run)}else{bars.push(null);cum.push(null)}
+    if(d<=cur){var q=ms+d-1,s0=sum(q,q,function(r){return r.p===0}),v1=sum(q,q,function(r){return r.p===1});bs.push(s0);bv.push(v1);bars.push(s0+v1);run+=s0+v1;cum.push(run)}else{bs.push(null);bv.push(null);bars.push(null);cum.push(null)}
     if(d<=pn){prun+=sum(pms+d-1,pms+d-1);pcum.push(prun)}else pcum.push(null);
   }
-  mk("cDaily",{data:{labels:labels,datasets:[
-    {type:"bar",label:"Day",data:bars,backgroundColor:P[0],borderRadius:3,yAxisID:"y",order:3},
+  mk("cDaily",{plugins:[dayLabels],data:{labels:labels,datasets:[
+    {type:"bar",label:"Studio",data:bs,backgroundColor:P[0],stack:"d",yAxisID:"y",order:3},{type:"bar",label:"Vini",data:bv,backgroundColor:P[1],stack:"d",yAxisID:"y",order:3},
     {type:"line",label:MON[mo]+" running total",data:cum,borderColor:P[1],backgroundColor:P[1],pointRadius:0,borderWidth:2.5,tension:.25,yAxisID:"y2",order:1},
     {type:"line",label:MON[pm]+" running total",data:pcum,borderColor:P[2],backgroundColor:P[2],pointRadius:0,borderWidth:2,borderDash:[5,4],tension:.25,yAxisID:"y2",order:2}]},
    options:Object.assign(baseOpts(),{interaction:{mode:"index",intersect:false},plugins:{legend:{display:true,position:"bottom",labels:{color:muted,boxWidth:7,usePointStyle:true}},tooltip:{callbacks:{title:function(c){return c[0].label+" "+MON[mo]},label:function(c){return" "+c.dataset.label+": "+inr(c.parsed.y)}}}},
-     scales:{x:{grid:{display:false},ticks:{color:muted,maxRotation:0,autoSkip:true}},y:{position:"left",grid:{color:line},ticks:{color:muted,callback:axs}},y2:{position:"right",grid:{display:false},ticks:{color:muted,callback:axs}}}})});
+     scales:{x:{stacked:true,grid:{display:false},ticks:{color:muted,maxRotation:0,autoSkip:true}},y:{stacked:true,grace:"40%",position:"left",grid:{color:line},ticks:{color:muted,callback:axs}},y2:{position:"right",grid:{display:false},ticks:{color:muted,callback:axs}}}})});
   // last 7
   var h="<thead><tr><th>Date</th><th>Studio</th><th>Vini</th><th>Total</th></tr></thead><tbody>";
   for(var k=0;k<7;k++){var dd=a-k,s0=sum(dd,dd,function(r){return r.p===0}),v0=sum(dd,dd,function(r){return r.p===1});h+="<tr><td>"+lbl(dd)+" <span class='note'>"+["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dt(dd).getUTCDay()]+"</span></td><td>"+short(s0)+"</td><td>"+short(v0)+"</td><td><b>"+short(s0+v0)+"</b></td></tr>"}
@@ -299,9 +307,9 @@ function renderTime(){
 }
 function stackChart(id,labels,s,v,P,muted,line){
   var lines=st.prod;
-  mk(id,{type:"bar",data:{labels:labels,datasets:[{label:"Studio",data:s,backgroundColor:P[0],borderRadius:2},{label:"Vini",data:v,backgroundColor:P[1],borderRadius:2}]},
+  mk(id,{plugins:[stackLabels],type:"bar",data:{labels:labels,datasets:[{label:"Studio",data:s,backgroundColor:P[0],borderRadius:2},{label:"Vini",data:v,backgroundColor:P[1],borderRadius:2}]},
    options:Object.assign(baseOpts(),{interaction:{mode:"index",intersect:false},plugins:{legend:{display:true,position:"bottom",labels:{color:muted,boxWidth:7,usePointStyle:true}},tooltip:{callbacks:{label:function(c){return" "+c.dataset.label+": "+inr(c.parsed.y)},footer:function(c){var t=0;c.forEach(function(i){t+=i.parsed.y});return"Total: "+inr(t)}}}},
-    scales:{x:{stacked:true,grid:{display:false},ticks:{color:muted,maxRotation:60,minRotation:0,font:{size:9}}},y:{stacked:true,grid:{color:line},ticks:{color:muted,callback:axs}}}})});
+    scales:{x:{stacked:true,grid:{display:false},ticks:{color:muted,maxRotation:60,minRotation:0,font:{size:9}}},y:{stacked:true,grace:"22%",grid:{color:line},ticks:{color:muted,callback:axs}}}})});
 }
 
 function render(){
