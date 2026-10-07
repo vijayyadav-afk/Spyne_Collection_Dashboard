@@ -206,7 +206,9 @@ function renderTiles(){
    ["t5","Vini MTD",short(vin),Math.round(vin/tot*100)+"% of Studio + Vini",mp],
    ["t6","Refunds MTD",short(ref),refN+" refund entr"+(refN===1?"y":"ies"),spl(m,a,neg)]];
   document.getElementById("tiles2").innerHTML=T2.map(function(t){return tile(t[0],t[1],t[2],t[3],t[4])}).join("");
-}function mk(id,cfg){if(charts[id])charts[id].destroy();charts[id]=new Chart(document.getElementById(id),cfg)}
+}var centerText={id:"centerText",afterDraw:function(c){var o=c.options.plugins&&c.options.plugins.centerText,e=c.getDatasetMeta(0).data[0];if(!o||!e)return;var x=c.ctx;x.save();x.textAlign="center";x.textBaseline="middle";x.fillStyle=css("--ink");x.font="700 11px "+css("--font-num");x.fillText(o.text,e.x,e.y-5);x.fillStyle=css("--muted");x.font="500 8px "+css("--font-ui");x.fillText("Net",e.x,e.y+8);x.restore()}};
+var barLabels={id:"barLabels",afterDatasetsDraw:function(c){var x=c.ctx;x.save();x.fillStyle=css("--ink");x.font="600 10px "+css("--font-ui");x.textAlign="center";x.textBaseline="bottom";c.getDatasetMeta(0).data.forEach(function(b,i){x.fillText(short(c.data.datasets[0].data[i]),b.x,b.y-3)});x.restore()}};
+function mk(id,cfg){if(charts[id])charts[id].destroy();charts[id]=new Chart(document.getElementById(id),cfg)}
 function baseOpts(){
   return{responsive:true,maintainAspectRatio:false,animation:{duration:250},plugins:{legend:{display:false},tooltip:{callbacks:{}}},
    scales:{}};
@@ -219,15 +221,15 @@ function renderScope(){
   var P=palette(), muted=css("--muted"), line=css("--line"), panel=css("--panel");
   // product
   var pv=[sum(a,b,function(r){return r.p===0}),sum(a,b,function(r){return r.p===1})], pt=pv[0]+pv[1];
-  mk("cProd",{type:"doughnut",data:{labels:PRODS,datasets:[{data:pv.map(function(v){return Math.max(v,0)}),backgroundColor:[P[0],P[1]],borderColor:panel,borderWidth:3}]},
-    options:Object.assign(baseOpts(),{cutout:"64%",plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return" "+PRODS[c.dataIndex]+": "+inr(pv[c.dataIndex])}}}}})});
+  mk("cProd",{plugins:[centerText],type:"doughnut",data:{labels:PRODS,datasets:[{data:pv.map(function(v){return Math.max(v,0)}),backgroundColor:[P[0],P[1]],borderColor:panel,borderWidth:3}]},
+    options:Object.assign(baseOpts(),{cutout:"64%",plugins:{legend:{display:false},centerText:{text:short(pt)},tooltip:{callbacks:{label:function(c){return" "+PRODS[c.dataIndex]+": "+inr(pv[c.dataIndex])}}}}})});
   document.getElementById("lgProd").innerHTML=PRODS.map(function(n,i){return'<span><i style="background:'+P[i]+'"></i>'+n+" "+short(pv[i])+(pt>0?" ("+Math.round(Math.max(pv[i],0)/pt*100)+"%)":"")+"</span>"}).join("");
   // mode
   var ms=D.modes.map(function(m,i){return{i:i,n:MODE_LABEL(m),v:sum(a,b,function(r){return r.m===i})}}).filter(function(x){return x.v!==0}).sort(function(x,y){return y.v-x.v});
   var mt=ms.reduce(function(s,x){return s+Math.max(x.v,0)},0);
-  mk("cMode",{type:"doughnut",data:{labels:ms.map(function(x){return x.n}),datasets:[{data:ms.map(function(x){return Math.max(x.v,0)}),backgroundColor:ms.map(function(x,k){return P[k%P.length]}),borderColor:panel,borderWidth:3}]},
-    options:Object.assign(baseOpts(),{cutout:"64%",plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return" "+ms[c.dataIndex].n+": "+inr(ms[c.dataIndex].v)}}}}})});
-  document.getElementById("lgMode").innerHTML=ms.length?ms.map(function(x,k){return'<span><i style="background:'+P[k%P.length]+'"></i>'+x.n+" "+(mt>0?Math.round(Math.max(x.v,0)/mt*100)+"%":"")+"</span>"}).join(""):"";
+  mk("cMode",{plugins:[centerText],type:"doughnut",data:{labels:ms.map(function(x){return x.n}),datasets:[{data:ms.map(function(x){return Math.max(x.v,0)}),backgroundColor:ms.map(function(x,k){return P[k%P.length]}),borderColor:panel,borderWidth:3}]},
+    options:Object.assign(baseOpts(),{cutout:"64%",plugins:{legend:{display:false},centerText:{text:short(ms.reduce(function(s,x){return s+x.v},0))},tooltip:{callbacks:{label:function(c){return" "+ms[c.dataIndex].n+": "+inr(ms[c.dataIndex].v)}}}}})});
+  document.getElementById("lgMode").innerHTML=ms.length?ms.map(function(x,k){return'<span><i style="background:'+P[k%P.length]+'"></i>'+x.n+" "+short(x.v)+(mt>0?" ("+Math.round(Math.max(x.v,0)/mt*100)+"%)":"")+"</span>"}).join(""):"";
   // customers
   var cm={};for(var i=0;i<R.length;i++){var r=R[i];if(r.d>=a&&r.d<=b&&ok(r))cm[r.c]=(cm[r.c]||0)+r.a}
   var cs=Object.keys(cm).map(function(k){return[D.cust[k],cm[k]]}).sort(function(x,y){return y[1]-x[1]}).slice(0,8);
@@ -246,9 +248,9 @@ function renderScope(){
   document.getElementById("matCap").textContent=rg[2]+filterText()+". Refunds show as negative amounts.";
   // account manager
   var av=without("am",function(){return D.am.map(function(n,i){return{n:n,v:sum(a,b,function(r){return r.am===i})}})}).filter(function(x){return x.v!==0}).sort(function(x,y){return y.v-x.v});
-  mk("cAm",{type:"bar",data:{labels:av.map(function(x){return x.n}),datasets:[{data:av.map(function(x){return x.v}),backgroundColor:P[3],borderRadius:4,maxBarThickness:46}]},
+  mk("cAm",{plugins:[barLabels],type:"bar",data:{labels:av.map(function(x){return x.n}),datasets:[{data:av.map(function(x){return x.v}),backgroundColor:P[3],borderRadius:4,maxBarThickness:46}]},
     options:Object.assign(baseOpts(),{plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return" "+inr(c.parsed.y)}}}},
-      scales:{x:{grid:{display:false},ticks:{color:muted}},y:{grid:{color:line},ticks:{color:muted,callback:axs}}}})});
+      scales:{x:{grid:{display:false},ticks:{color:muted}},y:{grace:"15%",grid:{color:line},ticks:{color:muted,callback:axs}}}})});
   renderDetails(a,b);
 }
 function renderDetails(a,b){
