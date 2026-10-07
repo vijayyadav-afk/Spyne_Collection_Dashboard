@@ -82,6 +82,9 @@ td.neg{color:var(--bad)}
 thead th{background:var(--panel)}
 td.l{text-align:left}
 #det th:nth-child(-n+7){text-align:left}
+#det th,#det td{padding:2px 8px;font-size:11px}
+#det thead th{position:sticky;top:0;background:var(--panel);z-index:1;box-shadow:0 1px 0 var(--line)}
+#details{padding:6px 10px}
 .empty{color:var(--muted);padding:20px 0;text-align:center}
 [hidden]{display:none!important}
 .tilerow{display:flex;flex-direction:column;gap:12px}
@@ -152,7 +155,7 @@ html,body{height:100%}
     <section class="panel s6"><h2 id="yearTitle">Collections by month</h2><div class="cap">Net collected each month this year, Studio and Vini</div><div class="ch"><canvas id="cYear" role="img" aria-label="Collections by month this year"></canvas></div></section>
 
   </div></div>
-  <section class="panel s12" id="details"><div class="scopebar"><div><h2>Details table view</h2><div class="note" id="detNote"></div></div></div><div class="tw" style="margin-top:6px;overflow-x:auto"><table id="det"></table></div><div style="margin-top:10px"><button class="more" id="more" type="button">Show 100 more</button></div></section>
+  <section class="panel s12" id="details"><div class="scopebar"><div><h2>Details table view</h2><div class="note" id="detNote"></div></div></div><div class="tw" id="detWrap" style="margin-top:6px;overflow:auto;max-height:250px"><table id="det"></table></div><div style="margin-top:10px"><button class="more" id="more" type="button">Show 100 more</button></div></section>
 
 
   <p class="note" id="foot"></p>
