@@ -83,14 +83,46 @@ thead th{position:sticky;top:0;background:var(--panel)}
 td.l{text-align:left}
 #det th:nth-child(-n+7){text-align:left}
 .empty{color:var(--muted);padding:20px 0;text-align:center}
+[hidden]{display:none!important}
+.tilerow{display:flex;flex-direction:column;gap:12px}
+html,body{height:100%}
+#drawer{position:fixed;left:12px;right:12px;bottom:12px;max-height:62vh;overflow:auto;z-index:30;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+@media (min-width:1000px) and (min-height:540px){
+ body{padding:8px 12px;overflow:hidden}
+ .wrap{max-width:none;height:100%;gap:6px}
+ header{gap:4px 14px;align-items:flex-end}
+ .hd h1{font-size:19px}
+ .sub{font-size:10.5px;margin-top:0}
+ .controls{gap:4px 10px}
+ .ctl>span{font-size:8.5px}
+ .ctl{gap:1px}
+ .seg button{padding:2px 8px;font-size:11px}
+ .ctl select,.ctl input{padding:3px 6px;font-size:11px;width:130px}
+ .date input{padding:2px 6px;font-size:11px;width:auto}
+ .date button{padding:2px 8px;font-size:11px}
+ .tiles{gap:6px}
+ .tile{padding:5px 10px;border-radius:7px}
+ .tile .k{font-size:9px}
+ .tile .v{font-size:clamp(13px,1.15vw,17px);margin-top:0}
+ .tile .n{font-size:9.5px;margin-top:0}
+ .tile .sv{font-size:9.5px;margin-top:3px;padding-top:3px}
+ .grid{flex:1 1 0;min-height:0;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:6px}
+ .grid>.panel{grid-column:auto!important;min-height:0;display:flex;flex-direction:column;padding:5px 9px;border-radius:8px}
+ #pDaily{grid-column:span 2!important}
+ .panel h2{font-size:11.5px}
+ .panel .cap{font-size:9.5px;margin:0 0 2px}
+ .ch,.ch.tall,.ch.short{flex:1 1 0;min-height:0;height:auto!important}
+ .legend{margin-top:1px;font-size:9.5px}
+ #foot{display:none}
+ .tilerow{display:grid;grid-template-columns:6fr 4fr;gap:6px}
+ .tile .sv{flex-direction:column;flex-wrap:nowrap;gap:0}
+ .tile .sv span{display:flex;justify-content:space-between;gap:6px}
+}
 </style>
 
 <div class="wrap">
   <header>
-    <div>
-      <h1>Spyne Collections Dashboard</h1>
-      <div class="sub" id="sub"></div>
-    </div>
+    <div class="hd"><h1>Spyne Collections Dashboard</h1><div class="sub"><span id="sub"></span> · <span id="scopeNote"></span></div></div>
     <div class="controls">
       <div class="ctl"><span>Account manager</span><div class="seg" id="segAm" role="group" aria-label="Account manager"></div></div>
       <div class="ctl"><span>Payment mode</span><select id="selMode" aria-label="Payment mode"></select></div>
@@ -99,33 +131,26 @@ td.l{text-align:left}
         <button data-v="-1" aria-pressed="true">All</button><button data-v="0" aria-pressed="false">Studio</button><button data-v="1" aria-pressed="false">Vini</button></div></div>
       <div class="ctl"><span>Entity</span><div class="seg" id="segEnt" role="group" aria-label="Entity">
         <button data-v="-1" aria-pressed="true">All</button><button data-v="0" aria-pressed="false">US</button><button data-v="1" aria-pressed="false">India</button></div></div>
-      <div class="ctl"><span>As of</span><div class="date"><input type="date" id="asof" aria-label="As of date"><button id="latest" type="button">Latest</button><button id="reset" type="button">Reset filters</button></div></div>
+      <div class="ctl"><span>Period</span><div class="seg" id="segScope" role="group" aria-label="Period"><button data-v="day" aria-pressed="false">Daily</button><button data-v="week" aria-pressed="false">Weekly</button><button data-v="mtd" aria-pressed="true">MTD</button></div></div>
+      <div class="ctl"><span>As of</span><div class="date"><input type="date" id="asof" aria-label="As of date"><button id="latest" type="button">Latest</button><button id="reset" type="button">Reset filters</button><button id="btnDetails" type="button">Details table</button></div></div>
     </div>
   </header>
 
-  <section class="tiles" id="tiles" aria-label="Period totals"></section>
-  <section class="tiles" id="tiles2" aria-label="Day, week and product totals"></section>
+  <div class="tilerow"><section class="tiles" id="tiles" aria-label="Period totals"></section><section class="tiles" id="tiles2" aria-label="Day, week and product totals"></section></div>
 
-  <section class="panel">
-    <div class="scopebar">
-      <div><h2>Breakdown</h2><div class="note" id="scopeNote"></div></div>
-      <div class="seg" id="segScope" role="group" aria-label="Period">
-        <button data-v="day" aria-pressed="false">Daily</button><button data-v="week" aria-pressed="false">Weekly</button><button data-v="mtd" aria-pressed="true">MTD</button></div>
-    </div>
-  </section>
+  
 
   <div class="grid">
     <section class="panel s4"><h2>Product split</h2><div class="cap" id="capProd">MTD Studio and Vini, net collected</div><div class="ch short"><canvas id="cProd" role="img" aria-label="Product split"></canvas></div><div class="legend" id="lgProd"></div></section>
     <section class="panel s4"><h2>Account manager collections</h2><div class="cap" id="capAm">MTD net collected by account manager</div><div class="ch short"><canvas id="cAm" role="img" aria-label="Account manager collections"></canvas></div></section>
     <section class="panel s4"><h2>Payment mode</h2><div class="cap" id="capMode">MTD net collected by payment mode</div><div class="ch short"><canvas id="cMode" role="img" aria-label="Payment mode split"></canvas></div><div class="legend" id="lgMode"></div></section>
 
-    <section class="panel s7"><h2 id="dailyTitle">Daily collections</h2><div class="cap">Bars show each day. Lines show the running month total against the previous month.</div><div class="ch tall" style="height:235px"><canvas id="cDaily" role="img" aria-label="Daily collections for the month"></canvas></div></section>
-    <section class="panel s5"><h2>Weekly collections</h2><div class="cap">Last 13 weeks, Monday to Sunday. The latest week is week to date.</div><div class="ch" style="height:235px"><canvas id="cWeek" role="img" aria-label="Weekly collections"></canvas></div></section>
-
-    <section class="panel s6"><h2 id="yearTitle">Collections by month</h2><div class="cap">Net collected each month this year, Studio and Vini</div><div class="ch"><canvas id="cYear" role="img" aria-label="Collections by month this year"></canvas></div></section>
     <section class="panel s6"><h2>Rolling 12 month collections</h2><div class="cap">Last 12 months. The latest month is month to date.</div><div class="ch"><canvas id="cMonth" role="img" aria-label="Rolling 12 month collections"></canvas></div></section>
+    <section class="panel s7" id="pDaily"><h2 id="dailyTitle">Daily collections</h2><div class="cap">Bars show each day. Lines show the running month total against the previous month.</div><div class="ch tall" style="height:235px"><canvas id="cDaily" role="img" aria-label="Daily collections for the month"></canvas></div></section>
+    <section class="panel s5"><h2>Weekly collections</h2><div class="cap">Last 13 weeks, Monday to Sunday. The latest week is week to date.</div><div class="ch" style="height:235px"><canvas id="cWeek" role="img" aria-label="Weekly collections"></canvas></div></section>
+    <section class="panel s6"><h2 id="yearTitle">Collections by month</h2><div class="cap">Net collected each month this year, Studio and Vini</div><div class="ch"><canvas id="cYear" role="img" aria-label="Collections by month this year"></canvas></div></section>
 
-    <section class="panel s12"><div class="scopebar"><div><h2>Details table view</h2><div class="note" id="detNote"></div></div></div><div class="tw" style="margin-top:10px;max-height:300px;overflow-y:auto"><table id="det"></table></div><div style="margin-top:10px"><button class="more" id="more" type="button">Show 100 more</button></div></section>
+    <section class="panel s12" id="drawer" hidden><div class="scopebar"><div><h2>Details table view</h2><div class="note" id="detNote"></div></div><button class="more" id="closeDrawer" type="button">Close</button></div><div class="tw" style="margin-top:10px;max-height:300px;overflow-y:auto"><table id="det"></table></div><div style="margin-top:10px"><button class="more" id="more" type="button">Show 100 more</button></div></section>
   </div>
 
   <p class="note" id="foot"></p>
@@ -202,19 +227,20 @@ function renderTiles(){
    ["t4","Studio MTD",short(stu),Math.round(stu/tot*100)+"% of Studio + Vini",mp],
    ["t5","Vini MTD",short(vin),Math.round(vin/tot*100)+"% of Studio + Vini",mp]];
   document.getElementById("tiles2").innerHTML=T2.map(function(t){return tile(t[0],t[1],t[2],t[3],t[4])}).join("");
-}var centerText={id:"centerText",afterDraw:function(c){var o=c.options.plugins&&c.options.plugins.centerText,e=c.getDatasetMeta(0).data[0];if(!o||!e)return;var x=c.ctx;x.save();x.textAlign="center";x.textBaseline="middle";x.fillStyle=css("--ink");x.font="700 11px "+css("--font-num");x.fillText(o.text,e.x,e.y-5);x.fillStyle=css("--muted");x.font="500 8px "+css("--font-ui");x.fillText("Net",e.x,e.y+8);x.restore()}};
+}var centerText={id:"centerText",afterDraw:function(c){var o=c.options.plugins&&c.options.plugins.centerText,e=c.getDatasetMeta(0).data[0];if(!o||!e||e.innerRadius<26)return;var x=c.ctx;x.save();x.textAlign="center";x.textBaseline="middle";x.fillStyle=css("--ink");x.font="700 11px "+css("--font-num");x.fillText(o.text,e.x,e.y-5);x.fillStyle=css("--muted");x.font="500 8px "+css("--font-ui");x.fillText("Net",e.x,e.y+8);x.restore()}};
 var barLabels={id:"barLabels",afterDatasetsDraw:function(c){var x=c.ctx;x.save();x.fillStyle=css("--ink");x.font="600 10px "+css("--font-ui");x.textAlign="center";x.textBaseline="bottom";c.getDatasetMeta(0).data.forEach(function(b,i){x.fillText(short(c.data.datasets[0].data[i]),b.x,b.y-3)});x.restore()}};
 var lab=function(v){return short(v).replace("₹","")};
 var onBar=function(){var d=document.documentElement.getAttribute("data-theme");return(d==="dark"||(!d&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches))?"#0f141d":"#fff"};
 var hLabels={id:"hLabels",afterDatasetsDraw:function(c){var x=c.ctx;x.save();x.fillStyle=css("--ink");x.font="600 9px "+css("--font-ui");x.textAlign="left";x.textBaseline="middle";c.getDatasetMeta(0).data.forEach(function(b,i){x.fillText(lab(c.data.datasets[0].data[i]),b.x+4,b.y)});x.restore()}};
-var stackLabels={id:"stackLabels",afterDatasetsDraw:function(c){var x=c.ctx,m0=c.getDatasetMeta(0).data,m1=c.getDatasetMeta(1).data,d0=c.data.datasets[0].data,d1=c.data.datasets[1].data;x.save();x.textAlign="center";m0.forEach(function(b0,i){if(d0[i]==null&&d1[i]==null)return;var b1=m1[i],s=d0[i]||0,v=d1[i]||0,up=Math.min(b0.y,b1.y)-2;x.font="600 8px "+css("--font-ui");x.textBaseline="middle";
- if(s!==0&&Math.abs(b0.base-b0.y)>=11){x.fillStyle=onBar();x.fillText(lab(s),b0.x,(b0.y+b0.base)/2)}
- if(v!==0){if(Math.abs(b1.base-b1.y)>=11){x.fillStyle=onBar();x.fillText(lab(v),b1.x,(b1.y+b1.base)/2)}else{x.fillStyle=css("--violet");x.textBaseline="bottom";x.fillText(lab(v),b1.x,up);up-=10}}
- x.fillStyle=css("--ink");x.font="700 9px "+css("--font-ui");x.textBaseline="bottom";x.fillText(lab(s+v),b0.x,up)});x.restore()}};
+var stackLabels={id:"stackLabels",afterDatasetsDraw:function(c){var x=c.ctx,m0=c.getDatasetMeta(0).data,m1=c.getDatasetMeta(1).data,d0=c.data.datasets[0].data,d1=c.data.datasets[1].data,compact=c.height<190;x.save();x.textAlign="center";m0.forEach(function(b0,i){if(d0[i]==null&&d1[i]==null)return;var b1=m1[i],s=d0[i]||0,v=d1[i]||0,up=Math.min(b0.y,b1.y)-2;x.font="600 8px "+css("--font-ui");x.textBaseline="middle";
+ if(!compact){if(s!==0&&Math.abs(b0.base-b0.y)>=11){x.fillStyle=onBar();x.fillText(lab(s),b0.x,(b0.y+b0.base)/2)}
+ if(v!==0){if(Math.abs(b1.base-b1.y)>=11){x.fillStyle=onBar();x.fillText(lab(v),b1.x,(b1.y+b1.base)/2)}else{x.fillStyle=css("--violet");x.textBaseline="bottom";x.fillText(lab(v),b1.x,up);up-=10}}}
+ x.fillStyle=css("--ink");x.font="700 "+(compact?8:9)+"px "+css("--font-ui");x.textBaseline="bottom";x.fillText(lab(s+v),b0.x,up)});x.restore()}};
 var dayLabels={id:"dayLabels",afterDatasetsDraw:function(c){var x=c.ctx,m0=c.getDatasetMeta(0).data,m1=c.getDatasetMeta(1).data,d0=c.data.datasets[0].data,d1=c.data.datasets[1].data;x.save();x.fillStyle=css("--ink");x.font="600 8px "+css("--font-ui");x.textAlign="left";x.textBaseline="middle";m0.forEach(function(b0,i){if(d0[i]===null)return;var t=d0[i]+d1[i];if(!t)return;x.save();x.translate(b0.x,Math.min(b0.y,m1[i].y)-3);x.rotate(-Math.PI/2);x.fillText(lab(t),0,0);x.restore()});x.restore()}};
 var sliceLabels={id:"sliceLabels",afterDatasetsDraw:function(c){var o=c.options.plugins&&c.options.plugins.sliceLabels;if(!o)return;var x=c.ctx,arcs=c.getDatasetMeta(0).data,vals=o.values,tot=vals.reduce(function(s,v){return s+Math.max(v,0)},0);if(!tot)return;x.save();x.textBaseline="middle";arcs.forEach(function(a,i){var v=Math.max(vals[i],0);if(!v)return;var f=v/tot,mid=(a.startAngle+a.endAngle)/2,cs=Math.cos(mid),sn=Math.sin(mid);
- if(f>=0.12){var r=(a.innerRadius+a.outerRadius)/2;x.fillStyle=onBar();x.textAlign="center";x.font="700 8px "+css("--font-ui");x.fillText(lab(v),a.x+cs*r,a.y+sn*r-4);x.font="500 8px "+css("--font-ui");x.fillText(Math.round(f*100)+"%",a.x+cs*r,a.y+sn*r+5)}
+ if(f>=0.12){if(a.outerRadius-a.innerRadius<22)return;var r=(a.innerRadius+a.outerRadius)/2;x.fillStyle=onBar();x.textAlign="center";x.font="700 8px "+css("--font-ui");x.fillText(lab(v),a.x+cs*r,a.y+sn*r-4);x.font="500 8px "+css("--font-ui");x.fillText(Math.round(f*100)+"%",a.x+cs*r,a.y+sn*r+5)}
  else{var r2=a.outerRadius+4;x.fillStyle=css("--ink");x.font="700 8px "+css("--font-ui");x.textAlign=cs>=0?"left":"right";x.fillText(lab(v)+" ("+Math.round(f*100)+"%)",a.x+cs*r2,a.y+sn*r2)}});x.restore()}};
+function donutPad(){var h=document.getElementById("cProd").parentNode.clientHeight;return h<170?{top:12,bottom:0,left:34,right:34}:{top:16,bottom:2,left:60,right:60}}
 function mk(id,cfg){if(charts[id])charts[id].destroy();cfg.options=cfg.options||{};var h=clickHandlers[id];if(h){cfg.options.onClick=function(e,els){if(els&&els.length)h(els[0].index)};cfg.options.onHover=function(e,els){var c=e.native&&e.native.target;if(c)c.style.cursor=els&&els.length?"pointer":"default"}}charts[id]=new Chart(document.getElementById(id),cfg)}
 function baseOpts(){
   return{responsive:true,maintainAspectRatio:false,animation:{duration:250},plugins:{legend:{display:false},tooltip:{callbacks:{}}},
@@ -231,13 +257,13 @@ function renderScope(){
   // product
   var pv=[sum(a,b,function(r){return r.p===0}),sum(a,b,function(r){return r.p===1})], pt=pv[0]+pv[1];
   mk("cProd",{plugins:[centerText,sliceLabels],type:"doughnut",data:{labels:PRODS,datasets:[{data:pv.map(function(v){return Math.max(v,0)}),backgroundColor:[P[0],P[1]],borderColor:panel,borderWidth:3}]},
-    options:Object.assign(baseOpts(),{cutout:"50%",layout:{padding:{top:16,bottom:2,left:60,right:60}},plugins:{legend:{display:false},centerText:{text:short(pt)},sliceLabels:{values:pv},tooltip:{callbacks:{label:function(c){return" "+PRODS[c.dataIndex]+": "+inr(pv[c.dataIndex])}}}}})});
+    options:Object.assign(baseOpts(),{cutout:"50%",layout:{padding:donutPad()},plugins:{legend:{display:false},centerText:{text:short(pt)},sliceLabels:{values:pv},tooltip:{callbacks:{label:function(c){return" "+PRODS[c.dataIndex]+": "+inr(pv[c.dataIndex])}}}}})});
   document.getElementById("lgProd").innerHTML=PRODS.map(function(n,i){return'<span><i style="background:'+P[i]+'"></i>'+n+" "+short(pv[i])+(pt>0?" ("+Math.round(Math.max(pv[i],0)/pt*100)+"%)":"")+"</span>"}).join("");
   // mode
   var ms=D.modes.map(function(m,i){return{i:i,n:MODE_LABEL(m),v:sum(a,b,function(r){return r.m===i})}}).filter(function(x){return x.v!==0}).sort(function(x,y){return y.v-x.v});
   var mt=ms.reduce(function(s,x){return s+Math.max(x.v,0)},0);
   mk("cMode",{plugins:[centerText,sliceLabels],type:"doughnut",data:{labels:ms.map(function(x){return x.n}),datasets:[{data:ms.map(function(x){return Math.max(x.v,0)}),backgroundColor:ms.map(function(x,k){return P[k%P.length]}),borderColor:panel,borderWidth:3}]},
-    options:Object.assign(baseOpts(),{cutout:"50%",layout:{padding:{top:16,bottom:2,left:60,right:60}},plugins:{legend:{display:false},sliceLabels:{values:ms.map(function(x){return x.v})},centerText:{text:short(ms.reduce(function(s,x){return s+x.v},0))},tooltip:{callbacks:{label:function(c){return" "+ms[c.dataIndex].n+": "+inr(ms[c.dataIndex].v)}}}}})});
+    options:Object.assign(baseOpts(),{cutout:"50%",layout:{padding:donutPad()},plugins:{legend:{display:false},sliceLabels:{values:ms.map(function(x){return x.v})},centerText:{text:short(ms.reduce(function(s,x){return s+x.v},0))},tooltip:{callbacks:{label:function(c){return" "+ms[c.dataIndex].n+": "+inr(ms[c.dataIndex].v)}}}}})});
   document.getElementById("lgMode").innerHTML=ms.length?ms.map(function(x,k){return'<span><i style="background:'+P[k%P.length]+'"></i>'+x.n+" "+short(x.v)+(mt>0?" ("+Math.round(Math.max(x.v,0)/mt*100)+"%)":"")+"</span>"}).join(""):"";
   // account manager
   var avm={},avo=[];
@@ -341,6 +367,9 @@ clickHandlers.cAm=function(i){var n=H.av[i].n,ids=[];D.am.forEach(function(o,j){
 clickHandlers.cDaily=function(i){var d=H.dms+i;if(d>MAXD)return;act(function(){st.asof=d;st.scope="day"})};
 clickHandlers.cWeek=function(i){var e=H.weekEnds[i];act(function(){st.asof=e;st.scope="week"})};
 clickHandlers.cMonth=function(i){var e=H.monthEnds[i];act(function(){st.asof=e;st.scope="mtd"})};
-document.getElementById("reset").addEventListener("click",function(){act(function(){st.prod=st.ent=st.am=st.mode=st.cust=-1;st.amSet=null;st.amLabel="";st.asof=MAXD;st.scope="mtd"})});render();
+document.getElementById("reset").addEventListener("click",function(){act(function(){st.prod=st.ent=st.am=st.mode=st.cust=-1;st.amSet=null;st.amLabel="";st.asof=MAXD;st.scope="mtd"})});document.getElementById("btnDetails").addEventListener("click",function(){var d=document.getElementById("drawer");d.hidden=!d.hidden});
+document.getElementById("closeDrawer").addEventListener("click",function(){document.getElementById("drawer").hidden=true});
+document.addEventListener("keydown",function(e){if(e.key==="Escape")document.getElementById("drawer").hidden=true});
+render();
 })();
 </script>
