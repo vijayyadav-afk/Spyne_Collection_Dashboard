@@ -240,11 +240,11 @@ function renderTiles(){
    ["t5","Rolling 30 days",short(r30),lbl(a-30)+" to "+lbl(a),spl(a-30,a)],
    ["t6","Rolling 90 days",short(r90),lbl(a-90)+" to "+lbl(a),spl(a-90,a)]];
   document.getElementById("tiles").innerHTML=T1.map(function(t){return tile(t[0],t[1],t[2],t[3],t[4])}).join("");
-  var today=sum(a,a), wtd=sum(w,a);
+  var prevDay=sum(a-1,a-1), wtd=sum(w,a);
 
 
   var T2=[
-   ["t2",a===MAXD?"Latest day":"Selected day",short(today),lblY(a),spl(a,a)],
+   ["t2","Previous day",short(prevDay),lblY(a-1),spl(a-1,a-1)],
    ["t3","Week to date",short(wtd),lbl(w)+" to "+lbl(a),spl(w,a)]];
   document.getElementById("tiles2").innerHTML=T2.map(function(t){return tile(t[0],t[1],t[2],t[3],t[4])}).join("");
 }var centerText={id:"centerText",afterDraw:function(c){var o=c.options.plugins&&c.options.plugins.centerText,e=c.getDatasetMeta(0).data[0];if(!o||!e||e.innerRadius<26)return;var x=c.ctx;x.save();x.textAlign="center";x.textBaseline="middle";x.fillStyle=css("--ink");x.font="700 11px "+css("--font-num");x.fillText(o.text,e.x,e.y-5);x.fillStyle=css("--muted");x.font="500 8px "+css("--font-ui");x.fillText("Net",e.x,e.y+8);x.restore()}};
