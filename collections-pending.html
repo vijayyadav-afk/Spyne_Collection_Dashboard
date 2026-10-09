@@ -5,21 +5,35 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Item Level Collection Pending Dashboard</title>
 <style>
+  /* Palette: navy and blue with a gold accent, matching the Collections dashboard.
+     Studio = blue (--b1), Vini = gold (--p1). Light by default; dark follows the computer's setting
+     unless the Light / Dark switch has chosen one (stored under "spyneTheme", shared with Collections). */
   :root{
-    --bg:#f6f7f9; --card:#fff; --ink:#14181f; --ink2:#5b6472; --ink3:#8a93a1;
-    --line:#e3e6ec; --line2:#eef0f4;
-    --b1:#3d7dd6; --b2:#e9a33a; --b3:#e3722f; --b4:#cf3f4a;
-    --g1:#2f9e6f; --p1:#8a6fd1; --t1:#2aa4b5;
-    --bar1:#4a55c9; --bar1-ink:#fff; --bar1-lt:#6670e0; --bar2:#0f9f94; --bar2-lt:#4fd1c5;
-    --ok:#2f9e6f; --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.04);
+    color-scheme:light;
+    --bg:#edf1f7; --card:#ffffff; --ink:#0f1d33; --ink2:#586a84; --ink3:#8190a8;
+    --line:#d9e1ec; --line2:#e7ecf4;
+    --b1:#2563eb; --b2:#cf8a10; --b3:#d9622b; --b4:#c43a4f;
+    --g1:#1a9a6c; --p1:#cf7f00; --t1:#0d9488;
+    --bar1:#1d4ed8; --bar1-ink:#fff; --bar1-lt:#4f86f0; --bar2:#13406b; --bar2-lt:#3a86c8;
+    --ok:#1a9a6c; --shadow:0 1px 2px rgba(15,29,51,.06),0 1px 3px rgba(15,29,51,.05);
   }
   @media (prefers-color-scheme:dark){
-    :root{--bg:#10131a;--card:#171b23;--ink:#e9edf4;--ink2:#a4adbb;--ink3:#7b8494;
-      --line:#262c37;--line2:#1e242d;--shadow:none;
-      --b1:#5b93e0;--b2:#e2ab55;--b3:#e08356;--b4:#e05c68;--g1:#48b085;--p1:#9d86dd;--t1:#45b7c7;
-      --bar1:#6b76e3;--bar1-ink:#fff;--bar1-lt:#98a1f2;--bar2:#26b3a7;--bar2-lt:#6fdcd2;}
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --bg:#0a1220; --card:#111c30; --ink:#e6edf8; --ink2:#93a4bf; --ink3:#6f819d;
+      --line:#1f2e48; --line2:#182640; --shadow:none;
+      --b1:#5b9bff; --b2:#f5a524; --b3:#f08a4b; --b4:#f0809b;
+      --g1:#34c58b; --p1:#f5a524; --t1:#2dd4bf;
+      --bar1:#3d6fdc; --bar1-ink:#fff; --bar1-lt:#6b9bf2; --bar2:#2a6db3; --bar2-lt:#63a4e6; --ok:#34c58b;}
   }
-  *{box-sizing:border-box}
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#0a1220; --card:#111c30; --ink:#e6edf8; --ink2:#93a4bf; --ink3:#6f819d;
+    --line:#1f2e48; --line2:#182640; --shadow:none;
+    --b1:#5b9bff; --b2:#f5a524; --b3:#f08a4b; --b4:#f0809b;
+    --g1:#34c58b; --p1:#f5a524; --t1:#2dd4bf;
+    --bar1:#3d6fdc; --bar1-ink:#fff; --bar1-lt:#6b9bf2; --bar2:#2a6db3; --bar2-lt:#63a4e6; --ok:#34c58b;
+  }  *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);
     font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     -webkit-font-smoothing:antialiased}
@@ -212,12 +226,17 @@
   footer{color:var(--ink3);font-size:11.5px;margin:16px 0 6px;line-height:1.6}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .topbar h1{margin:0}
-#selDash{font:inherit;font-size:13px;padding:6px 10px;border:1px solid #cbd3df;border-radius:8px;background:#fff;color:inherit;cursor:pointer;max-width:100%}
-.gate{position:fixed;left:0;top:0;right:0;bottom:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:#eef1f6;padding:16px}
+.topright{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px;gap:1px}
+.seg button{font:inherit;font-size:12px;font-weight:600;color:var(--ink2);background:none;border:0;border-radius:6px;padding:4px 11px;cursor:pointer}
+.seg button:hover:not([aria-pressed="true"]){color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--b1);color:#fff}
+#selDash{font:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer;max-width:100%}
+.gate{position:fixed;left:0;top:0;right:0;bottom:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:16px}
 .gate[hidden]{display:none!important}
-.gate-card{background:#fff;color:#1b2333;border:1px solid #dfe4ec;border-radius:14px;padding:28px 32px;text-align:center;max-width:380px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.18);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.gate-card{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:28px 32px;text-align:center;max-width:380px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.18);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 .gate-title{font-size:18px;font-weight:700;margin-bottom:8px}
-#gateMsg{color:#5b6678;margin:0 0 16px;font-size:14px}
+#gateMsg{color:var(--ink2);margin:0 0 16px;font-size:14px}
 #gBtn{display:flex;justify-content:center;min-height:44px}
   .dash{display:block}
   /* one-screen layout: filters, KPI boxes and every chart fill the window; the invoice table sits below */
@@ -250,6 +269,7 @@
     .hbar .zone{min-height:20px}
     #p-detail{padding-top:12px}
   }</style>
+<script>try{var __th=localStorage.getItem("spyneTheme");if(__th==="light"||__th==="dark")document.documentElement.setAttribute("data-theme",__th);}catch(e){}</script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -257,7 +277,7 @@
 <div class="wrap">
 <div class="dash">
 
-<div class="topbar"><h1>Item Level Collection Pending Dashboard</h1><select id="selDash" aria-label="Switch dashboard"><option value="/collections">Collections dashboard</option><option value="/collections-pending">Collection Pending dashboard</option></select></div>
+<div class="topbar"><h1>Item Level Collection Pending Dashboard</h1><div class="topright"><div class="seg" id="segTheme" role="group" aria-label="Theme"><button data-v="light" aria-pressed="false">Light</button><button data-v="dark" aria-pressed="false">Dark</button></div><select id="selDash" aria-label="Switch dashboard"><option value="/collections">Collections dashboard</option><option value="/collections-pending">Collection Pending dashboard</option></select></div></div>
 <div class="sub gone" id="prov">Reading the sheet…</div>
 
 <div class="toolbar gone">
@@ -1001,6 +1021,11 @@ document.getElementById('noteClear').onclick=()=>{
 /* ---------------- go ---------------- */
 notesLoad(); renderNoteBar();
 setEmptyState('Reading the sheet…');
+{const sw=document.getElementById('segTheme');
+ const eff=()=>{const d=document.documentElement.getAttribute('data-theme');return d?d:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');};
+ const mark=()=>sw.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===eff()?'true':'false'));
+ sw.onclick=e=>{const b=e.target.closest('button');if(!b)return;document.documentElement.setAttribute('data-theme',b.dataset.v);try{localStorage.setItem('spyneTheme',b.dataset.v);}catch(x){}mark();};
+ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',mark);mark();}
 {const sd=document.getElementById('selDash');sd.value='/collections-pending';sd.onchange=()=>{location.href=sd.value;};}
 bootAuth();
 </script>
