@@ -219,12 +219,43 @@
 .gate-title{font-size:18px;font-weight:700;margin-bottom:8px}
 #gateMsg{color:#5b6678;margin:0 0 16px;font-size:14px}
 #gBtn{display:flex;justify-content:center;min-height:44px}
-</style>
+  .dash{display:block}
+  /* one-screen layout: filters, KPI boxes and every chart fill the window; the invoice table sits below */
+  @media (min-width:1000px) and (min-height:540px){
+    .wrap{padding:8px 12px}
+    .dash{display:flex;flex-direction:column;gap:7px;height:calc(100vh - 16px);min-height:500px}
+    .dash>*{margin:0!important}
+    .topbar h1{font-size:17px}
+    .toolbar{padding:5px 8px}
+    .dash>section.page.on{flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:7px;padding-top:0}
+    .kpis{margin:0;gap:6px;flex:0 0 auto}
+    .kpi{min-height:0;padding:4px 10px 5px}
+    .kpi .val{font-size:16.5px}
+    .kpi .hint,.kpi .split{font-size:10.5px}
+    .kpi .split{margin-top:2px;padding-top:2px}
+    .grid3eq{flex:1.05 1 0;min-height:0;gap:8px}
+    .grid3eq>.card{margin:0;min-height:0}
+    #p-pend>.card{flex:1.15 1 0;min-height:0;margin:0;display:flex;flex-direction:column}
+    .card>header{padding:6px 12px}
+    .pad{padding:6px 12px;min-height:0}
+    #p-pend>.card>.pad{flex:1 1 0;display:flex;flex-direction:column}
+    #b-pend-spoc{flex:1 1 0;min-height:0;display:flex;flex-direction:column;padding-top:14px}
+    .vcols{flex:1 1 0;height:auto;min-height:0}
+    .vlabs{height:28px}
+    .agewrap{gap:12px;height:100%;min-height:0}
+    #pie-age,#pie-prod{height:100%;max-height:150px;aspect-ratio:1/1}
+    #pie-age svg,#pie-prod svg{width:100%;height:100%}
+    .lgrow{padding:4px 4px}
+    .hbars{gap:6px;padding:2px}
+    .hbar .zone{min-height:20px}
+    #p-detail{padding-top:12px}
+  }</style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div id="gate" class="gate"><div class="gate-card"><div class="gate-title">Item Level Collection Pending Dashboard</div><p id="gateMsg">Sign in with your Spyne Google account to continue.</p><div id="gBtn"></div></div></div>
 <div class="wrap">
+<div class="dash">
 
 <div class="topbar"><h1>Item Level Collection Pending Dashboard</h1><select id="selDash" aria-label="Switch dashboard"><option value="/collections">Collections dashboard</option><option value="/collections-pending">Collection Pending dashboard</option></select></div>
 <div class="sub gone" id="prov">Reading the sheet…</div>
@@ -315,6 +346,9 @@
     <header><h2>Outstanding by SPOC</h2><span class="cap">click to filter</span></header>
     <div class="pad"><div id="b-pend-spoc"></div></div>
   </div>
+  </section>
+</div>
+<section class="page on" id="p-detail">
   <div class="card">
     <header><h2>Invoice line detail</h2><span class="cap gone" id="cap-pend"></span>
       <button class="btn" data-export="pend">Export CSV</button></header>
