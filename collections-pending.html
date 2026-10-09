@@ -147,15 +147,16 @@
   .barrow .fill{height:100%;border-radius:4px;background:var(--b1);display:flex}
   .barrow .v{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 
-  .grid2eq{display:grid;grid-template-columns:1fr 1fr;gap:13px;align-items:stretch}
-  @media (max-width:1080px){.grid2eq{grid-template-columns:1fr}}
-  .grid2eq>.card{display:flex;flex-direction:column}
-  .grid2eq>.card>.pad{flex:1 1 auto;display:flex;align-items:center}
+  .grid3eq{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px;align-items:stretch}
+  @media (max-width:1180px){.grid3eq{grid-template-columns:1fr}}
+  .grid3eq>.card{display:flex;flex-direction:column}
+  .grid3eq>.card>.pad{flex:1 1 auto;display:flex;align-items:center}
   .agewrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap;width:100%}
-  #pie-age svg,#pie-prod svg{width:170px;height:170px;display:block}
+  #pie-age svg,#pie-prod svg{width:150px;height:150px;display:block}
+  #b-pend-am{width:100%}
   #pie-age circle.seg,#pie-prod circle.seg{cursor:pointer;transition:opacity .15s}
-  #lg-age,#lg-prod{flex:1 1 210px;min-width:200px}
-  .lgrow{display:grid;grid-template-columns:14px 1fr auto 70px;gap:10px;align-items:center;padding:7px 4px;
+  #lg-age,#lg-prod{flex:1 1 170px;min-width:160px}
+  .lgrow{display:grid;grid-template-columns:14px 1fr auto 52px;gap:8px;align-items:center;padding:7px 4px;
     border-bottom:1px solid var(--line2);cursor:pointer;font-variant-numeric:tabular-nums}
   .lgrow:last-child{border-bottom:0}
   .lgrow:hover{background:color-mix(in srgb,var(--b1) 6%,var(--card))}
@@ -296,25 +297,23 @@
     same balance in USD.
   </div>
   <div class="kpis" id="k-pend"></div>
-  <div class="grid2eq">
+  <div class="grid3eq">
     <div class="card" id="c-age">
       <header><h2>Total outstanding % by age bucket</h2><span class="cap">click to filter</span></header>
       <div class="pad"><div class="agewrap"><div id="pie-age"></div><div id="lg-age"></div></div></div>
+    </div>
+    <div class="card" id="c-am">
+      <header><h2>Outstanding by Account Manager</h2><span class="cap">click to filter</span></header>
+      <div class="pad"><div id="b-pend-am"></div></div>
     </div>
     <div class="card" id="c-prod">
       <header><h2>Total outstanding by product</h2><span class="cap">click to filter</span></header>
       <div class="pad"><div class="agewrap"><div id="pie-prod"></div><div id="lg-prod"></div></div></div>
     </div>
   </div>
-  <div class="grid2 fit">
-    <div class="card">
-      <header><h2>Outstanding by Account Manager</h2><span class="cap">click to filter</span></header>
-      <div class="pad"><div id="b-pend-am"></div></div>
-    </div>
-    <div class="card">
-      <header><h2>Outstanding by SPOC</h2><span class="cap">click to filter</span></header>
-      <div class="pad"><div id="b-pend-spoc"></div></div>
-    </div>
+  <div class="card">
+    <header><h2>Outstanding by SPOC</h2><span class="cap">click to filter</span></header>
+    <div class="pad"><div id="b-pend-spoc"></div></div>
   </div>
   <div class="card">
     <header><h2>Invoice line detail</h2><span class="cap gone" id="cap-pend"></span>
