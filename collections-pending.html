@@ -192,6 +192,9 @@
   .status.err{color:var(--b4)} .status.good{color:var(--ok)}
   .empty{padding:40px 20px;text-align:center;color:var(--ink2);font-size:13px}
   footer{color:var(--ink3);font-size:11.5px;margin:16px 0 6px;line-height:1.6}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.topbar h1{margin:0}
+#selDash{font:inherit;font-size:13px;padding:6px 10px;border:1px solid #cbd3df;border-radius:8px;background:#fff;color:inherit;cursor:pointer;max-width:100%}
 .gate{position:fixed;left:0;top:0;right:0;bottom:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:#eef1f6;padding:16px}
 .gate[hidden]{display:none!important}
 .gate-card{background:#fff;color:#1b2333;border:1px solid #dfe4ec;border-radius:14px;padding:28px 32px;text-align:center;max-width:380px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.18);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
@@ -205,7 +208,7 @@
 <div id="gate" class="gate"><div class="gate-card"><div class="gate-title">Item Level Collection Pending Dashboard</div><p id="gateMsg">Sign in with your Spyne Google account to continue.</p><div id="gBtn"></div></div></div>
 <div class="wrap">
 
-<h1>Item Level Collection Pending Dashboard</h1>
+<div class="topbar"><h1>Item Level Collection Pending Dashboard</h1><select id="selDash" aria-label="Switch dashboard"><option value="/collections">Collections dashboard</option><option value="/collections-pending">Collection Pending dashboard</option></select></div>
 <div class="sub gone" id="prov">Reading the sheet…</div>
 
 <div class="toolbar gone">
@@ -899,6 +902,7 @@ document.getElementById('noteClear').onclick=()=>{
 /* ---------------- go ---------------- */
 notesLoad(); renderNoteBar();
 setEmptyState('Reading the sheet…');
+{const sd=document.getElementById('selDash');sd.value='/collections-pending';sd.onchange=()=>{location.href=sd.value;};}
 bootAuth();
 </script>
 </body>
