@@ -94,7 +94,7 @@ function buildData(rows) {
 }
 
 // ---- access control: Google sign-in limited to one company domain ----
-const GOOGLE_CLIENT_ID = 'REPLACE_WITH_GOOGLE_CLIENT_ID';
+const GOOGLE_CLIENT_ID = '706399438904-1ijn6ih2tq6svot6iguosob7nf68no5o.apps.googleusercontent.com';
 const ALLOWED_DOMAIN = 'spyne.ai';
 const JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
 

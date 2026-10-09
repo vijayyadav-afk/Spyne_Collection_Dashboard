@@ -431,7 +431,7 @@ function setWarn(n){var e=document.getElementById("liveTag");e.className="live b
 function setLive(ok,msg){var e=document.getElementById("liveTag");e.className="live "+(ok?"ok":"bad");e.textContent=ok?"● Live · updated "+msg:"● Offline · showing saved data"}
 function hhmm(){var d=new Date(),h=d.getHours(),m=d.getMinutes();return(h<10?"0":"")+h+":"+(m<10?"0":"")+m}
 function sig(t){var h=0;for(var i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))|0;return t.length+":"+h}
-var CLIENT_ID="REPLACE_WITH_GOOGLE_CLIENT_ID",token=null,gsiInit=false;
+var CLIENT_ID="706399438904-1ijn6ih2tq6svot6iguosob7nf68no5o.apps.googleusercontent.com",token=null,gsiInit=false;
 try{token=sessionStorage.getItem("spyneTok")}catch(e){}
 function tokExp(t){try{var p=t.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");return JSON.parse(atob(p)).exp*1000}catch(e){return 0}}
 if(token&&tokExp(token)<Date.now()+30000)token=null;
