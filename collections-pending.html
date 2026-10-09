@@ -192,9 +192,17 @@
   .status.err{color:var(--b4)} .status.good{color:var(--ok)}
   .empty{padding:40px 20px;text-align:center;color:var(--ink2);font-size:13px}
   footer{color:var(--ink3);font-size:11.5px;margin:16px 0 6px;line-height:1.6}
+.gate{position:fixed;left:0;top:0;right:0;bottom:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:#eef1f6;padding:16px}
+.gate[hidden]{display:none!important}
+.gate-card{background:#fff;color:#1b2333;border:1px solid #dfe4ec;border-radius:14px;padding:28px 32px;text-align:center;max-width:380px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.18);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.gate-title{font-size:18px;font-weight:700;margin-bottom:8px}
+#gateMsg{color:#5b6678;margin:0 0 16px;font-size:14px}
+#gBtn{display:flex;justify-content:center;min-height:44px}
 </style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+<div id="gate" class="gate"><div class="gate-card"><div class="gate-title">Item Level Collection Pending Dashboard</div><p id="gateMsg">Sign in with your Spyne Google account to continue.</p><div id="gBtn"></div></div></div>
 <div class="wrap">
 
 <h1>Item Level Collection Pending Dashboard</h1>
@@ -308,18 +316,42 @@
    file, so it needs the sheet to stay link-viewable and must be served over
    http(s) (a page opened from disk sends a null origin, which Google refuses).
    ===================================================================== */
-const SHEET_ID='10A5kLP9hWZeMaRNbLsplLj43U0YljsreS_c0qDlgfK8';
-const GID='0';
-const SHEET_BASE='https://docs.google.com/spreadsheets/d/'+SHEET_ID;
-/* Ask Google for only the 20 columns this dashboard uses instead of all 40:
-   272 KB -> 181 KB, 2.2s -> 0.9s. Column letters are positional, so if the
-   sheet is ever restructured this projection may stop carrying a column we
-   need — buildRows throws, and we fall back to the full export automatically. */
-const COLS='select A,C,D,E,F,G,H,K,M,Z,AC,AD,AE,AF,AG,AH,AI,AJ,AM,AN';
-const DATA_URL=SHEET_BASE+'/gviz/tq?tqx=out:csv&gid='+GID+'&tq='+encodeURIComponent(COLS);
-const DATA_URL_FULL=SHEET_BASE+'/export?format=csv&gid='+GID;
-const PROBE_URL=SHEET_BASE+'/gviz/tq?tqx=out:csv&gid='+GID+
-  '&tq='+encodeURIComponent('select count(E), sum(AH)');
+/* Data now comes through /api/pending, which checks the Google sign-in and holds the sheet
+   address and column list server-side. These three names are the kinds of read it offers. */
+const DATA_URL='data', DATA_URL_FULL='full', PROBE_URL='probe';
+
+/* ---------------- access: Google sign-in for the spyne.ai domain ---------------- */
+const CLIENT_ID='706399438904-1ijn6ih2tq6svot6iguosob7nf68no5o.apps.googleusercontent.com';
+let token=null, gsiInit=false;
+try{token=sessionStorage.getItem('spyneTok');}catch(e){}
+const tokExp=t=>{try{return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).exp*1000;}catch(e){return 0;}};
+if(token&&tokExp(token)<Date.now()+30000)token=null;
+const showGate=msg=>{document.getElementById('gate').hidden=false;if(msg)document.getElementById('gateMsg').textContent=msg;};
+const hideGate=()=>{document.getElementById('gate').hidden=true;};
+const setToken=t=>{token=t;try{sessionStorage.setItem('spyneTok',t);}catch(e){}};
+const clearToken=()=>{token=null;try{sessionStorage.removeItem('spyneTok');}catch(e){}};
+const authFail=m=>{const e=new Error('sign-in required');e.authFail=true;return e;};
+function initGoogle(){
+  if(gsiInit||!(window.google&&google.accounts&&google.accounts.id))return;
+  gsiInit=true;
+  google.accounts.id.initialize({client_id:CLIENT_ID,hd:'spyne.ai',auto_select:true,cancel_on_tap_outside:false,
+    callback:r=>{setToken(r.credential);startLive();}});
+  google.accounts.id.renderButton(document.getElementById('gBtn'),{theme:'outline',size:'large',text:'signin_with',shape:'rectangular',width:260});
+  if(!token)google.accounts.id.prompt();
+}
+async function relay(kind){
+  if(!token||tokExp(token)<Date.now()+30000){clearToken();showGate('Sign in with your Spyne Google account to continue.');initGoogle();throw authFail();}
+  const r=await fetch('/api/pending?kind='+kind+'&cb='+Date.now(),{cache:'no-store',headers:{Authorization:'Bearer '+token}});
+  if(r.status===401){clearToken();showGate('Your session expired. Please sign in again.');initGoogle();throw authFail();}
+  if(r.status===403){clearToken();showGate('Access denied. Please sign in with your @spyne.ai Google account.');try{google.accounts.id.disableAutoSelect();}catch(e){}initGoogle();throw authFail();}
+  hideGate();
+  return r;
+}
+function startLive(){refreshLive().then(()=>{if(token)return probeSig().then(s=>{if(s)lastSig=s;});});}
+function bootAuth(){
+  const gt=setInterval(()=>{if(window.google&&google.accounts&&google.accounts.id){clearInterval(gt);initGoogle();}},200);
+  if(token)startLive(); else {showGate('Sign in with your Spyne Google account to continue.');}
+}
 
 /* ---------------- formatting ---------------- */
 const inrFmt=new Intl.NumberFormat('en-IN',{maximumFractionDigits:0});
@@ -764,7 +796,7 @@ async function refreshLive(){
   const t0=performance.now();
   btn.disabled=true; liveMsg('','Reading the sheet…');
   const grab=async(url)=>{
-    const r=await fetch(url+'&cb='+Date.now(),{cache:'no-store'});
+    const r=await relay(url);
     if(!r.ok) throw new Error('HTTP '+r.status);
     const t=await r.text();
     if(/^\s*<(!doctype|html)/i.test(t.slice(0,80)))
@@ -775,7 +807,7 @@ async function refreshLive(){
     let n, how='read live';
     try{
       n=applyText(await grab(DATA_URL),how);
-    }catch(first){
+    }catch(first){ if(first&&first.authFail)throw first;
       /* trimmed read failed — most likely the sheet's columns moved. Take the
          whole export instead rather than showing nothing. */
       how='read live (full export)';
@@ -800,7 +832,7 @@ document.getElementById('liveBtn').onclick=refreshLive;
 /* 74-byte "has it moved?" check each minute; full read only when it has */
 async function probeSig(){
   try{
-    const r=await fetch(PROBE_URL+'&cb='+Date.now(),{cache:'no-store'});
+    const r=await relay(PROBE_URL);
     if(!r.ok) throw new Error();
     const t=(await r.text()).trim();
     const last=t.split('\n').pop().replace(/"/g,'').trim();
@@ -809,7 +841,7 @@ async function probeSig(){
 }
 const PROBE_EVERY=60*1000, FORCE_EVERY=15*60*1000;
 async function tick(){
-  if(document.hidden||typing()||liveBusy)return;
+  if(!token||document.hidden||typing()||liveBusy)return;
   const sig=await probeSig();
   if(!sig)return;
   if(sig!==lastSig||Date.now()-lastLive>FORCE_EVERY){ lastSig=sig; await refreshLive(); }
@@ -867,7 +899,7 @@ document.getElementById('noteClear').onclick=()=>{
 /* ---------------- go ---------------- */
 notesLoad(); renderNoteBar();
 setEmptyState('Reading the sheet…');
-refreshLive().then(()=>probeSig().then(s=>{if(s)lastSig=s;}));
+bootAuth();
 </script>
 </body>
 </html>
