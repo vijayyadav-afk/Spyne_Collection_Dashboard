@@ -147,10 +147,14 @@
   .barrow .fill{height:100%;border-radius:4px;background:var(--b1);display:flex}
   .barrow .v{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 
-  .agewrap{display:flex;align-items:center;gap:28px;flex-wrap:wrap}
-  #pie-age svg{width:176px;height:176px;display:block}
-  #pie-age circle.seg{cursor:pointer;transition:opacity .15s}
-  #lg-age{flex:1 1 300px;min-width:240px}
+  .grid2eq{display:grid;grid-template-columns:1fr 1fr;gap:13px;align-items:stretch}
+  @media (max-width:1080px){.grid2eq{grid-template-columns:1fr}}
+  .grid2eq>.card{display:flex;flex-direction:column}
+  .grid2eq>.card>.pad{flex:1 1 auto;display:flex;align-items:center}
+  .agewrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap;width:100%}
+  #pie-age svg,#pie-prod svg{width:170px;height:170px;display:block}
+  #pie-age circle.seg,#pie-prod circle.seg{cursor:pointer;transition:opacity .15s}
+  #lg-age,#lg-prod{flex:1 1 210px;min-width:200px}
   .lgrow{display:grid;grid-template-columns:14px 1fr auto 70px;gap:10px;align-items:center;padding:7px 4px;
     border-bottom:1px solid var(--line2);cursor:pointer;font-variant-numeric:tabular-nums}
   .lgrow:last-child{border-bottom:0}
@@ -292,9 +296,15 @@
     same balance in USD.
   </div>
   <div class="kpis" id="k-pend"></div>
-  <div class="card" id="c-age">
-    <header><h2>Total outstanding % by age bucket</h2><span class="cap">click to filter</span></header>
-    <div class="pad"><div class="agewrap"><div id="pie-age"></div><div id="lg-age"></div></div></div>
+  <div class="grid2eq">
+    <div class="card" id="c-age">
+      <header><h2>Total outstanding % by age bucket</h2><span class="cap">click to filter</span></header>
+      <div class="pad"><div class="agewrap"><div id="pie-age"></div><div id="lg-age"></div></div></div>
+    </div>
+    <div class="card" id="c-prod">
+      <header><h2>Total outstanding by product</h2><span class="cap">click to filter</span></header>
+      <div class="pad"><div class="agewrap"><div id="pie-prod"></div><div id="lg-prod"></div></div></div>
+    </div>
   </div>
   <div class="grid2 fit">
     <div class="card">
@@ -507,6 +517,7 @@ function view(){
     (!F.band || BANDS[F.band](r)) &&
     (!F.pay || (F.pay==='auto'?r.autopay:!r.autopay)));
 }
+function viewNoProduct(){const sv=F.product;F.product="";try{return view();}finally{F.product=sv;}}
 function viewNoBand(){const sv=F.band;F.band="";try{return view();}finally{F.band=sv;}}
 const bucketOf=r=>r.aging<=30?'b0':r.aging<=60?'b1':r.aging<=90?'b2':'b3';
 
@@ -553,7 +564,27 @@ document.addEventListener('input',e=>{
 });
 
 /* ---------------- chart helpers ---------------- */
-/* donut: each age bucket's share of total outstanding; slices and legend rows filter by age */
+/* generic donut: parts [{k,label,color,v}], clicking a slice or legend row calls toggle(k) */
+function donutChart(pieEl,lgEl,parts,activeKey,toggle,aria){
+  const tot=parts.reduce((s,p)=>s+Math.max(p.v,0),0);
+  if(!tot){pieEl.innerHTML='<span class="muted">No data.</span>';lgEl.innerHTML='';return;}
+  const R=58,C=2*Math.PI*R;let off=0;
+  const segs=parts.map(p=>{
+    const share=Math.max(p.v,0)/tot, len=Math.max(0,share*C-(share<1?1.5:0)), o=off; off+=share*C;
+    if(share<=0)return '';
+    return `<circle class="seg" data-k="${esc(p.k)}" cx="80" cy="80" r="${R}" fill="none" stroke="${p.color}" stroke-width="26"
+      stroke-dasharray="${len.toFixed(2)} ${(C-len).toFixed(2)}" stroke-dashoffset="${(-o).toFixed(2)}"
+      transform="rotate(-90 80 80)" style="${activeKey&&activeKey!==p.k?'opacity:.3':''}"><title>${esc(p.label)}: ${short(p.v)} (${pct(p.v,tot)})</title></circle>`;}).join('');
+  pieEl.innerHTML=`<svg viewBox="0 0 160 160" role="img" aria-label="${esc(aria)}">${segs}
+    <text x="80" y="76" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor">${short(tot)}</text>
+    <text x="80" y="93" text-anchor="middle" font-size="9.5" fill="currentColor" opacity=".6">outstanding</text></svg>`;
+  lgEl.innerHTML=parts.map(p=>`<div class="lgrow ${activeKey===p.k?'hit':activeKey?'dim':''}" data-k="${esc(p.k)}">
+      <span class="sw" style="background:${p.color}"></span><span>${esc(p.label)}</span>
+      <span class="amt">${short(p.v)}</span><span class="pc">${pct(Math.max(p.v,0),tot)}</span></div>`).join('');
+  pieEl.querySelectorAll('.seg').forEach(c=>c.onclick=()=>toggle(c.dataset.k));
+  lgEl.querySelectorAll('.lgrow').forEach(r=>r.onclick=()=>toggle(r.dataset.k));
+}
+/* each age bucket's share of total outstanding; filters by age band */
 function pieAge(pieEl,lgEl,rows,activeBand){
   const parts=[
     {k:'a',b:'b0',label:'0 - 30 days',color:'var(--g1)'},
@@ -561,26 +592,14 @@ function pieAge(pieEl,lgEl,rows,activeBand){
     {k:'c',b:'b2',label:'61 - 90 days',color:'var(--b3)'},
     {k:'d',b:'b3',label:'Over 90 days',color:'var(--b4)'}];
   parts.forEach(p=>{p.v=sum(rows.filter(r=>bucketOf(r)===p.b),r=>r.inr);});
-  const tot=parts.reduce((s,p)=>s+Math.max(p.v,0),0);
-  const toggle=k=>{F.band=(F.band===k?'':k);syncFilters();renderAll();};
-  if(!tot){pieEl.innerHTML='<span class="muted">No data.</span>';lgEl.innerHTML='';return;}
-  const R=58,C=2*Math.PI*R;let off=0;
-  const segs=parts.map(p=>{
-    const share=Math.max(p.v,0)/tot, len=Math.max(0,share*C-(share<1?1.5:0)), o=off; off+=share*C;
-    if(share<=0)return '';
-    return `<circle class="seg" data-k="${p.k}" cx="80" cy="80" r="${R}" fill="none" stroke="${p.color}" stroke-width="26"
-      stroke-dasharray="${len.toFixed(2)} ${(C-len).toFixed(2)}" stroke-dashoffset="${(-o).toFixed(2)}"
-      transform="rotate(-90 80 80)" style="${activeBand&&activeBand!==p.k?'opacity:.3':''}"><title>${p.label}: ${short(p.v)} (${pct(p.v,tot)})</title></circle>`;}).join('');
-  pieEl.innerHTML=`<svg viewBox="0 0 160 160" role="img" aria-label="Outstanding by age bucket">${segs}
-    <text x="80" y="76" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor">${short(tot)}</text>
-    <text x="80" y="93" text-anchor="middle" font-size="9.5" fill="currentColor" opacity=".6">outstanding</text></svg>`;
-  lgEl.innerHTML=parts.map(p=>`<div class="lgrow ${activeBand===p.k?'hit':activeBand?'dim':''}" data-k="${p.k}">
-      <span class="sw" style="background:${p.color}"></span><span>${p.label}</span>
-      <span class="amt">${short(p.v)}</span><span class="pc">${pct(Math.max(p.v,0),tot)}</span></div>`).join('');
-  pieEl.querySelectorAll('.seg').forEach(c=>c.onclick=()=>toggle(c.dataset.k));
-  lgEl.querySelectorAll('.lgrow').forEach(r=>r.onclick=()=>toggle(r.dataset.k));
+  donutChart(pieEl,lgEl,parts,activeBand,k=>{F.band=(F.band===k?'':k);syncFilters();renderAll();},'Outstanding by age bucket');
 }
-function hBars(el,items,fmt,onClick,activeKey){
+/* each product's share of total outstanding; filters by product */
+function pieProduct(pieEl,lgEl,rows,activeProduct){
+  const named={Studio:'var(--b1)',Vini:'var(--p1)'}, extra=['var(--t1)','var(--b2)','var(--b3)','var(--b4)'];let n=0;
+  const parts=groupSum(rows,'product','inr').map(([k,v])=>({k,label:k,v,color:named[k]||extra[n++%extra.length]}));
+  donutChart(pieEl,lgEl,parts,activeProduct,k=>{F.product=(F.product===k?'':k);syncFilters();renderAll();},'Outstanding by product');
+}function hBars(el,items,fmt,onClick,activeKey){
   const max=Math.max(1,...items.map(i=>i[1]));
   el.className='hbars';
   el.innerHTML=items.length?items.map(([k,v])=>
@@ -715,6 +734,7 @@ function renderPend(){
       prodSplit(v,payLine)]
   ]);
   pieAge(document.getElementById('pie-age'),document.getElementById('lg-age'),viewNoBand(),F.band);
+  pieProduct(document.getElementById('pie-prod'),document.getElementById('lg-prod'),viewNoProduct(),F.product);
   hBars(document.getElementById('b-pend-am'),groupSum(v,'am','inr'),lakh,
     k=>{F.am=(F.am===k?'':k);syncFilters();renderAll();},F.am);
   vCols(document.getElementById('b-pend-spoc'),groupSum(v,'spoc','inr',18),lakh,
