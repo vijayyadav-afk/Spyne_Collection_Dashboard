@@ -177,7 +177,7 @@ html,body{height:100%}
     <section class="panel s6"><h2>Rolling 12 month collections</h2><div class="cap">Last 12 months. The latest month is month to date.</div><div class="ch"><canvas id="cMonth" role="img" aria-label="Rolling 12 month collections"></canvas></div></section>
     <section class="panel s7" id="pDaily"><h2 id="dailyTitle">Daily collections</h2><div class="cap">Bars show each day. Lines show the running month total against the previous month.</div><div class="ch tall" style="height:235px"><canvas id="cDaily" role="img" aria-label="Daily collections for the month"></canvas></div></section>
     <section class="panel s5"><h2>Weekly collections</h2><div class="cap">Last 13 weeks, Monday to Sunday. The latest week is week to date.</div><div class="ch" style="height:235px"><canvas id="cWeek" role="img" aria-label="Weekly collections"></canvas></div></section>
-    <section class="panel s6"><h2 id="yearTitle">Collections by month</h2><div class="cap">Net collected each month this year, Studio and Vini</div><div class="ch"><canvas id="cYear" role="img" aria-label="Collections by month this year"></canvas></div></section>
+    <section class="panel s6"><h2 id="yearTitle">Month-on-month growth, last 12 months</h2><div class="cap">vs previous month · current month vs the same days last month</div><div class="ch"><canvas id="cYear" role="img" aria-label="Month-on-month growth, last 12 months"></canvas></div></section>
 
   </div></div>
   <section class="panel s12" id="details"><div class="scopebar"><div><h2>Details table view</h2><div class="note" id="detNote"></div></div><div class="seg" id="segDet" role="group" aria-label="Table range"><button data-v="all" aria-pressed="true">All data</button><button data-v="period" aria-pressed="false">Selected period</button></div></div><div class="tw" id="detWrap" style="margin-top:6px;overflow:auto;max-height:245px"><table id="det"></table></div><div class="pager"><span id="pgInfo"></span></div></section>
@@ -349,12 +349,27 @@ function renderTime(){
   var ml=[],mS=[],mV=[],me=[];
   for(var j=11;j>=0;j--){var yy=y,mm=mo-j;while(mm<0){mm+=12;yy--}var s1=idx(yy,mm,1),e1=Math.min(idx(yy,mm,dim(yy,mm)),a);ml.push(MON[mm]+" "+String(yy).slice(2)+(j===0?" (MTD)":""));me.push(e1);mS.push(sum(s1,e1,function(r){return r.p===0}));mV.push(sum(s1,e1,function(r){return r.p===1}))}
   H.monthEnds=me;stackChart("cMonth",ml,mS,mV,P,muted,line);
-  // current year, month by month
-  var yl=[],yS=[],yV=[],ye=[];
-  for(var qq=0;qq<12;qq++){var s2=idx(y,qq,1),e2=Math.min(idx(y,qq,dim(y,qq)),a);yl.push(MON[qq]+(qq===mo?" (MTD)":""));ye.push(e2);if(s2>a){yS.push(null);yV.push(null)}else{yS.push(sum(s2,e2,function(r){return r.p===0}));yV.push(sum(s2,e2,function(r){return r.p===1}))}}
-  document.getElementById("yearTitle").textContent="Collections by month, "+y;
-  H.yearEnds=ye;H.yearY=y;
-  stackChart("cYear",yl,yS,yV,P,muted,line);
+  // month-on-month growth over the last 12 months: each month against the month before it
+  var yl=[],gv=[],gc=[],gp=[],ye=[],ys=[];
+  for(var jj=11;jj>=0;jj--){
+    var yy2=y,mm2=mo-jj;while(mm2<0){mm2+=12;yy2--}
+    var s2=idx(yy2,mm2,1),mEnd=idx(yy2,mm2,dim(yy2,mm2)),e2=Math.min(mEnd,a);
+    yl.push(MON[mm2]+" "+String(yy2).slice(2)+(jj===0?" (MTD)":""));ye.push(e2);ys.push(s2);
+    var py2=mm2?yy2:yy2-1,pm2=mm2?mm2-1:11,ps=idx(py2,pm2,1),pEnd=idx(py2,pm2,dim(py2,pm2));
+    var pe=e2<mEnd?Math.min(ps+(e2-s2),pEnd):pEnd;   // a month still running is set against the same days of the month before
+    var cu=sum(s2,e2),pr=sum(ps,pe);
+    gc.push(cu);gp.push(pr);gv.push(pr?(cu-pr)/Math.abs(pr)*100:null);
+  }
+  document.getElementById("yearTitle").textContent="Month-on-month growth, last 12 months";
+  H.yearEnds=ye;H.yearStarts=ys;
+  growthChart("cYear",yl,gv,gc,gp,muted,line);
+}
+var growthLabels={id:"growthLabels",afterDatasetsDraw:function(c){var x=c.ctx,d=c.data.datasets[0].data,m=c.getDatasetMeta(0).data;x.save();x.textAlign="center";x.font="700 9px "+css("--font-ui");x.fillStyle=css("--ink");m.forEach(function(b,i){var v=d[i];if(v===null||v===undefined)return;x.textBaseline=v>=0?"bottom":"top";x.fillText((v>=0?"+":"")+v.toFixed(1)+"%",b.x,v>=0?b.y-3:b.y+3)});x.restore()}};
+function growthChart(id,labels,gv,gc,gp,muted,line){
+  var up=css("--good"),dn=css("--bad"),zero=css("--muted");
+  mk(id,{plugins:[growthLabels],type:"bar",data:{labels:labels,datasets:[{label:"Growth vs previous month",data:gv,backgroundColor:gv.map(function(v){return v!==null&&v<0?dn:up}),borderRadius:3,maxBarThickness:34}]},
+   options:Object.assign(baseOpts(),{layout:{padding:{right:14,top:4}},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){var i=c.dataIndex;return gv[i]===null?" no earlier month to compare":" "+(gv[i]>=0?"+":"")+gv[i].toFixed(1)+"%  ("+short(gc[i])+" vs "+short(gp[i])+")"}}}},
+    scales:{x:{grid:{display:false},ticks:{color:muted,maxRotation:60,minRotation:0,font:{size:9}}},y:{grace:"28%",grid:{color:function(c){return c.tick&&c.tick.value===0?zero:line}},ticks:{color:muted,callback:function(v){return v+"%"}}}}})});
 }
 function stackChart(id,labels,s,v,P,muted,line){
   var lines=st.prod;
@@ -397,7 +412,7 @@ function syncUI(){setSeg("segProd",st.prod);setSeg("segEnt",st.ent);setSeg("segA
 function act(fn){fn();st.rows=100;syncUI();render()}
 clickHandlers.cProd=function(i){act(function(){st.prod=st.prod===i?-1:i})};
 clickHandlers.cMode=function(i){var m=H.mrows[i].i;act(function(){st.mode=st.mode===m?-1:m})};
-clickHandlers.cYear=function(i){if(idx(H.yearY,i,1)>MAXD)return;var e=H.yearEnds[i];act(function(){st.asof=e;st.scope="mtd"})};
+clickHandlers.cYear=function(i){if(H.yearStarts[i]>MAXD)return;var e=H.yearEnds[i];act(function(){st.asof=e;st.scope="mtd"})};
 clickHandlers.cAm=function(i){var n=H.av[i].n,ids=[];D.am.forEach(function(o,j){if((amName[o]||o)===n)ids.push(j)});act(function(){var same=st.amSet?st.amSet.join()===ids.join():(ids.length===1&&st.am===ids[0]);if(same){st.am=-1;st.amSet=null;st.amLabel=""}else if(ids.length===1){st.am=ids[0];st.amSet=null;st.amLabel=""}else{st.am=-2;st.amSet=ids;st.amLabel=n}})};
 clickHandlers.cDaily=function(i){var d=H.dms+i;if(d>MAXD)return;act(function(){st.asof=d;st.scope="day"})};
 clickHandlers.cWeek=function(i){var e=H.weekEnds[i];act(function(){st.asof=e;st.scope="week"})};
