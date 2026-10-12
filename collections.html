@@ -179,7 +179,7 @@ html,body{height:100%}
     <section class="panel s6"><div class="phead"><h2>Collections trend by product</h2><div class="seg segsm" id="segTrend" role="group" aria-label="Trend period"><button data-v="m" aria-pressed="true">Monthly</button><button data-v="q" aria-pressed="false">Quarterly</button></div></div><div class="cap" id="trendCap">₹ crore per month</div><div class="ch"><canvas id="cMonth" role="img" aria-label="Collections trend by product, monthly or quarterly"></canvas></div></section>
     <section class="panel s7" id="pDaily"><h2 id="dailyTitle">Daily collections</h2><div class="cap">Bars show each day. Lines show the running month total against the previous month.</div><div class="ch tall" style="height:235px"><canvas id="cDaily" role="img" aria-label="Daily collections for the month"></canvas></div></section>
     <section class="panel s5"><h2>Weekly collections</h2><div class="cap">Last 13 weeks, Monday to Sunday. The latest week is week to date.</div><div class="ch" style="height:235px"><canvas id="cWeek" role="img" aria-label="Weekly collections"></canvas></div></section>
-    <section class="panel s6"><h2 id="yearTitle">Month-on-month growth by product</h2><div class="cap">vs previous month · current month vs same days last month</div><div class="ch"><canvas id="cYear" role="img" aria-label="Month-on-month growth by product, last 12 months"></canvas></div></section>
+    <section class="panel s6"><h2 id="yearTitle">Month-on-month growth by product</h2><div class="cap">vs previous month · completed months only</div><div class="ch"><canvas id="cYear" role="img" aria-label="Month-on-month growth by product, last 12 months"></canvas></div></section>
 
   </div></div>
   <section class="panel s12" id="details"><div class="scopebar"><div><h2>Details table view</h2><div class="note" id="detNote"></div></div><div class="seg" id="segDet" role="group" aria-label="Table range"><button data-v="all" aria-pressed="true">All data</button><button data-v="period" aria-pressed="false">Selected period</button></div></div><div class="tw" id="detWrap" style="margin-top:6px;overflow:auto;max-height:245px"><table id="det"></table></div><div class="pager"><span id="pgInfo"></span></div></section>
@@ -366,10 +366,10 @@ function renderTime(){
   trendChart("cMonth",tl,tYear,tPart,[{name:"Studio",color:P[0],v:tS.map(function(v){return v||null})},{name:"Vini",color:P[1],v:tV.map(function(v){return v||null})}],muted,line);
   // month-on-month growth by product over the last 12 months: (this month - last month) / last month x 100
   var yl=[],ye=[],ys=[],gS=[],gV=[],cS=[],cV=[],pS=[],pV=[];
-  for(var jj=11;jj>=0;jj--){
+  for(var jj=12;jj>=1;jj--){   // the 12 completed months before the current one
     var yy2=y,mm2=mo-jj;while(mm2<0){mm2+=12;yy2--}
     var s2=idx(yy2,mm2,1),mEnd=idx(yy2,mm2,dim(yy2,mm2)),e2=Math.min(mEnd,a);
-    yl.push(MON[mm2]+" "+String(yy2).slice(2)+(jj===0?" (MTD)":""));ye.push(e2);ys.push(s2);
+    yl.push(MON[mm2]+" "+String(yy2).slice(2));ye.push(e2);ys.push(s2);
     var py2=mm2?yy2:yy2-1,pm2=mm2?mm2-1:11,ps=idx(py2,pm2,1),pEnd=idx(py2,pm2,dim(py2,pm2));
     var pe=e2<mEnd?Math.min(ps+(e2-s2),pEnd):pEnd;   // a month still running is set against the same days of the month before
     [[0,gS,cS,pS],[1,gV,cV,pV]].forEach(function(z){
