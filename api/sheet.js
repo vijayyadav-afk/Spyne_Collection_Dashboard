@@ -153,6 +153,25 @@ function json(status, obj) {
   });
 }
 
+// Autopay tab (gid 484222143): column G = Final Status (keep "Active"), I = Amount, J = Date (dd-MMM-yyyy).
+// Returns [[dayIndex, amount], ...]; if that tab cannot be read the rest of the data is still served.
+const AUTO_GID = '484222143';
+async function readAutopay() {
+  try {
+    const r = await fetch('https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&gid=' + AUTO_GID, { cache: 'no-store' });
+    if (!r.ok) return [];
+    const rows = csvParse(await r.text());
+    const out = [];
+    for (let i = 1; i < rows.length; i++) {
+      const x = rows[i];
+      if (String(x[6] || '').trim().toLowerCase() !== 'active') continue;
+      const dm = /^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/.exec(String(x[9] || '').trim());
+      if (!dm || MONTHS[dm[2].toLowerCase()] === undefined) continue;
+      out.push([Math.round((Date.UTC(+dm[3], MONTHS[dm[2].toLowerCase()], +dm[1]) - EPOCH) / MS), Math.round(num(x[8]))]);
+    }
+    return out;
+  } catch (e) { return []; }
+}
 // Built data is kept for 30 s inside the running isolate so one sheet read serves many viewers.
 let dataCache = { t: 0, body: '' };
 
@@ -171,7 +190,9 @@ export default async function handler(request) {
       const url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&gid=' + SHEET_GID;
       const r = await fetch(url, { cache: 'no-store' });
       if (!r.ok) throw new Error('sheet responded ' + r.status);
-      dataCache = { t: Date.now(), body: JSON.stringify(buildData(csvParse(await r.text()))) };
+      const data = buildData(csvParse(await r.text()));
+      data.auto = await readAutopay();
+      dataCache = { t: Date.now(), body: JSON.stringify(data) };
     }
     return new Response(dataCache.body, {
       status: 200,

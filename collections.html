@@ -237,7 +237,7 @@ function rangeOf(scope,a){
 }
 
 /* tiles */
-function tile(c,k,v,n,p){return'<div class="tile '+c+'"><div class="k">'+k+'</div><div class="v">'+v+'</div><div class="n">'+n+'</div><div class="sv"><span>Studio <b>'+short(p[0]).replace("₹","")+'</b></span><span>Vini <b>'+short(p[1]).replace("₹","")+'</b></span></div></div>'}
+function tile(c,k,v,n,p,custom){if(custom)return'<div class="tile '+c+'"><div class="k">'+k+'</div><div class="v">'+v+'</div><div class="n">'+n+'</div><div class="sv"><span>Due till '+lbl(st.asof)+' <b>'+short(p[0]).replace("₹","")+'</b></span><span>Still to come <b>'+short(p[1]).replace("₹","")+'</b></span></div></div>';return'<div class="tile '+c+'"><div class="k">'+k+'</div><div class="v">'+v+'</div><div class="n">'+n+'</div><div class="sv"><span>Studio <b>'+short(p[0]).replace("₹","")+'</b></span><span>Vini <b>'+short(p[1]).replace("₹","")+'</b></span></div></div>'}
 function spl(a,b,f){return without("prod",function(){return[sum(a,b,function(r){return r.p===0&&(!f||f(r))}),sum(a,b,function(r){return r.p===1&&(!f||f(r))})]})}
 function renderTiles(){
   var a=st.asof, w=monday(a), m=mstart(a), x=dt(a), y=x.getUTCFullYear(), mo=x.getUTCMonth();
@@ -252,12 +252,14 @@ function renderTiles(){
    ["t6","Rolling 90 days",short(r90),lbl(a-90)+" to "+lbl(a),spl(a-90,a)]];
   document.getElementById("tiles").innerHTML=T1.map(function(t){return tile(t[0],t[1],t[2],t[3],t[4])}).join("");
   var prevDay=sum(a-1,a-1), wtd=sum(w,a);
+  var apS=m,apE=idx(y,mo,dim(y,mo)),apT=0,apN=0,apD=0;(D.auto||[]).forEach(function(r){if(r[0]>=apS&&r[0]<=apE){apT+=r[1];if(r[1]>0)apN++;if(r[0]<=a)apD+=r[1]}});
+  var ap={total:apT,n:apN,split:[apD,apT-apD]};
 
 
   var T2=[
    ["t2","Previous day",short(prevDay),lblY(a-1),spl(a-1,a-1)],
-   ["t3","Week to date",short(wtd),lbl(w)+" to "+lbl(a),spl(w,a)]];
-  document.getElementById("tiles2").innerHTML=T2.map(function(t){return tile(t[0],t[1],t[2],t[3],t[4])}).join("");
+   ["t3","Autopay this month",short(ap.total),ap.n+" autopay dates in "+MON[mo]+" "+y,ap.split,1]];
+  document.getElementById("tiles2").innerHTML=T2.map(function(t){return tile(t[0],t[1],t[2],t[3],t[4],t[5])}).join("");
 }var centerText={id:"centerText",afterDraw:function(c){var o=c.options.plugins&&c.options.plugins.centerText,e=c.getDatasetMeta(0).data[0];if(!o||!e||e.innerRadius<26)return;var x=c.ctx;x.save();x.textAlign="center";x.textBaseline="middle";x.fillStyle=css("--ink");x.font="700 11px "+css("--font-num");if(x.measureText(o.text).width>e.innerRadius*1.7){x.restore();return}x.fillText(o.text,e.x,e.y-5);x.fillStyle=css("--muted");x.font="500 8px "+css("--font-ui");x.fillText("Net",e.x,e.y+8);x.restore()}};
 var barLabels={id:"barLabels",afterDatasetsDraw:function(c){var x=c.ctx;x.save();x.fillStyle=css("--ink");x.font="600 10px "+css("--font-ui");x.textAlign="center";x.textBaseline="bottom";c.getDatasetMeta(0).data.forEach(function(b,i){x.fillText(short(c.data.datasets[0].data[i]),b.x,b.y-3)});x.restore()}};
 var lab=function(v){return short(v).replace("₹","")};
