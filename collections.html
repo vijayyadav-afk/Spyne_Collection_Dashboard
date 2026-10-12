@@ -350,19 +350,19 @@ function renderTime(){
   // collections trend, monthly (last 12 months) or quarterly (last 8 quarters), one line per product
   var tl=[],tS=[],tV=[],te=[],tYear=[],tPart=[];
   if(trend==="m"){
-    for(var j=11;j>=0;j--){var yy=y,mm=mo-j;while(mm<0){mm+=12;yy--}
+    for(var j=12;j>=1;j--){var yy=y,mm=mo-j;while(mm<0){mm+=12;yy--}
       var s1=idx(yy,mm,1),e1=Math.min(idx(yy,mm,dim(yy,mm)),a);
-      tl.push(mm===0||j===11?[MON[mm],String(yy)]:[MON[mm]]);tYear.push(yy);tPart.push(j===0);te.push(e1);
+      tl.push(mm===0||j===12?[MON[mm],String(yy)]:[MON[mm]]);tYear.push(yy);tPart.push(false);te.push(e1);
       tS.push(sum(s1,e1,function(r){return r.p===0}));tV.push(sum(s1,e1,function(r){return r.p===1}));}
   }else{
     var qs0=y*12+Math.floor(mo/3)*3;
-    for(var kq=7;kq>=0;kq--){var m0=qs0-3*kq,yy=Math.floor(m0/12),mm=m0%12,m2=m0+2,ey=Math.floor(m2/12),em=m2%12;
+    for(var kq=8;kq>=1;kq--){var m0=qs0-3*kq,yy=Math.floor(m0/12),mm=m0%12,m2=m0+2,ey=Math.floor(m2/12),em=m2%12;
       var s1=idx(yy,mm,1),qEnd=idx(ey,em,dim(ey,em)),e1=Math.min(qEnd,a);
-      tl.push(mm===0||kq===7?["Q"+(mm/3+1),String(yy)]:["Q"+(mm/3+1)]);tYear.push(yy);tPart.push(kq===0);te.push(e1);
+      tl.push(mm===0||kq===8?["Q"+(mm/3+1),String(yy)]:["Q"+(mm/3+1)]);tYear.push(yy);tPart.push(false);te.push(e1);
       tS.push(sum(s1,e1,function(r){return r.p===0}));tV.push(sum(s1,e1,function(r){return r.p===1}));}
   }
   H.monthEnds=te;H.trendMode=trend;
-  document.getElementById("trendCap").textContent=trend==="m"?"₹ crore per month · last 12 months, latest to date":"₹ crore per quarter · last 8 quarters, latest to date";
+  document.getElementById("trendCap").textContent=trend==="m"?"₹ crore per month · last 12 completed months":"₹ crore per quarter · last 8 completed quarters";
   trendChart("cMonth",tl,tYear,tPart,[{name:"Studio",color:P[0],v:tS.map(function(v){return v||null})},{name:"Vini",color:P[1],v:tV.map(function(v){return v||null})}],muted,line);
   // month-on-month growth by product over the last 12 months: (this month - last month) / last month x 100
   var yl=[],ye=[],ys=[],gS=[],gV=[],cS=[],cV=[],pS=[],pV=[];
