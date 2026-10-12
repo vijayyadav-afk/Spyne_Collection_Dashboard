@@ -100,6 +100,8 @@ td.l{text-align:left}
 .gate-title{font-family:var(--font-num);font-size:18px;font-weight:700;margin-bottom:8px}
 #gateMsg{color:var(--muted);margin:0 0 16px}
 #gBtn{display:flex;justify-content:center;min-height:44px}
+.phead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.segsm button{padding:2px 8px;font-size:10px}
 .empty{color:var(--muted);padding:20px 0;text-align:center}
 [hidden]{display:none!important}
 .tilerow{display:flex;flex-direction:column;gap:12px}
@@ -174,7 +176,7 @@ html,body{height:100%}
     <section class="panel s4"><h2>Account manager collections</h2><div class="cap" id="capAm">MTD net collected by account manager</div><div class="ch short"><canvas id="cAm" role="img" aria-label="Account manager collections"></canvas></div></section>
     <section class="panel s4"><h2>Payment mode</h2><div class="cap" id="capMode">MTD net collected by payment mode</div><div class="ch short"><canvas id="cMode" role="img" aria-label="Payment mode split"></canvas></div><div class="legend" id="lgMode"></div></section>
 
-    <section class="panel s6"><h2>Rolling 12 month collections</h2><div class="cap">Last 12 months. The latest month is month to date.</div><div class="ch"><canvas id="cMonth" role="img" aria-label="Rolling 12 month collections"></canvas></div></section>
+    <section class="panel s6"><div class="phead"><h2>Collections trend by product</h2><div class="seg segsm" id="segTrend" role="group" aria-label="Trend period"><button data-v="m" aria-pressed="true">Monthly</button><button data-v="q" aria-pressed="false">Quarterly</button></div></div><div class="cap" id="trendCap">₹ crore per month</div><div class="ch"><canvas id="cMonth" role="img" aria-label="Collections trend by product, monthly or quarterly"></canvas></div></section>
     <section class="panel s7" id="pDaily"><h2 id="dailyTitle">Daily collections</h2><div class="cap">Bars show each day. Lines show the running month total against the previous month.</div><div class="ch tall" style="height:235px"><canvas id="cDaily" role="img" aria-label="Daily collections for the month"></canvas></div></section>
     <section class="panel s5"><h2>Weekly collections</h2><div class="cap">Last 13 weeks, Monday to Sunday. The latest week is week to date.</div><div class="ch" style="height:235px"><canvas id="cWeek" role="img" aria-label="Weekly collections"></canvas></div></section>
     <section class="panel s6"><h2 id="yearTitle">Month-on-month growth by product</h2><div class="cap">vs previous month · current month vs same days last month</div><div class="ch"><canvas id="cYear" role="img" aria-label="Month-on-month growth by product, last 12 months"></canvas></div></section>
@@ -199,7 +201,7 @@ var MAXD=0;R.forEach(function(r){if(r.d>MAXD)MAXD=r.d});
 var MS=864e5, EPOCH=Date.UTC(2023,0,1);
 var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 var st={scope:"mtd",prod:-1,ent:-1,am:-1,amSet:null,amLabel:"",mode:-1,cust:-1,asof:MAXD,rows:100,detAll:true};
-var amName={Partner:"Reseller",Sales:"D2D","#N/A":"CS"},H={},clickHandlers={};
+var amName={Partner:"Reseller",Sales:"D2D","#N/A":"CS"},H={},clickHandlers={},trend="m";
 var ign={};
 var charts={};
 
@@ -345,10 +347,23 @@ function renderTime(){
   var wl=[],ws=[],wv=[],w0=monday(a),we=[];H.dms=ms;
   for(var i=12;i>=0;i--){var s=w0-7*i,e=Math.min(s+6,a);wl.push(lbl(s)+(i===0?" (WTD)":""));we.push(e);ws.push(sum(s,e,function(r){return r.p===0}));wv.push(sum(s,e,function(r){return r.p===1}))}
   H.weekEnds=we;stackChart("cWeek",wl,ws,wv,P,muted,line);
-  // monthly
-  var ml=[],mS=[],mV=[],me=[];
-  for(var j=11;j>=0;j--){var yy=y,mm=mo-j;while(mm<0){mm+=12;yy--}var s1=idx(yy,mm,1),e1=Math.min(idx(yy,mm,dim(yy,mm)),a);ml.push(MON[mm]+" "+String(yy).slice(2)+(j===0?" (MTD)":""));me.push(e1);mS.push(sum(s1,e1,function(r){return r.p===0}));mV.push(sum(s1,e1,function(r){return r.p===1}))}
-  H.monthEnds=me;stackChart("cMonth",ml,mS,mV,P,muted,line);
+  // collections trend, monthly (last 12 months) or quarterly (last 8 quarters), one line per product
+  var tl=[],tS=[],tV=[],te=[],tYear=[],tPart=[];
+  if(trend==="m"){
+    for(var j=11;j>=0;j--){var yy=y,mm=mo-j;while(mm<0){mm+=12;yy--}
+      var s1=idx(yy,mm,1),e1=Math.min(idx(yy,mm,dim(yy,mm)),a);
+      tl.push(mm===0||j===11?[MON[mm],String(yy)]:[MON[mm]]);tYear.push(yy);tPart.push(j===0);te.push(e1);
+      tS.push(sum(s1,e1,function(r){return r.p===0}));tV.push(sum(s1,e1,function(r){return r.p===1}));}
+  }else{
+    var qs0=y*12+Math.floor(mo/3)*3;
+    for(var kq=7;kq>=0;kq--){var m0=qs0-3*kq,yy=Math.floor(m0/12),mm=m0%12,m2=m0+2,ey=Math.floor(m2/12),em=m2%12;
+      var s1=idx(yy,mm,1),qEnd=idx(ey,em,dim(ey,em)),e1=Math.min(qEnd,a);
+      tl.push(mm===0||kq===7?["Q"+(mm/3+1),String(yy)]:["Q"+(mm/3+1)]);tYear.push(yy);tPart.push(kq===0);te.push(e1);
+      tS.push(sum(s1,e1,function(r){return r.p===0}));tV.push(sum(s1,e1,function(r){return r.p===1}));}
+  }
+  H.monthEnds=te;H.trendMode=trend;
+  document.getElementById("trendCap").textContent=trend==="m"?"₹ crore per month · last 12 months, latest to date":"₹ crore per quarter · last 8 quarters, latest to date";
+  trendChart("cMonth",tl,tYear,tPart,[{name:"Studio",color:P[0],v:tS.map(function(v){return v||null})},{name:"Vini",color:P[1],v:tV.map(function(v){return v||null})}],muted,line);
   // month-on-month growth by product over the last 12 months: (this month - last month) / last month x 100
   var yl=[],ye=[],ys=[],gS=[],gV=[],cS=[],cV=[],pS=[],pV=[];
   for(var jj=11;jj>=0;jj--){
@@ -385,7 +400,30 @@ function growthChart(id,labels,series,muted,line){
      growthLabels:{real:series.map(function(s){return s.g}),clamped:clamped,colors:series.map(function(s){return s.color})},
      tooltip:{callbacks:{label:function(c){var k=c.datasetIndex,i=c.dataIndex,v=series[k].g[i];if(v===null)return" "+c.dataset.label+": no earlier month to compare";return" "+c.dataset.label+": "+(v>=0?"+":"-")+(Math.abs(v)>=1000?Math.round(Math.abs(v)).toLocaleString("en-IN"):Math.abs(v).toFixed(1))+"%  ("+short(series[k].cu[i])+" vs "+short(series[k].pr[i])+")"}}}},
     scales:{x:{grid:{display:false},ticks:{color:muted,maxRotation:60,minRotation:0,font:{size:9}}},y:{min:yMin,max:yMax,grid:{color:function(c){return c.tick&&c.tick.value===0?zero:line}},ticks:{color:muted,callback:function(v){return v+"%"}}}}})});
-}function stackChart(id,labels,s,v,P,muted,line){
+}var hexA=function(h,a){h=String(h).trim();if(h.charAt(0)!=="#")return h;if(h.length===4)h="#"+h[1]+h[1]+h[2]+h[2]+h[3]+h[3];var n=parseInt(h.slice(1),16);return"rgba("+(n>>16&255)+","+(n>>8&255)+","+(n&255)+","+a+")"};
+var trendDeco={id:"trendDeco",
+ beforeDatasetsDraw:function(c){var o=c.options.plugins&&c.options.plugins.trendDeco;if(!o)return;var x=c.ctx,ca=c.chartArea,xs=c.scales.x,yrs=o.years,n=yrs.length;if(!n)return;
+  var px=function(i){return xs.getPixelForValue(i)},groups=[],s0=0;
+  for(var i=1;i<=n;i++){if(i===n||yrs[i]!==yrs[s0]){groups.push([s0,i-1,yrs[s0]]);s0=i}}
+  x.save();x.font="700 10px "+css("--font-ui");x.textAlign="center";x.textBaseline="top";
+  groups.forEach(function(g,gi){var l=g[0]===0?ca.left:(px(g[0]-1)+px(g[0]))/2,r=g[1]===n-1?ca.right:(px(g[1])+px(g[1]+1))/2;
+    if(gi%2===1){x.fillStyle=hexA(css("--teal"),0.09);x.fillRect(l,ca.top,r-l,ca.bottom-ca.top)}
+    x.fillStyle=css("--ink");x.fillText(String(g[2]),(l+r)/2,ca.top+3)});
+  x.restore()},
+ afterDatasetsDraw:function(c){var o=c.options.plugins&&c.options.plugins.trendDeco;if(!o)return;var x=c.ctx;x.save();
+  o.series.forEach(function(s,k){var pts=c.getDatasetMeta(k).data,last=-1;
+   x.textAlign="center";x.textBaseline="bottom";x.font="700 8px "+css("--font-ui");x.fillStyle=s.color;
+   s.v.forEach(function(v,i){if(v===null||!pts[i])return;last=i;x.fillText((v/1e7).toFixed(2),pts[i].x,pts[i].y-5)});
+   if(last>=0){x.textAlign="left";x.textBaseline="middle";x.font="700 9px "+css("--font-ui");x.fillText(s.name,pts[last].x+8,pts[last].y)}});
+  x.restore()}};
+function trendChart(id,labels,years,part,series,muted,line){
+  mk(id,{plugins:[trendDeco],type:"line",data:{labels:labels,datasets:series.map(function(s){return{label:s.name,data:s.v,borderColor:s.color,backgroundColor:s.color,borderWidth:2,tension:.15,spanGaps:false,pointRadius:3,pointHoverRadius:5,
+     segment:{borderDash:function(c){return part[c.p1DataIndex]?[4,3]:undefined}}}})},
+   options:Object.assign(baseOpts(),{interaction:{mode:"index",intersect:false},layout:{padding:{right:40,top:2}},
+    plugins:{legend:{display:false},trendDeco:{years:years,series:series},tooltip:{callbacks:{title:function(c){var l=labels[c[0].dataIndex];return(Array.isArray(l)?l.join(" "):l)+(part[c[0].dataIndex]?" (so far)":"")},label:function(c){return" "+c.dataset.label+": "+inr(series[c.datasetIndex].v[c.dataIndex])}}}},
+    scales:{x:{grid:{display:false},ticks:{color:muted,maxRotation:0,minRotation:0,font:{size:9}}},y:{beginAtZero:true,grace:"30%",grid:{color:line},ticks:{color:muted,callback:function(v){return(v/1e7).toFixed(v/1e7<10?1:0)}}}}})});
+}
+function stackChart(id,labels,s,v,P,muted,line){
   var lines=st.prod;
   mk(id,{plugins:[stackLabels],type:"bar",data:{labels:labels,datasets:[{label:"Studio",data:s,backgroundColor:P[0],borderRadius:2},{label:"Vini",data:v,backgroundColor:P[1],borderRadius:2}]},
    options:Object.assign(baseOpts(),{interaction:{mode:"index",intersect:false},plugins:{legend:{display:true,position:"bottom",labels:{color:muted,boxWidth:7,usePointStyle:true}},tooltip:{callbacks:{label:function(c){return" "+c.dataset.label+": "+inr(c.parsed.y)},footer:function(c){var t=0;c.forEach(function(i){t+=i.parsed.y});return"Total: "+inr(t)}}}},
@@ -430,7 +468,7 @@ clickHandlers.cYear=function(i){if(H.yearStarts[i]>MAXD)return;var e=H.yearEnds[
 clickHandlers.cAm=function(i){var n=H.av[i].n,ids=[];D.am.forEach(function(o,j){if((amName[o]||o)===n)ids.push(j)});act(function(){var same=st.amSet?st.amSet.join()===ids.join():(ids.length===1&&st.am===ids[0]);if(same){st.am=-1;st.amSet=null;st.amLabel=""}else if(ids.length===1){st.am=ids[0];st.amSet=null;st.amLabel=""}else{st.am=-2;st.amSet=ids;st.amLabel=n}})};
 clickHandlers.cDaily=function(i){var d=H.dms+i;if(d>MAXD)return;act(function(){st.asof=d;st.scope="day"})};
 clickHandlers.cWeek=function(i){var e=H.weekEnds[i];act(function(){st.asof=e;st.scope="week"})};
-clickHandlers.cMonth=function(i){var e=H.monthEnds[i];act(function(){st.asof=e;st.scope="mtd"})};
+clickHandlers.cMonth=function(i){if(H.trendMode!=="m")return;var e=H.monthEnds[i];act(function(){st.asof=e;st.scope="mtd"})};
 document.getElementById("reset").addEventListener("click",function(){act(function(){st.prod=st.ent=st.am=st.mode=st.cust=-1;st.amSet=null;st.amLabel="";st.asof=MAXD;st.scope="mtd"})});document.getElementById("detWrap").addEventListener("scroll",detMore);
 document.getElementById("segDet").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;st.detAll=b.getAttribute("data-v")==="all";setSeg("segDet",st.detAll?"all":"period");render()});
 document.getElementById("btnDetails").addEventListener("click",function(){document.getElementById("details").scrollIntoView({behavior:"smooth"})});
@@ -439,6 +477,7 @@ document.getElementById("segTheme").addEventListener("click",function(e){var b=e
 if(window.matchMedia)matchMedia("(prefers-color-scheme: dark)").addEventListener("change",function(){setSeg("segTheme",effTheme())});
 var sd=document.getElementById("selDash");sd.value=location.pathname.indexOf("collections-pending")>=0?"/collections-pending":"/collections";sd.addEventListener("change",function(){location.href=sd.value});
 setSeg("segTheme",effTheme());
+document.getElementById("segTrend").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;trend=b.getAttribute("data-v");setSeg("segTrend",trend);render()});
 function buildLists(){
   amSeg.innerHTML='<button data-v="-1" aria-pressed="true">All</button>'+D.am.map(function(n,i){return{n:n,i:i}}).filter(function(x){return x.n!=="#N/A"}).concat(D.am.indexOf("#N/A")>=0?[{n:"#N/A",i:D.am.indexOf("#N/A")}]:[]).map(function(x){return'<button data-v="'+x.i+'" aria-pressed="false">'+(x.n==="#N/A"?"Unmapped":x.n)+"</button>"}).join("");
   sm.innerHTML='<option value="-1">All modes</option>'+D.modes.map(function(m,i){return'<option value="'+i+'">'+MODE_LABEL(m)+"</option>"}).join("");
