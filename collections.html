@@ -257,7 +257,7 @@ function renderTiles(){
 
 
   var T2=[
-   ["t2","Previous day",short(prevDay),lblY(a-1),spl(a-1,a-1)],
+   ["t2","Previous day collections",short(prevDay),lblY(a-1),spl(a-1,a-1)],
    ["t3","Autopay this month",short(ap.total),ap.n+" autopay dates in "+MON[mo]+" "+y,ap.split,1]];
   document.getElementById("tiles2").innerHTML=T2.map(function(t){return tile(t[0],t[1],t[2],t[3],t[4],t[5])}).join("");
 }var centerText={id:"centerText",afterDraw:function(c){var o=c.options.plugins&&c.options.plugins.centerText,e=c.getDatasetMeta(0).data[0];if(!o||!e||e.innerRadius<26)return;var x=c.ctx;x.save();x.textAlign="center";x.textBaseline="middle";x.fillStyle=css("--ink");x.font="700 11px "+css("--font-num");if(x.measureText(o.text).width>e.innerRadius*1.7){x.restore();return}x.fillText(o.text,e.x,e.y-5);x.fillStyle=css("--muted");x.font="500 8px "+css("--font-ui");x.fillText("Net",e.x,e.y+8);x.restore()}};
