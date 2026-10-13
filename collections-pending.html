@@ -825,7 +825,7 @@ function renderPend(){
 /* Three views of the same lines: Item level (every invoice line), Invoice level (one row per invoice),
    Customer level (one row per customer). Amounts add up; aging shows the oldest line. */
 const TH={cust:'Customer',invNo:'Invoice no.',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Acct mgr',
-  acctStatus:'Account status',aging:'Aging days',usd:'Due USD',inr:'Outstanding',note:'Manual remark'};
+  acctStatus:'Account status',aging:'Aging days',invCount:'Invoices',usd:'Due USD',inr:'Outstanding',note:'Manual remark'};
 const COLDEF={
   cust:{k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
   invNo:{k:'invNo',f:r=>esc(r.invNo)||'—',cls:'muted',txt:1},
@@ -835,13 +835,14 @@ const COLDEF={
   am:{k:'am',f:r=>esc(r.am),txt:1,cls:'muted'},
   acctStatus:{k:'acctStatus',f:r=>statusChip(r.acctStatus),txt:1},
   aging:{k:'aging',f:r=>r.aging,style:r=>r.aging>90?'color:var(--b4);font-weight:600':r.aging>60?'color:var(--b3)':''},
+  invCount:{k:'invCount',f:r=>r.invCount},
   usd:{k:'usd',f:r=>r.usd?usd(r.usd):'—',cls:'muted'},
   inr:{k:'inr',sorted:1,f:r=>'<b>'+money(r.inr)+'</b>'},
   note:NOTE_COL};
 const LEVELS={
   item:['cust','invNo','callType','product','spoc','am','acctStatus','aging','usd','inr','note'],
   invoice:['cust','invNo','spoc','am','acctStatus','aging','usd','inr','note'],
-  customer:['cust','spoc','am','acctStatus','aging','usd','inr','note']};
+  customer:['cust','spoc','am','acctStatus','aging','invCount','usd','inr','note']};
 const groupRows=(rows,keyOf)=>{const m=new Map();
   rows.forEach(r=>{const k=keyOf(r);let g=m.get(k);
     if(!g){g=Object.assign({},r,{usd:0,inr:0});m.set(k,g);}
@@ -850,14 +851,15 @@ const groupRows=(rows,keyOf)=>{const m=new Map();
 const ROWS={item:()=>view(),
   /* invoice-level remarks are kept per invoice and shown only in this view */
   invoice:()=>groupRows(view(),r=>r.invNo+'|'+r.cust).map(g=>{g.noteKey='INV::'+g.invNo+'|'+g.cust;g.note=NOTES[g.noteKey]||'';return g;}),
-  customer:()=>groupRows(view(),r=>r.cust).map(g=>{g.noteKey='CUS::'+g.cust;g.note=NOTES[g.noteKey]||'';return g;})};
+  customer:()=>{const rs=view(),inv=new Map();rs.forEach(r=>{let s=inv.get(r.cust);if(!s)inv.set(r.cust,s=new Set());s.add(r.invNo);});
+    return groupRows(rs,r=>r.cust).map(g=>{g.invCount=inv.get(g.cust).size;g.noteKey='CUS::'+g.cust;g.note=NOTES[g.noteKey]||'';return g;});}};
 let LEVEL='item', drawPend=()=>{};
 function buildLevel(level){
   LEVEL=level;
   const keys=LEVELS[level];
   document.querySelector('#t-pend thead tr').innerHTML=keys.map(k=>`<th data-k="${k}">${TH[k]}</th>`).join('');
   drawPend=mkTable('t-pend',ROWS[level],keys.map(k=>COLDEF[k]),
-    rows=>keys.map((k,i)=>k==='usd'?usd(sum(rows,r=>r.usd)):k==='inr'?money(sum(rows,r=>r.inr)):k==='note'?noteFoot(rows):i===0?'Grand total':''));
+    rows=>keys.map((k,i)=>k==='invCount'?sum(rows,r=>r.invCount):k==='usd'?usd(sum(rows,r=>r.usd)):k==='inr'?money(sum(rows,r=>r.inr)):k==='note'?noteFoot(rows):i===0?'Grand total':''));
   document.querySelectorAll('#segView button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===level?'true':'false'));
 }
 document.getElementById('segView').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;buildLevel(b.dataset.v);drawPend();});
@@ -1001,7 +1003,7 @@ document.getElementById('fReset').onclick=()=>{
 /* ---------------- export ---------------- */
 const EXPORT={
   pend:()=>{
-    const hd={cust:'Customer',invNo:'Invoice',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Account manager',acctStatus:'Account status',aging:'Aging days',usd:'Due USD',inr:'Outstanding INR',note:'Manual remark'};
+    const hd={invCount:'Invoices',cust:'Customer',invNo:'Invoice',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Account manager',acctStatus:'Account status',aging:'Aging days',invCount:'Invoices',usd:'Due USD',inr:'Outstanding INR',note:'Manual remark'};
     const keys=LEVEL==='item'?['cust','invNo','invDate','item','callType','product','spoc','am','acctStatus','aging','usd','inr','note']:LEVELS[LEVEL];
     return [keys.map(k=>k==='invDate'?'Invoice date':k==='item'?'Item':hd[k]),ROWS[LEVEL]().map(r=>keys.map(k=>r[k])),
     LEVEL==='item'?'invoice-lines':LEVEL==='invoice'?'invoice-level':'customer-level'];},
