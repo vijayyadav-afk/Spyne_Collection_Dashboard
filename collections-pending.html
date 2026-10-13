@@ -499,6 +499,8 @@ const cln=v=>{const s=String(v==null?'':v).replace(/\s+/g,' ').trim();return s==
 
 /* Columns are matched by header name, with the old sheet's names kept as
    aliases so a rename on either side still resolves. */
+/* test entries that were typed into the sheet; they are left out of every number on this page */
+const DUMMY_CUSTOMERS=new Set(['asdf','na','asdfasdf','#1 vincue']);
 const WANT={
   region:['region','entity'],
   invNo:['invoice_number','invoice number'],
@@ -552,7 +554,7 @@ function buildRows(text,label){
     if(!r||r.join('').trim()==='')continue;
     if(r.length!==width){ragged++;continue;}
     const cust=cln(pick(r,'cust',''));
-    if(!cust)continue;
+    if(!cust||DUMMY_CUSTOMERS.has(cust.toLowerCase()))continue;
     rows.push({
       cust, region:cln(pick(r,'region',''))||'—',
       invNo:cln(pick(r,'invNo','')), invDate:cln(pick(r,'invDate','')),
