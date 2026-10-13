@@ -268,7 +268,32 @@
     .hbars{gap:6px;padding:2px}
     .hbar .zone{min-height:20px}
     #p-detail{padding-top:12px}
-  }</style>
+  }.msel{position:relative}
+  .mbox{display:flex;align-items:center;flex-wrap:nowrap;gap:4px;min-width:230px;max-width:330px;background:color-mix(in srgb,var(--bar1) 9%,var(--card));border:1px solid color-mix(in srgb,var(--bar1) 28%,var(--line));border-radius:7px;padding:2px 4px}
+  .mbox:focus-within{border-color:var(--bar1)}
+  .mbox input[type=search]{flex:1 1 90px;min-width:70px;border:0!important;background:transparent!important;box-shadow:none!important;outline:none;padding:4px 4px}
+  #mchips{display:inline-flex;gap:3px;flex:0 0 auto}
+  .chipx{display:inline-flex;align-items:center;gap:3px;background:var(--bar1);color:#fff;border-radius:999px;padding:1px 4px 1px 8px;font-size:10.5px;font-weight:600;white-space:nowrap;max-width:110px}
+  .chipx span{overflow:hidden;text-overflow:ellipsis}
+  .chipx button{all:unset;cursor:pointer;padding:0 3px;line-height:1;opacity:.85}
+  .chipx.more{padding:1px 8px;background:var(--ink2)}
+  .mpanel{position:absolute;z-index:60;top:calc(100% + 4px);left:0;width:380px;max-width:92vw;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);overflow:hidden}
+  .mtools{display:flex;align-items:center;gap:12px;padding:7px 10px;border-bottom:1px solid var(--line2);font-size:11.5px}
+  .mlink{all:unset;cursor:pointer;color:var(--b1);font-weight:600}
+  .mlink:hover{text-decoration:underline}
+  .mcount{margin-left:auto;color:var(--ink3)}
+  .mlist{max-height:300px;overflow:auto}
+  .mrow2{display:grid;grid-template-columns:18px 1fr auto;gap:8px;align-items:center;padding:6px 10px;cursor:pointer;font-size:12.5px;border-bottom:1px solid var(--line2)}
+  .mrow2:hover{background:color-mix(in srgb,var(--bar1) 7%,var(--card))}
+  .mrow2 .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mrow2 .am{color:var(--ink3);font-variant-numeric:tabular-nums;font-size:11.5px}
+  .mrow2 input{margin:0;accent-color:var(--bar1)}
+  .mempty{padding:14px 10px;color:var(--ink3);font-size:12px}
+  .mpaste{padding:8px 10px;border-bottom:1px solid var(--line2)}
+  .mpaste textarea{width:100%;box-sizing:border-box;font:inherit;font-size:12px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px}
+  .mrow{display:flex;align-items:center;gap:8px;margin-top:6px}
+  .mmsg{font-size:11.5px;color:var(--ink2)}
+</style>
 <script>try{var __th=localStorage.getItem("spyneTheme");if(__th==="light"||__th==="dark")document.documentElement.setAttribute("data-theme",__th);}catch(e){}</script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -302,7 +327,12 @@
 </div>
 
 <div class="toolbar">
-  <input type="search" id="fq" placeholder="Search customer or invoice…">
+  <div class="msel" id="msel"><div class="mbox" id="mbox"><span id="mchips"></span><input type="search" id="fq" placeholder="Search customer or invoice…" autocomplete="off"></div>
+    <div class="mpanel" id="mpanel" hidden>
+      <div class="mtools"><button type="button" class="mlink" id="mAll">Select all matches</button><button type="button" class="mlink" id="mClear">Clear</button><button type="button" class="mlink" id="mPasteBtn">Paste list</button><span class="mcount" id="mCount"></span></div>
+      <div class="mpaste" id="mPaste" hidden><textarea id="mPasteTxt" rows="4" placeholder="One customer name per line"></textarea><div class="mrow"><button type="button" class="btn" id="mPasteGo">Select these</button><span class="mmsg" id="mPasteMsg"></span></div></div>
+      <div class="mlist" id="mlist"></div>
+    </div></div>
   <select id="fRegion"></select>
   <select id="fAm"></select>
   <select id="fSpoc"></select>
@@ -562,13 +592,13 @@ function buildRows(text,label){
 
 /* ---------------- state ---------------- */
 let ALL=[], provText='', ragged=0;
-const F={q:'',region:'',am:'',spoc:'',product:'',acct:'',band:'',pay:''};
+const F={q:'',region:'',am:'',spoc:'',product:'',acct:'',band:'',pay:'',custSet:new Set()};
 
 const BANDS={a:r=>r.aging<=30, b:r=>r.aging>30&&r.aging<=60, c:r=>r.aging>60&&r.aging<=90, d:r=>r.aging>90};
 function view(){
   const q=F.q;
   return ALL.filter(r=>
-    (!q || r.cust.toLowerCase().includes(q) || r.invNo.toLowerCase().includes(q)) &&
+    (F.custSet.size?F.custSet.has(r.cust):(!q || r.cust.toLowerCase().includes(q) || r.invNo.toLowerCase().includes(q))) &&
     (!F.region || r.region===F.region) && (!F.am || r.am===F.am) &&
     (!F.spoc || r.spoc===F.spoc) && (!F.product || r.product===F.product) &&
     (!F.acct || r.acctStatus===F.acct) &&
@@ -862,6 +892,7 @@ function syncFilters(){
   document.getElementById('fBand').value=F.band;
   document.getElementById('fq').value=F.q;
   document.getElementById('fPay').value=F.pay;
+  if(window.mselRefresh)window.mselRefresh();
 }
 const wire=(id,key,lower)=>{
   const el=document.getElementById(id);
@@ -873,10 +904,59 @@ wire('fq','q',1); wire('fRegion','region'); wire('fAm','am'); wire('fSpoc','spoc
 wire('fProduct','product'); wire('fAcct','acct'); wire('fBand','band');
 wire('fPay','pay');
 document.getElementById('fReset').onclick=()=>{
-  Object.assign(F,{q:'',region:'',am:'',spoc:'',product:'',acct:'',band:'',pay:''});
+  Object.assign(F,{q:'',region:'',am:'',spoc:'',product:'',acct:'',band:'',pay:'',custSet:new Set()});
   syncFilters(); renderAll();
 };
 
+
+/* ---------------- multi-select customer search ---------------- */
+(function(){
+  const q=document.getElementById('fq'), panel=document.getElementById('mpanel'), list=document.getElementById('mlist');
+  const chips=document.getElementById('mchips'), cnt=document.getElementById('mCount'), box=document.getElementById('msel');
+  const paste=document.getElementById('mPaste'), pasteTxt=document.getElementById('mPasteTxt'), pasteMsg=document.getElementById('mPasteMsg');
+  const apply=()=>{renderAll();};
+  const custTotals=()=>{const m=new Map();ALL.forEach(r=>m.set(r.cust,(m.get(r.cust)||0)+r.inr));
+    return [...m.entries()].sort((a,b)=>b[1]-a[1]);};
+  const matches=()=>{const s=q.value.trim().toLowerCase();let all=custTotals();
+    if(s){const inv=new Set(ALL.filter(r=>r.invNo.toLowerCase().includes(s)).map(r=>r.cust));
+      all=all.filter(([c])=>c.toLowerCase().includes(s)||inv.has(c));}
+    return all;};
+  function drawChips(){
+    const sel=[...F.custSet];chips.innerHTML='';
+    sel.slice(0,2).forEach(c=>{const e=document.createElement('span');e.className='chipx';e.title=c;
+      e.innerHTML='<span>'+esc(c)+'</span><button type="button" aria-label="Remove">✕</button>';
+      e.querySelector('button').onclick=ev=>{ev.stopPropagation();F.custSet.delete(c);drawChips();drawList();apply();};chips.appendChild(e);});
+    if(sel.length>2){const m=document.createElement('span');m.className='chipx more';m.textContent='+'+(sel.length-2);m.title=sel.slice(2).join('\n');chips.appendChild(m);}
+    q.placeholder=sel.length?'Add more…':'Search customer or invoice…';
+  }
+  function drawList(){
+    const ms=matches(),show=ms.slice(0,80);
+    cnt.textContent=F.custSet.size?F.custSet.size+' selected':ms.length+' customers';
+    list.innerHTML=show.length?show.map(([c,v])=>'<label class="mrow2"><input type="checkbox" data-c="'+esc(c)+'"'+(F.custSet.has(c)?' checked':'')+'><span class="nm" title="'+esc(c)+'">'+esc(c)+'</span><span class="am">'+short(v)+'</span></label>').join('')
+      +(ms.length>80?'<div class="mempty">Showing 80 of '+ms.length+'. Type more to narrow the list.</div>':'')
+      :'<div class="mempty">No customer matches.</div>';
+    list.querySelectorAll('input').forEach(i=>i.onchange=()=>{i.checked?F.custSet.add(i.dataset.c):F.custSet.delete(i.dataset.c);drawChips();cnt.textContent=F.custSet.size?F.custSet.size+' selected':ms.length+' customers';apply();});
+  }
+  const open=()=>{panel.hidden=false;drawList();};
+  q.addEventListener('focus',open);
+  q.addEventListener('input',()=>{if(panel.hidden)open();else drawList();});
+  document.addEventListener('mousedown',e=>{if(!box.contains(e.target))panel.hidden=true;});
+  q.addEventListener('keydown',e=>{if(e.key==='Escape'){panel.hidden=true;q.blur();}
+    if(e.key==='Backspace'&&!q.value&&F.custSet.size){const last=[...F.custSet].pop();F.custSet.delete(last);drawChips();drawList();apply();}});
+  document.getElementById('mAll').onclick=()=>{matches().forEach(([c])=>F.custSet.add(c));q.value='';F.q='';drawChips();drawList();apply();};
+  document.getElementById('mClear').onclick=()=>{F.custSet.clear();drawChips();drawList();apply();};
+  document.getElementById('mPasteBtn').onclick=()=>{paste.hidden=!paste.hidden;if(!paste.hidden)pasteTxt.focus();};
+  document.getElementById('mPasteGo').onclick=()=>{
+    const names=pasteTxt.value.split(/[\n\r\t;]+/).map(s=>s.trim()).filter(Boolean);
+    const all=custTotals().map(x=>x[0]),low=all.map(c=>c.toLowerCase()),miss=[];let hit=0;
+    names.forEach(n=>{const k=n.toLowerCase();let i=low.indexOf(k);
+      if(i<0){const p=low.map((c,j)=>c.includes(k)?j:-1).filter(j=>j>-1);if(p.length===1)i=p[0];}
+      if(i>-1){F.custSet.add(all[i]);hit++;}else miss.push(n);});
+    pasteMsg.textContent=hit+' selected'+(miss.length?'; not found: '+miss.slice(0,4).join(', ')+(miss.length>4?' +'+(miss.length-4)+' more':''):'');
+    drawChips();drawList();apply();};
+  window.mselRefresh=()=>{drawChips();if(!panel.hidden)drawList();};
+  drawChips();
+})();
 /* ---------------- export ---------------- */
 const EXPORT={
   pend:()=>[['Customer','Invoice','Invoice date','Item','Product Type','Product','SPOC','Account manager','Account status',
