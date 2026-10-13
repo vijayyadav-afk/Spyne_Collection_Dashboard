@@ -293,6 +293,8 @@
   .mpaste textarea{width:100%;box-sizing:border-box;font:inherit;font-size:12px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px}
   .mrow{display:flex;align-items:center;gap:8px;margin-top:6px}
   .mmsg{font-size:11.5px;color:var(--ink2)}
+.vwrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .vwrap .seg button{font-size:11.5px}
 </style>
 <script>try{var __th=localStorage.getItem("spyneTheme");if(__th==="light"||__th==="dark")document.documentElement.setAttribute("data-theme",__th);}catch(e){}</script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -402,20 +404,9 @@
 <section class="page on" id="p-detail">
   <div class="card">
     <header><h2>Invoice line detail</h2><span class="cap gone" id="cap-pend"></span>
-      <button class="btn" data-export="pend">Export CSV</button></header>
-    <div class="scroll"><table id="t-pend"><thead><tr>
-      <th data-k="cust">Customer</th>
-      <th data-k="invNo">Invoice no.</th>
-      <th data-k="callType">Product Type</th>
-      <th data-k="product">Product</th>
-      <th data-k="spoc">SPOC</th>
-      <th data-k="am">Acct mgr</th>
-      <th data-k="acctStatus">Account status</th>
-      <th data-k="aging">Aging days</th>
-      <th data-k="usd">Due USD</th>
-      <th data-k="inr" class="sorted">Outstanding</th>
-      <th data-k="note">Manual remark</th>
-    </tr></thead><tbody></tbody><tfoot></tfoot></table></div>
+      <div class="vwrap"><div class="seg" id="segView" role="group" aria-label="Table level"><button type="button" data-v="customer" aria-pressed="false">Customer level</button><button type="button" data-v="invoice" aria-pressed="false">Invoice level</button><button type="button" data-v="item" aria-pressed="true">Item level</button></div>
+      <button class="btn" data-export="pend">Export CSV</button></div></header>
+    <div class="scroll"><table id="t-pend"><thead><tr></tr></thead><tbody></tbody><tfoot></tfoot></table></div>
   </div>
 </section>
 
@@ -830,22 +821,45 @@ function renderPend(){
   document.getElementById('cap-pend').innerHTML=
     `${v.length} of ${ALL.length} lines · <b>${short(tot)}</b>`;
 }
-const drawPend=mkTable('t-pend',view,[
-  {k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
-  {k:'invNo',f:r=>esc(r.invNo)||'—',cls:'muted',txt:1},
-  {k:'callType',f:r=>r.callType?`<span class="chip">${r.callType}</span>`:'',txt:1},
-  {k:'product',f:r=>`<span class="chip">${esc(r.product)}</span>`,txt:1},
-  {k:'spoc',f:r=>esc(r.spoc),txt:1},
-  {k:'am',f:r=>esc(r.am),txt:1,cls:'muted'},
-  {k:'acctStatus',f:r=>statusChip(r.acctStatus),txt:1},
-  {k:'aging',f:r=>r.aging,style:r=>r.aging>90?'color:var(--b4);font-weight:600':r.aging>60?'color:var(--b3)':''},
-  {k:'usd',f:r=>r.usd?usd(r.usd):'—',cls:'muted'},
-  {k:'inr',sorted:1,f:r=>'<b>'+money(r.inr)+'</b>'},
-  NOTE_COL
-/* 11 cells: customer, invoice no., product type, product, spoc, acct mgr, account status, aging, usd, inr, remark.
-   Aging is left blank — a sum of day counts would be meaningless. */
-],rows=>['Grand total','','','','','','','',
-  usd(sum(rows,r=>r.usd)),money(sum(rows,r=>r.inr)),noteFoot(rows)]);
+/* Three views of the same lines: Item level (every invoice line), Invoice level (one row per invoice),
+   Customer level (one row per customer). Amounts add up; aging shows the oldest line. */
+const TH={cust:'Customer',invNo:'Invoice no.',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Acct mgr',
+  acctStatus:'Account status',aging:'Aging days',usd:'Due USD',inr:'Outstanding',note:'Manual remark'};
+const COLDEF={
+  cust:{k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
+  invNo:{k:'invNo',f:r=>esc(r.invNo)||'—',cls:'muted',txt:1},
+  callType:{k:'callType',f:r=>r.callType?`<span class="chip">${r.callType}</span>`:'',txt:1},
+  product:{k:'product',f:r=>`<span class="chip">${esc(r.product)}</span>`,txt:1},
+  spoc:{k:'spoc',f:r=>esc(r.spoc),txt:1},
+  am:{k:'am',f:r=>esc(r.am),txt:1,cls:'muted'},
+  acctStatus:{k:'acctStatus',f:r=>statusChip(r.acctStatus),txt:1},
+  aging:{k:'aging',f:r=>r.aging,style:r=>r.aging>90?'color:var(--b4);font-weight:600':r.aging>60?'color:var(--b3)':''},
+  usd:{k:'usd',f:r=>r.usd?usd(r.usd):'—',cls:'muted'},
+  inr:{k:'inr',sorted:1,f:r=>'<b>'+money(r.inr)+'</b>'},
+  note:NOTE_COL};
+const LEVELS={
+  item:['cust','invNo','callType','product','spoc','am','acctStatus','aging','usd','inr','note'],
+  invoice:['cust','invNo','spoc','am','acctStatus','aging','usd','inr','note'],
+  customer:['cust','spoc','am','acctStatus','aging','usd','inr','note']};
+const groupRows=(rows,keyOf)=>{const m=new Map();
+  rows.forEach(r=>{const k=keyOf(r);let g=m.get(k);
+    if(!g){g=Object.assign({},r,{usd:0,inr:0});m.set(k,g);}
+    g.usd+=r.usd;g.inr+=r.inr;g.aging=Math.max(g.aging,r.aging);});
+  return [...m.values()];};
+const ROWS={item:()=>view(),
+  invoice:()=>groupRows(view(),r=>r.invNo+'|'+r.cust),
+  customer:()=>groupRows(view(),r=>r.cust)};
+let LEVEL='item', drawPend=()=>{};
+function buildLevel(level){
+  LEVEL=level;
+  const keys=LEVELS[level];
+  document.querySelector('#t-pend thead tr').innerHTML=keys.map(k=>`<th data-k="${k}">${TH[k]}</th>`).join('');
+  drawPend=mkTable('t-pend',ROWS[level],keys.map(k=>COLDEF[k]),
+    rows=>keys.map((k,i)=>k==='usd'?usd(sum(rows,r=>r.usd)):k==='inr'?money(sum(rows,r=>r.inr)):k==='note'?noteFoot(rows):i===0?'Grand total':''));
+  document.querySelectorAll('#segView button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===level?'true':'false'));
+}
+document.getElementById('segView').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;buildLevel(b.dataset.v);drawPend();});
+buildLevel('item');
 
 /* ---------------- shell ---------------- */
 function renderProv(){
@@ -959,10 +973,11 @@ document.getElementById('fReset').onclick=()=>{
 })();
 /* ---------------- export ---------------- */
 const EXPORT={
-  pend:()=>[['Customer','Invoice','Invoice date','Item','Product Type','Product','SPOC','Account manager','Account status',
-    'Aging days','Due USD','Outstanding INR','Manual remark'],
-    view().map(r=>[r.cust,r.invNo,r.invDate,r.item,r.callType,r.product,r.spoc,r.am,r.acctStatus,r.aging,r.usd,r.inr,r.note]),
-    'invoice-lines'],
+  pend:()=>{
+    const hd={cust:'Customer',invNo:'Invoice',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Account manager',acctStatus:'Account status',aging:'Aging days',usd:'Due USD',inr:'Outstanding INR',note:'Manual remark'};
+    const keys=LEVEL==='item'?['cust','invNo','invDate','item','callType','product','spoc','am','acctStatus','aging','usd','inr','note']:LEVELS[LEVEL];
+    return [keys.map(k=>k==='invDate'?'Invoice date':k==='item'?'Item':hd[k]),ROWS[LEVEL]().map(r=>keys.map(k=>r[k])),
+    LEVEL==='item'?'invoice-lines':LEVEL==='invoice'?'invoice-level':'customer-level'];},
 };
 document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>{
   const [head,body,name]=EXPORT[b.dataset.export]();
