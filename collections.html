@@ -160,7 +160,7 @@ html,body{height:100%}
       <div class="ctl"><span>Entity</span><div class="seg" id="segEnt" role="group" aria-label="Entity">
         <button data-v="-1" aria-pressed="true">All</button><button data-v="0" aria-pressed="false">US</button><button data-v="1" aria-pressed="false">India</button></div></div>
       <div class="ctl"><span>Period</span><div class="seg" id="segScope" role="group" aria-label="Period"><button data-v="day" aria-pressed="false">Daily</button><button data-v="week" aria-pressed="false">Weekly</button><button data-v="mtd" aria-pressed="true">MTD</button></div></div>
-      <div class="ctl"><span>As of</span><div class="date"><input type="date" id="asof" aria-label="As of date"><button id="latest" type="button">Latest</button><button id="reset" type="button">Reset filters</button><button id="btnDetails" type="button">Details table ↓</button></div></div>
+      <div class="ctl"><span>As of</span><div class="date"><input type="date" id="asof" aria-label="As of date"><button id="reset" type="button">Reset filters</button></div></div>
       <div class="ctl"><span>Theme</span><div class="seg" id="segTheme" role="group" aria-label="Theme"><button data-v="light" aria-pressed="false">Light</button><button data-v="dark" aria-pressed="false">Dark</button></div></div>
       <div class="ctl"><span>Dashboard</span><select id="selDash" aria-label="Switch dashboard"><option value="/collections">Collections dashboard</option><option value="/collections-pending">Collection Pending dashboard</option></select></div>
       <span id="liveTag" class="live">● Connecting…</span>
@@ -456,7 +456,7 @@ function seg(id,key,parse){
 seg("segAm","am",Number);seg("segProd","prod",Number);seg("segEnt","ent",Number);seg("segScope","scope",String);
 var inp=document.getElementById("asof");inp.min=iso(0);inp.max=iso(MAXD);inp.value=iso(MAXD);
 inp.addEventListener("change",function(){if(!inp.value)return;var d=fromIso(inp.value);st.asof=Math.max(0,Math.min(MAXD,d));render()});
-document.getElementById("latest").addEventListener("click",function(){st.asof=MAXD;inp.value=iso(MAXD);render()});
+
 document.getElementById("foot").textContent="Source: Google Sheet, tab “0”, column Collected Amount (INR), by Date of Collection. Refunds are negative entries and are netted into every figure. Figures are company-reported collections, not audited. Data refreshes automatically from the sheet every minute.";
 if(window.matchMedia)window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",render);
 new MutationObserver(render).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
@@ -472,7 +472,7 @@ clickHandlers.cWeek=function(i){var e=H.weekEnds[i];act(function(){st.asof=e;st.
 clickHandlers.cMonth=function(i){if(H.trendMode!=="m")return;var e=H.monthEnds[i];act(function(){st.asof=e;st.scope="mtd"})};
 document.getElementById("reset").addEventListener("click",function(){act(function(){st.prod=st.ent=st.am=st.mode=st.cust=-1;st.amSet=null;st.amLabel="";st.asof=MAXD;st.scope="mtd"})});document.getElementById("detWrap").addEventListener("scroll",detMore);
 document.getElementById("segDet").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;st.detAll=b.getAttribute("data-v")==="all";setSeg("segDet",st.detAll?"all":"period");render()});
-document.getElementById("btnDetails").addEventListener("click",function(){document.getElementById("details").scrollIntoView({behavior:"smooth"})});
+
 function effTheme(){var d=document.documentElement.getAttribute("data-theme");if(d)return d;return window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}
 document.getElementById("segTheme").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;var v=b.getAttribute("data-v");document.documentElement.setAttribute("data-theme",v);try{localStorage.setItem("spyneTheme",v)}catch(x){}setSeg("segTheme",v)});
 if(window.matchMedia)matchMedia("(prefers-color-scheme: dark)").addEventListener("change",function(){setSeg("segTheme",effTheme())});
