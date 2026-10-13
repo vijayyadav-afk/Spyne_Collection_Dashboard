@@ -850,7 +850,7 @@ const groupRows=(rows,keyOf)=>{const m=new Map();
 const ROWS={item:()=>view(),
   /* invoice-level remarks are kept per invoice and shown only in this view */
   invoice:()=>groupRows(view(),r=>r.invNo+'|'+r.cust).map(g=>{g.noteKey='INV::'+g.invNo+'|'+g.cust;g.note=NOTES[g.noteKey]||'';return g;}),
-  customer:()=>groupRows(view(),r=>r.cust)};
+  customer:()=>groupRows(view(),r=>r.cust).map(g=>{g.noteKey='CUS::'+g.cust;g.note=NOTES[g.noteKey]||'';return g;})};
 let LEVEL='item', drawPend=()=>{};
 function buildLevel(level){
   LEVEL=level;
