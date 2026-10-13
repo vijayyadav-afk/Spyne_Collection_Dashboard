@@ -320,7 +320,7 @@ function renderDetails(a,b){
   var h="<thead><tr><th>Account manager</th><th>AE name</th><th>Customer</th><th>Product</th><th>Date</th><th>Deposit to</th><th>Currency</th><th>Received amount</th><th>Amount INR</th></tr></thead><tbody>";
   for(var i=0;i<DET.n;i++)h+=detRow(rs[i]);
   if(!rs.length)h="<tbody><tr><td class='empty' colspan='9'>No entries for these filters.</td></tr></tbody>";
-  else h+="</tbody><tfoot><tr><td colspan='8'>Grand total ("+rs.length.toLocaleString("en-IN")+" entries)</td><td>"+inr(tot)+"</td></tr></tfoot>";
+  else{var usd=0,all=0;rs.forEach(function(r){all+=r.o;if(D.cur[r.cu]==="USD")usd+=r.o});h+="</tbody><tfoot><tr><td colspan='7'>Grand total ("+rs.length.toLocaleString("en-IN")+" entries)</td><td>"+Math.round(all).toLocaleString("en-IN")+"<div class='note' style='font-weight:500'>USD rows: "+Math.round(usd).toLocaleString("en-IN")+"</div></td><td>"+inr(tot)+"</td></tr></tfoot>"}
   document.getElementById("det").innerHTML=h;
   document.getElementById("detWrap").scrollTop=0;
   document.getElementById("detNote").textContent=st.detAll?"All entries, newest first":"Newest first · "+rangeOf(st.scope,st.asof)[2];
