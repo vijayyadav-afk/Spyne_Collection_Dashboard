@@ -632,7 +632,7 @@ function noteSet(cust,text){
 function renderNoteBar(){const el=document.getElementById('noteCount');if(!el)return;
   const n=noteCount();el.textContent=n?n+(n===1?' remark saved':' remarks saved'):'no remarks yet';}
 const NOTE_COL={k:'note',txt:1,cls:'notecell',
-  f:r=>`<input class="noteIn${r.note?' filled':''}" data-c="${esc(r.cust)}" value="${esc(r.note||'')}" `+
+  f:r=>`<input class="noteIn${r.note?' filled':''}" data-c="${esc(r.noteKey||r.cust)}" value="${esc(r.note||'')}" `+
        `placeholder="add remark…" maxlength="300" spellcheck="false">`};
 const noteFoot=rows=>{const n=rows.filter(r=>r.note).length;
   return n?`<span class="muted">${n} remark${n===1?'':'s'} in view</span>`:'';};
@@ -848,7 +848,8 @@ const groupRows=(rows,keyOf)=>{const m=new Map();
     g.usd+=r.usd;g.inr+=r.inr;g.aging=Math.max(g.aging,r.aging);});
   return [...m.values()];};
 const ROWS={item:()=>view(),
-  invoice:()=>groupRows(view(),r=>r.invNo+'|'+r.cust),
+  /* invoice-level remarks are kept per invoice and shown only in this view */
+  invoice:()=>groupRows(view(),r=>r.invNo+'|'+r.cust).map(g=>{g.noteKey='INV::'+g.invNo+'|'+g.cust;g.note=NOTES[g.noteKey]||'';return g;}),
   customer:()=>groupRows(view(),r=>r.cust)};
 let LEVEL='item', drawPend=()=>{};
 function buildLevel(level){
