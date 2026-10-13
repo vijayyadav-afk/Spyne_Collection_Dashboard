@@ -539,7 +539,7 @@ function buildRows(text,label){
       ccy:cln(pick(r,'ccy',''))||'—',
       lastPay:cln(pick(r,'lastPay','')),
       item:cln(pick(r,'item',''))||'—',
-      callType:(d=>/\binbound\b/i.test(d)?'Inbound':/\boutbound\b/i.test(d)?'Outbound':/\bservice\s+recall\b/i.test(d)?'Service Recall':'')(cln(pick(r,'desc',''))),
+      callType:(d=>/\binbound\b/i.test(d)?'Inbound':/\boutbound\b/i.test(d)?'Outbound':/\bservice\s+recall\b/i.test(d)?'Service Recall':/\brecall\s+sales\b/i.test(d)?'Recall Sales':'')(cln(pick(r,'desc',''))),
       product:cln(pick(r,'product',''))||'—',
       aging:Math.round(numOf(pick(r,'aging',0))),
       payStatus:(cln(pick(r,'payStatus',''))||'—').toLowerCase(),
