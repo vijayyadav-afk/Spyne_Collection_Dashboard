@@ -268,7 +268,16 @@
     .hbars{gap:6px;padding:2px}
     .hbar .zone{min-height:20px}
     #p-detail{padding-top:12px}
-  }.msel{position:relative}
+  }.mf{position:relative}
+  .mfbtn{font:inherit;font-size:12px;cursor:pointer;text-align:left;min-width:112px;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:5px 24px 5px 9px;border-radius:7px;border:1px solid color-mix(in srgb,var(--bar1) 28%,var(--line));background:color-mix(in srgb,var(--bar1) 9%,var(--card));color:var(--ink);position:relative}
+  .mfbtn::after{content:"";position:absolute;right:9px;top:50%;width:6px;height:6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-70%) rotate(45deg);opacity:.7}
+  .mfbtn:hover{border-color:var(--bar1-lt)}
+  .mfbtn.on{background:var(--bar1);border-color:var(--bar1);color:var(--bar1-ink);font-weight:600}
+  .mfpanel{position:absolute;z-index:60;top:calc(100% + 4px);left:0;min-width:210px;max-width:300px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);overflow:hidden}
+  .mfq{display:block;width:calc(100% - 20px);margin:8px 10px 0;box-sizing:border-box;font:inherit;font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+  .mftools{display:flex;align-items:center;gap:12px;padding:7px 10px;border-bottom:1px solid var(--line2);font-size:11.5px}
+  .mflist{max-height:280px;overflow:auto}
+  .msel{position:relative}
   .mbox{display:flex;align-items:center;flex-wrap:nowrap;gap:4px;min-width:230px;max-width:330px;background:color-mix(in srgb,var(--bar1) 9%,var(--card));border:1px solid color-mix(in srgb,var(--bar1) 28%,var(--line));border-radius:7px;padding:2px 4px}
   .mbox:focus-within{border-color:var(--bar1)}
   .mbox input[type=search]{flex:1 1 90px;min-width:70px;border:0!important;background:transparent!important;box-shadow:none!important;outline:none;padding:4px 4px}
@@ -335,23 +344,13 @@
       <div class="mpaste" id="mPaste" hidden><textarea id="mPasteTxt" rows="4" placeholder="One customer name per line"></textarea><div class="mrow"><button type="button" class="btn" id="mPasteGo">Select these</button><span class="mmsg" id="mPasteMsg"></span></div></div>
       <div class="mlist" id="mlist"></div>
     </div></div>
-  <select id="fRegion"></select>
-  <select id="fAm"></select>
-  <select id="fSpoc"></select>
-  <select id="fProduct"></select>
-  <select id="fAcct"></select>
-  <select id="fBand">
-    <option value="">Any aging</option>
-    <option value="a">0 - 30 days</option>
-    <option value="b">31 - 60 days</option>
-    <option value="c">61 - 90 days</option>
-    <option value="d">Over 90 days</option>
-  </select>
-  <select id="fPay">
-    <option value="">Payment Mode</option>
-    <option value="auto">Autopay</option>
-    <option value="manual">Manual</option>
-  </select>
+  <div id="fRegion"></div>
+  <div id="fAm"></div>
+  <div id="fSpoc"></div>
+  <div id="fProduct"></div>
+  <div id="fAcct"></div>
+  <div id="fBand"></div>
+  <div id="fPay"></div>
   <button class="btn" id="fReset">Reset</button>
   <span class="spacer"></span>
   <div class="seg" id="segTheme" role="group" aria-label="Theme"><button data-v="light" aria-pressed="false">Light</button><button data-v="dark" aria-pressed="false">Dark</button></div>
@@ -583,21 +582,23 @@ function buildRows(text,label){
 
 /* ---------------- state ---------------- */
 let ALL=[], provText='', ragged=0;
-const F={q:'',region:'',am:'',spoc:'',product:'',acct:'',band:'',pay:'',custSet:new Set()};
+const F={q:'',region:new Set(),am:new Set(),spoc:new Set(),product:new Set(),acct:new Set(),band:new Set(),pay:new Set(),custSet:new Set()};
+function isOn(a,k){return !!a&&(typeof a==='string'?a===k:a.has(k));}
+function anyOn(a){return !!a&&(typeof a==='string'?!!a:a.size>0);}
 
 const BANDS={a:r=>r.aging<=30, b:r=>r.aging>30&&r.aging<=60, c:r=>r.aging>60&&r.aging<=90, d:r=>r.aging>90};
 function view(){
   const q=F.q;
   return ALL.filter(r=>
     (F.custSet.size?F.custSet.has(r.cust):(!q || r.cust.toLowerCase().includes(q) || r.invNo.toLowerCase().includes(q))) &&
-    (!F.region || r.region===F.region) && (!F.am || r.am===F.am) &&
-    (!F.spoc || r.spoc===F.spoc) && (!F.product || r.product===F.product) &&
-    (!F.acct || r.acctStatus===F.acct) &&
-    (!F.band || BANDS[F.band](r)) &&
-    (!F.pay || (F.pay==='auto'?r.autopay:!r.autopay)));
+    (!F.region.size || F.region.has(r.region)) && (!F.am.size || F.am.has(r.am)) &&
+    (!F.spoc.size || F.spoc.has(r.spoc)) && (!F.product.size || F.product.has(r.product)) &&
+    (!F.acct.size || F.acct.has(r.acctStatus)) &&
+    (!F.band.size || [...F.band].some(k=>BANDS[k](r))) &&
+    (!F.pay.size || [...F.pay].some(k=>k==='auto'?r.autopay:!r.autopay)));
 }
-function viewNoProduct(){const sv=F.product;F.product="";try{return view();}finally{F.product=sv;}}
-function viewNoBand(){const sv=F.band;F.band="";try{return view();}finally{F.band=sv;}}
+function viewNoProduct(){const sv=F.product;F.product=new Set();try{return view();}finally{F.product=sv;}}
+function viewNoBand(){const sv=F.band;F.band=new Set();try{return view();}finally{F.band=sv;}}
 const bucketOf=r=>r.aging<=30?'b0':r.aging<=60?'b1':r.aging<=90?'b2':'b3';
 
 /* ---------------- manual remarks ---------------- */
@@ -653,11 +654,11 @@ function donutChart(pieEl,lgEl,parts,activeKey,toggle,aria){
     if(share<=0)return '';
     return `<circle class="seg" data-k="${esc(p.k)}" cx="80" cy="80" r="${R}" fill="none" stroke="${p.color}" stroke-width="26"
       stroke-dasharray="${len.toFixed(2)} ${(C-len).toFixed(2)}" stroke-dashoffset="${(-o).toFixed(2)}"
-      transform="rotate(-90 80 80)" style="${activeKey&&activeKey!==p.k?'opacity:.3':''}"><title>${esc(p.label)}: ${short(p.v)} (${pct(p.v,tot)})</title></circle>`;}).join('');
+      transform="rotate(-90 80 80)" style="${anyOn(activeKey)&&!isOn(activeKey,p.k)?'opacity:.3':''}"><title>${esc(p.label)}: ${short(p.v)} (${pct(p.v,tot)})</title></circle>`;}).join('');
   pieEl.innerHTML=`<svg viewBox="0 0 160 160" role="img" aria-label="${esc(aria)}">${segs}
     <text x="80" y="76" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor">${short(tot)}</text>
     <text x="80" y="93" text-anchor="middle" font-size="9.5" fill="currentColor" opacity=".6">outstanding</text></svg>`;
-  lgEl.innerHTML=parts.map(p=>`<div class="lgrow ${activeKey===p.k?'hit':activeKey?'dim':''}" data-k="${esc(p.k)}">
+  lgEl.innerHTML=parts.map(p=>`<div class="lgrow ${isOn(activeKey,p.k)?'hit':anyOn(activeKey)?'dim':''}" data-k="${esc(p.k)}">
       <span class="sw" style="background:${p.color}"></span><span>${esc(p.label)}</span>
       <span class="amt">${short(p.v)}</span><span class="pc">${pct(Math.max(p.v,0),tot)}</span></div>`).join('');
   pieEl.querySelectorAll('.seg').forEach(c=>c.onclick=()=>toggle(c.dataset.k));
@@ -671,18 +672,18 @@ function pieAge(pieEl,lgEl,rows,activeBand){
     {k:'c',b:'b2',label:'61 - 90 days',color:'var(--b3)'},
     {k:'d',b:'b3',label:'Over 90 days',color:'var(--b4)'}];
   parts.forEach(p=>{p.v=sum(rows.filter(r=>bucketOf(r)===p.b),r=>r.inr);});
-  donutChart(pieEl,lgEl,parts,activeBand,k=>{F.band=(F.band===k?'':k);syncFilters();renderAll();},'Outstanding by age bucket');
+  donutChart(pieEl,lgEl,parts,activeBand,k=>{F.band.has(k)?F.band.delete(k):F.band.add(k);syncFilters();renderAll();},'Outstanding by age bucket');
 }
 /* each product's share of total outstanding; filters by product */
 function pieProduct(pieEl,lgEl,rows,activeProduct){
   const named={Studio:'var(--b1)',Vini:'var(--p1)'}, extra=['var(--t1)','var(--b2)','var(--b3)','var(--b4)'];let n=0;
   const parts=groupSum(rows,'product','inr').map(([k,v])=>({k,label:k,v,color:named[k]||extra[n++%extra.length]}));
-  donutChart(pieEl,lgEl,parts,activeProduct,k=>{F.product=(F.product===k?'':k);syncFilters();renderAll();},'Outstanding by product');
+  donutChart(pieEl,lgEl,parts,activeProduct,k=>{F.product.has(k)?F.product.delete(k):F.product.add(k);syncFilters();renderAll();},'Outstanding by product');
 }function hBars(el,items,fmt,onClick,activeKey){
   const max=Math.max(1,...items.map(i=>i[1]));
   el.className='hbars';
   el.innerHTML=items.length?items.map(([k,v])=>
-    `<div class="hbar ${k===activeKey?'hit':''}" data-k="${esc(k)}" ${onClick?'style="cursor:pointer"':''}>
+    `<div class="hbar ${isOn(activeKey,k)?'hit':''}" data-k="${esc(k)}" ${onClick?'style="cursor:pointer"':''}>
        <div class="cat" title="${esc(k)}">${esc(k)}</div>
        <div class="zone"><div class="hfill ${100*v/max<18?'out':''}" style="width:${Math.max(6,100*v/max)}%"><span>${fmt(v)}</span></div></div>
      </div>`).join(''):'<span class="muted">No data.</span>';
@@ -693,12 +694,12 @@ function vCols(el,items,fmt,onClick,activeKey){
   el.className='vchart';
   if(!items.length){el.innerHTML='<span class="muted">No data.</span>';return;}
   el.innerHTML='<div class="vcols">'+items.map(([k,v])=>
-      `<div class="vcol ${k===activeKey?'hit':''}" data-k="${esc(k)}" title="${esc(k)} · ${fmt(v)}"
+      `<div class="vcol ${isOn(activeKey,k)?'hit':''}" data-k="${esc(k)}" title="${esc(k)} · ${fmt(v)}"
             ${onClick?'style="cursor:pointer"':''}>
          <span class="vv" style="bottom:calc(${Math.max(1,86*v/max)}% + 3px)">${fmt(v)}</span>
          <div class="vb" style="height:${Math.max(1,86*v/max)}%"></div></div>`).join('')+'</div>'+
     '<div class="vlabs">'+items.map(([k],i)=>
-      `<div class="vlab ${i%2?'low':''} ${k===activeKey?'on':''}" title="${esc(k)}">${esc(k)}</div>`).join('')+'</div>';
+      `<div class="vlab ${i%2?'low':''} ${isOn(activeKey,k)?'on':''}" title="${esc(k)}">${esc(k)}</div>`).join('')+'</div>';
   if(onClick)el.querySelectorAll('.vcol').forEach(c=>c.onclick=()=>onClick(c.dataset.k));
 }
 function plainBars(el,items,fmt,color){
@@ -815,9 +816,9 @@ function renderPend(){
   pieAge(document.getElementById('pie-age'),document.getElementById('lg-age'),viewNoBand(),F.band);
   pieProduct(document.getElementById('pie-prod'),document.getElementById('lg-prod'),viewNoProduct(),F.product);
   hBars(document.getElementById('b-pend-am'),groupSum(v,'am','inr'),lakh,
-    k=>{F.am=(F.am===k?'':k);syncFilters();renderAll();},F.am);
+    k=>{F.am.has(k)?F.am.delete(k):F.am.add(k);syncFilters();renderAll();},F.am);
   vCols(document.getElementById('b-pend-spoc'),groupSum(v,'spoc','inr',18),lakh,
-    k=>{F.spoc=(F.spoc===k?'':k);syncFilters();renderAll();},F.spoc);
+    k=>{F.spoc.has(k)?F.spoc.delete(k):F.spoc.add(k);syncFilters();renderAll();},F.spoc);
   document.getElementById('cap-pend').innerHTML=
     `${v.length} of ${ALL.length} lines · <b>${short(tot)}</b>`;
 }
@@ -870,7 +871,7 @@ function renderProv(){
     uniqCount(ALL,ENT)+'</b> customers · outstanding in <b>INR</b>'+
     (ragged?' · <span style="color:var(--b4)">'+ragged+' malformed rows skipped</span>':'');
   const bits=[];
-  if(F.pay)bits.push(F.pay==='auto'?'autopay only':'manual only');
+  if(F.pay.size===1)bits.push(F.pay.has('auto')?'autopay only':'manual only');
   document.getElementById('scopeMsg').textContent=
     (bits.length?bits.join(' · ')+' · ':'')+v.length+' of '+ALL.length+' lines in scope';
   document.getElementById('foot').innerHTML=
@@ -898,14 +899,8 @@ function renderAll(){
 }
 function syncFilters(){
   const v=ALL;
-  fillSel('fRegion','All regions',uniqVals(v,'region'),F.region);
-  fillSel('fAm','All account managers',uniqVals(v,'am'),F.am);
-  fillSel('fSpoc','All SPOCs',uniqVals(v,'spoc'),F.spoc);
-  fillSel('fProduct','All products',uniqVals(v,'product'),F.product);
-  fillSel('fAcct','Any account status',uniqVals(v,'acctStatus'),F.acct);
-  document.getElementById('fBand').value=F.band;
+  if(window.mfRefresh)window.mfRefresh();
   document.getElementById('fq').value=F.q;
-  document.getElementById('fPay').value=F.pay;
   if(window.mselRefresh)window.mselRefresh();
 }
 const wire=(id,key,lower)=>{
@@ -914,15 +909,46 @@ const wire=(id,key,lower)=>{
     F[key]=el.type==='checkbox'?el.checked:(lower?el.value.trim().toLowerCase():el.value);
     renderAll();});
 };
-wire('fq','q',1); wire('fRegion','region'); wire('fAm','am'); wire('fSpoc','spoc');
-wire('fProduct','product'); wire('fAcct','acct'); wire('fBand','band');
-wire('fPay','pay');
+wire('fq','q',1);
+
+
 document.getElementById('fReset').onclick=()=>{
-  Object.assign(F,{q:'',region:'',am:'',spoc:'',product:'',acct:'',band:'',pay:'',custSet:new Set()});
+  Object.assign(F,{q:'',region:new Set(),am:new Set(),spoc:new Set(),product:new Set(),acct:new Set(),band:new Set(),pay:new Set(),custSet:new Set()});
   syncFilters(); renderAll();
 };
 
 
+
+/* ---------------- tick-box filter dropdowns ---------------- */
+(function(){
+  const CFG=[
+    {id:'fRegion',key:'region',label:'All regions',vals:()=>uniqVals(ALL,'region')},
+    {id:'fAm',key:'am',label:'All account managers',vals:()=>uniqVals(ALL,'am')},
+    {id:'fSpoc',key:'spoc',label:'All SPOCs',vals:()=>uniqVals(ALL,'spoc'),search:1},
+    {id:'fProduct',key:'product',label:'All products',vals:()=>uniqVals(ALL,'product')},
+    {id:'fAcct',key:'acct',label:'Any account status',vals:()=>uniqVals(ALL,'acctStatus')},
+    {id:'fBand',key:'band',label:'Any aging',opts:[['a','0 - 30 days'],['b','31 - 60 days'],['c','61 - 90 days'],['d','Over 90 days']]},
+    {id:'fPay',key:'pay',label:'Payment Mode',opts:[['auto','Autopay'],['manual','Manual']]}];
+  const parts=CFG.map(c=>{
+    const root=document.getElementById(c.id);root.className='mf';
+    root.innerHTML='<button type="button" class="mfbtn"></button><div class="mfpanel" hidden>'+(c.search?'<input type="search" class="mfq" placeholder="Search…">':'')+
+      '<div class="mftools"><button type="button" class="mlink">Clear</button><span class="mcount"></span></div><div class="mflist"></div></div>';
+    const o={c,root,btn:root.querySelector('.mfbtn'),panel:root.querySelector('.mfpanel'),list:root.querySelector('.mflist'),cnt:root.querySelector('.mcount'),q:root.querySelector('.mfq')};
+    const items=()=>{const all=c.opts||c.vals().map(v=>[v,v]),s=o.q?o.q.value.trim().toLowerCase():'';return s?all.filter(x=>x[1].toLowerCase().includes(s)):all;};
+    o.label=v=>{const x=(c.opts||[]).find(y=>y[0]===v);return x?x[1]:v;};
+    o.drawBtn=()=>{const s=F[c.key];o.btn.textContent=s.size===0?c.label:s.size===1?o.label([...s][0]):s.size+' selected';o.btn.classList.toggle('on',s.size>0);};
+    o.drawList=()=>{const it=items(),s=F[c.key];o.cnt.textContent=s.size?s.size+' selected':it.length+' options';
+      o.list.innerHTML=it.length?it.map(([v,l])=>'<label class="mrow2"><input type="checkbox" data-v="'+esc(v)+'"'+(s.has(v)?' checked':'')+'><span class="nm">'+esc(l)+'</span><span></span></label>').join(''):'<div class="mempty">Nothing matches.</div>';
+      o.list.querySelectorAll('input').forEach(i=>i.onchange=()=>{i.checked?s.add(i.dataset.v):s.delete(i.dataset.v);o.drawBtn();o.cnt.textContent=s.size?s.size+' selected':it.length+' options';renderAll();});};
+    o.btn.onclick=()=>{const open=o.panel.hidden;parts.forEach(p=>p.panel.hidden=true);if(open){o.panel.hidden=false;o.drawList();if(o.q)o.q.focus();}};
+    if(o.q)o.q.addEventListener('input',o.drawList);
+    root.querySelector('.mlink').onclick=()=>{F[c.key].clear();o.drawBtn();o.drawList();renderAll();};
+    return o;});
+  document.addEventListener('mousedown',e=>parts.forEach(p=>{if(!p.root.contains(e.target))p.panel.hidden=true;}));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')parts.forEach(p=>p.panel.hidden=true);});
+  window.mfRefresh=()=>parts.forEach(p=>{p.drawBtn();if(!p.panel.hidden)p.drawList();});
+  window.mfRefresh();
+})();
 /* ---------------- multi-select customer search ---------------- */
 (function(){
   const q=document.getElementById('fq'), panel=document.getElementById('mpanel'), list=document.getElementById('mlist');
