@@ -376,7 +376,7 @@
     <div class="scroll"><table id="t-pend"><thead><tr>
       <th data-k="cust">Customer</th>
       <th data-k="invNo">Invoice no.</th>
-      <th data-k="callType">Inbound / Outbound</th>
+      <th data-k="callType">Call type</th>
       <th data-k="product">Product</th>
       <th data-k="spoc">SPOC</th>
       <th data-k="am">Acct mgr</th>
@@ -539,7 +539,7 @@ function buildRows(text,label){
       ccy:cln(pick(r,'ccy',''))||'—',
       lastPay:cln(pick(r,'lastPay','')),
       item:cln(pick(r,'item',''))||'—',
-      callType:(d=>/\binbound\b/i.test(d)?'Inbound':/\boutbound\b/i.test(d)?'Outbound':'')(cln(pick(r,'desc',''))),
+      callType:(d=>/\binbound\b/i.test(d)?'Inbound':/\boutbound\b/i.test(d)?'Outbound':/\bservice\s+recall\b/i.test(d)?'Service Recall':'')(cln(pick(r,'desc',''))),
       product:cln(pick(r,'product',''))||'—',
       aging:Math.round(numOf(pick(r,'aging',0))),
       payStatus:(cln(pick(r,'payStatus',''))||'—').toLowerCase(),
@@ -812,7 +812,7 @@ const drawPend=mkTable('t-pend',view,[
   {k:'usd',f:r=>r.usd?usd(r.usd):'—',cls:'muted'},
   {k:'inr',sorted:1,f:r=>'<b>'+money(r.inr)+'</b>'},
   NOTE_COL
-/* 11 cells: customer, invoice no., inbound/outbound, product, spoc, acct mgr, account status, aging, usd, inr, remark.
+/* 11 cells: customer, invoice no., call type, product, spoc, acct mgr, account status, aging, usd, inr, remark.
    Aging is left blank — a sum of day counts would be meaningless. */
 ],rows=>['Grand total','','','','','','','',
   usd(sum(rows,r=>r.usd)),money(sum(rows,r=>r.inr)),noteFoot(rows)]);
@@ -879,7 +879,7 @@ document.getElementById('fReset').onclick=()=>{
 
 /* ---------------- export ---------------- */
 const EXPORT={
-  pend:()=>[['Customer','Invoice','Invoice date','Item','Inbound / Outbound','Product','SPOC','Account manager','Account status',
+  pend:()=>[['Customer','Invoice','Invoice date','Item','Call type','Product','SPOC','Account manager','Account status',
     'Aging days','Due USD','Outstanding INR','Manual remark'],
     view().map(r=>[r.cust,r.invNo,r.invDate,r.item,r.callType,r.product,r.spoc,r.am,r.acctStatus,r.aging,r.usd,r.inr,r.note]),
     'invoice-lines'],
