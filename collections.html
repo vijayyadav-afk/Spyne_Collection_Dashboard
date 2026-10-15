@@ -119,6 +119,8 @@ td.l{text-align:left}
 .mlist{max-height:300px;overflow:auto}
 .mrow2{display:grid;grid-template-columns:18px 1fr;gap:8px;align-items:center;padding:6px 10px;cursor:pointer;font-size:12.5px;border-bottom:1px solid var(--line)}
 .mrow2:hover{background:var(--soft)}
+.mrow2.wd{grid-template-columns:18px 1fr auto}
+.mrow2 .lp{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .mrow2 .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mrow2 input{margin:0;accent-color:var(--teal)}
 .mempty{padding:14px 10px;color:var(--muted);font-size:12px}
@@ -557,7 +559,10 @@ document.addEventListener("visibilitychange",function(){if(!document.hidden)live
 /* ---------------- multi-select customer picker ---------------- */
 (function(){
   var q=document.getElementById("inpCust"),panel=document.getElementById("mpanel"),list=document.getElementById("mlist"),chips=document.getElementById("mchips"),cnt=document.getElementById("mCount"),box=document.getElementById("msel");
-  function matches(){var s=q.value.trim().toLowerCase(),out=[];for(var i=0;i<D.cust.length;i++){if(!s||D.cust[i].toLowerCase().indexOf(s)>=0)out.push(i)}out.sort(function(a,b){return D.cust[a].localeCompare(D.cust[b])});return out}
+  var lastPay=[];
+  function calcLast(){lastPay=new Array(D.cust.length);for(var k=0;k<R.length;k++){var r=R[k];if(r.a>0&&(lastPay[r.c]===undefined||r.d>lastPay[r.c]))lastPay[r.c]=r.d}}
+  function matches(){var s=q.value.trim().toLowerCase(),out=[];calcLast();for(var i=0;i<D.cust.length;i++){if(!s||D.cust[i].toLowerCase().indexOf(s)>=0)out.push(i)}
+    out.sort(function(a,b){var x=lastPay[a],y=lastPay[b];if(x===undefined&&y===undefined)return D.cust[a].localeCompare(D.cust[b]);if(x===undefined)return 1;if(y===undefined)return -1;return y-x||D.cust[a].localeCompare(D.cust[b])});return out}
   function apply(){st.rows=100;render()}
   function drawChips(){chips.innerHTML="";var sel=Array.from(st.cs);
     if(sel.length){var e=document.createElement("span");e.className="chipx";e.title=D.cust[sel[0]];e.innerHTML="<span>"+esc(D.cust[sel[0]])+"</span><button type=\"button\" aria-label=\"Remove\">✕</button>";
@@ -566,7 +571,7 @@ document.addEventListener("visibilitychange",function(){if(!document.hidden)live
     q.placeholder=sel.length?"Add more…":"All customers"}
   function drawList(){var ms=matches(),show=ms.slice(0,80);
     cnt.textContent=st.cs.size?st.cs.size+" selected":ms.length+" customers";
-    list.innerHTML=show.length?show.map(function(i){return"<label class=\"mrow2\"><input type=\"checkbox\" data-i=\""+i+"\""+(st.cs.has(i)?" checked":"")+"><span class=\"nm\" title=\""+esc(D.cust[i])+"\">"+esc(D.cust[i])+"</span></label>"}).join("")+(ms.length>80?"<div class=\"mempty\">Showing 80 of "+ms.length+". Type more to narrow the list.</div>":""):"<div class=\"mempty\">No customer matches.</div>";
+    list.innerHTML=show.length?show.map(function(i){return"<label class=\"mrow2 wd\"><input type=\"checkbox\" data-i=\""+i+"\""+(st.cs.has(i)?" checked":"")+"><span class=\"nm\" title=\""+esc(D.cust[i])+"\">"+esc(D.cust[i])+"</span><span class=\"lp\">"+(lastPay[i]===undefined?"no payment":lblY(lastPay[i]))+"</span></label>"}).join("")+(ms.length>80?"<div class=\"mempty\">Showing 80 of "+ms.length+". Type more to narrow the list.</div>":""):"<div class=\"mempty\">No customer matches.</div>";
     [].forEach.call(list.querySelectorAll("input"),function(c){c.onchange=function(){var i=+c.dataset.i;c.checked?st.cs.add(i):st.cs.delete(i);drawChips();cnt.textContent=st.cs.size?st.cs.size+" selected":ms.length+" customers";apply()}})}
   function open(){panel.hidden=false;drawList()}
   q.addEventListener("focus",open);
