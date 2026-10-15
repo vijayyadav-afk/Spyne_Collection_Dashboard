@@ -943,7 +943,7 @@ document.getElementById('fReset').onclick=()=>{
     {id:'fAm',key:'am',label:'All account managers',vals:()=>uniqVals(ALL,'am')},
     {id:'fSpoc',key:'spoc',label:'All SPOCs',vals:()=>uniqVals(ALL,'spoc'),search:1},
     {id:'fProduct',key:'product',label:'All products',vals:()=>uniqVals(ALL,'product')},
-    {id:'fAcct',key:'acct',label:'Any account status',vals:()=>uniqVals(ALL,'acctStatus')},
+    {id:'fAcct',key:'acct',label:'Account Status',vals:()=>uniqVals(ALL,'acctStatus')},
     {id:'fBand',key:'band',label:'Any aging',opts:[['a','0 - 30 days'],['b','31 - 60 days'],['c','61 - 90 days'],['d','Over 90 days']]},
     {id:'fPay',key:'pay',label:'Payment Mode',opts:[['auto','Autopay'],['manual','Manual']]}];
   const parts=CFG.map(c=>{
