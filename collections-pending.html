@@ -306,6 +306,14 @@
   .vwrap .seg button{font-size:11.5px}
 .dateIn{font:inherit;font-size:12px;width:132px;padding:3px 5px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
   .dateIn.filled{border-color:var(--bar1);font-weight:600}
+  /* the filters share the full width of the bar, so nothing is left over before the Light / Dark switch */
+  .toolbar>.mf{flex:1 1 0;min-width:112px}
+  .toolbar>.mf .mfbtn{width:100%;max-width:none;min-width:0}
+  .toolbar>.msel{flex:1.5 1 0;min-width:190px}
+  .toolbar>.msel .mbox{max-width:none;min-width:0;width:100%;box-sizing:border-box}
+  .toolbar>.spacer{display:none}
+  .toolbar>#fAm{flex-grow:1.45}
+  .toolbar>#fAcct{flex-grow:1.2}
 </style>
 <script>try{var __th=localStorage.getItem("spyneTheme");if(__th==="light"||__th==="dark")document.documentElement.setAttribute("data-theme",__th);}catch(e){}</script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
