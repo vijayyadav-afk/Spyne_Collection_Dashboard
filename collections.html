@@ -272,10 +272,10 @@ function renderTiles(){
   var ys=idx(y,0,1), qs=idx(y,Math.floor(mo/3)*3,1);
   var total=sum(0,a), ytd=sum(ys,a), qtd=sum(qs,a), mtd=sum(m,a), r30=sum(a-30,a), r90=sum(a-90,a);
   var T1=[
-   ["t1","Total collection",short(total),"All dates to "+lbl(a),spl(0,a)],
-   ["t2","YTD collection",short(ytd),"1 Jan to "+lbl(a),spl(ys,a)],
-   ["t3","QTD collection",short(qtd),lbl(qs)+" to "+lbl(a),spl(qs,a)],
-   ["t4","MTD collection",short(mtd),lbl(m)+" to "+lbl(a),spl(m,a)],
+   ["t1","MTD collection",short(mtd),lbl(m)+" to "+lbl(a),spl(m,a)],
+   ["t2","QTD collection",short(qtd),lbl(qs)+" to "+lbl(a),spl(qs,a)],
+   ["t3","YTD collection",short(ytd),"1 Jan to "+lbl(a),spl(ys,a)],
+   ["t4","Total collection",short(total),"All dates to "+lbl(a),spl(0,a)],
    ["t5","Rolling 30 days",short(r30),lbl(a-30)+" to "+lbl(a),spl(a-30,a)],
    ["t6","Rolling 90 days",short(r90),lbl(a-90)+" to "+lbl(a),spl(a-90,a)]];
   document.getElementById("tiles").innerHTML=T1.map(function(t){return tile(t[0],t[1],t[2],t[3],t[4])}).join("");
