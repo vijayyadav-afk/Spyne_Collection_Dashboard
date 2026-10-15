@@ -14,6 +14,7 @@ const SOURCES = {
   data: BASE + '/gviz/tq?tqx=out:csv&gid=' + GID + '&tq=' + encodeURIComponent(COLS),
   full: BASE + '/export?format=csv&gid=' + GID,
   probe: BASE + '/gviz/tq?tqx=out:csv&gid=' + GID + '&tq=' + encodeURIComponent('select count(E), sum(AH)'),
+  autopay: BASE + '/export?format=csv&gid=1196397351',
 };
 // ---- access control: Google sign-in limited to one company domain ----
 const GOOGLE_CLIENT_ID = '706399438904-1ijn6ih2tq6svot6iguosob7nf68no5o.apps.googleusercontent.com';

@@ -773,6 +773,32 @@ function mkTable(id,getRows,cols,foot){
 const kpiHtml=items=>items.map(([l,v,h,c,s])=>
   `<div class="kpi ${c||''}"><div class="lab">${l}</div><div class="row"><div class="val">${v}</div>${h?`<div class="hint">${h}</div>`:""}</div>${s?`<div class="split">${s}</div>`:''}</div>`).join('');
 /* Studio / Vini sub-lines under a KPI; f turns a set of rows into the displayed value */
+/* Autopay tab: only rows whose Autopay Status is Active. The amount counts when the upcoming autopay date is in the current month. */
+let AUTO=[], AUTO_OK=false;
+const MON3={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+async function loadAutopay(){
+  try{
+    const r=await relay('autopay'), g=parseCSV(await r.text());
+    if(g.length<2)throw new Error('empty');
+    const low=g[0].map(c=>cln(c).toLowerCase()), ix=n=>low.indexOf(n);
+    const iId=ix('enterprisesid'),iName=ix('customer name'),iSt=ix('autopay status'),iAmt=ix('autopay amount'),iDt=ix('autopay upcoming date');
+    if(iSt<0||iAmt<0||iDt<0)throw new Error('columns moved');
+    AUTO=[];
+    g.slice(1).forEach(x=>{
+      if(cln(x[iSt]).toLowerCase()!=='active')return;
+      const m=/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/.exec(cln(x[iDt]));if(!m||MON3[m[2].toLowerCase()]===undefined)return;
+      AUTO.push({id:cln(x[iId]),name:cln(x[iName]).toLowerCase(),amt:numOf(x[iAmt]),y:+m[3],m:MON3[m[2].toLowerCase()]});});
+    AUTO_OK=true;
+  }catch(e){ if(e&&e.authFail)throw e; AUTO_OK=AUTO.length>0; }
+}
+function filtersActive(){return !!F.q||F.custSet.size>0||['region','am','spoc','product','acct','band','pay'].some(k=>F[k].size>0);}
+function autopayInfo(v){
+  const now=new Date(),y=now.getFullYear(),m=now.getMonth(),filt=filtersActive();let ids=null,names=null;
+  if(filt){ids=new Set();names=new Set();v.forEach(r=>{if(r.entId)ids.add(r.entId);names.add(r.cust.toLowerCase());});}
+  let amt=0,n=0;
+  AUTO.forEach(a=>{if(a.y!==y||a.m!==m)return;if(filt&&!(ids.has(a.id)||names.has(a.name)))return;amt+=a.amt;if(a.amt>0)n++;});
+  return {amt,n,filt};
+}
 const prodSplit=(rows,f)=>['Studio','Vini'].map(p=>
   `<div><span>${p}</span><b>${f(rows.filter(r=>r.product===p))}</b></div>`).join('');
 const statusChip=s=>`<span class="chip ${s==='active'?'ok':s==='inactive'?'bad':''}">${esc(s)}</span>`;
@@ -821,9 +847,9 @@ function renderPend(){
     ['Over 90 days',short(b('b3')),cc(inB('b3')),'crit',prodSplit(v,amt('b3'))],
     ['Customers / invoices',uniqCount(v,ENT)+' / '+uniqCount(v,r=>r.invNo),'','teal',
       prodSplit(v,rows=>uniqCount(rows,ENT)+' / '+uniqCount(rows,r=>r.invNo))],
-    ['Autopay / manual',pct(pm.autopay,pm.n)+' / '+pct(pm.manual+pm.mixed,pm.n),
-      '','good',
-      prodSplit(v,payLine)]
+    (()=>{const ap=autopayInfo(v);
+      return ['Autopay this month',AUTO_OK?short(ap.amt):'—',AUTO_OK?(ap.n+' autopay customers'):'autopay data not loaded','good',
+        AUTO_OK?`<div><span>Of outstanding</span><b>${pct(ap.amt,tot)}</b></div><div><span>Outstanding in view</span><b>${short(tot)}</b></div>`:'']})()
   ]);
   pieAge(document.getElementById('pie-age'),document.getElementById('lg-age'),viewNoBand(),F.band);
   pieProduct(document.getElementById('pie-prod'),document.getElementById('lg-prod'),viewNoProduct(),F.product);
@@ -1081,6 +1107,7 @@ async function refreshLive(){
       n=applyText(await grab(DATA_URL_FULL),how);
     }
     lastLive=Date.now();
+    loadAutopay().then(()=>{if(ALL.length)renderPend();}).catch(()=>{});
     lastReadText='Live · '+n+' lines at '+hhmm()+' in '+((performance.now()-t0)/1000).toFixed(1)+'s';
     liveMsg('good',lastReadText);
   }catch(e){
