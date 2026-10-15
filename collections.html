@@ -4,28 +4,28 @@
 <style>
 /* Layout: filter bar, six period tiles (day / week / MTD / Studio / Vini / refunds), then chart panels that follow the Day-Week-MTD scope. */
 :root{
-  --bg:#edf1f7; --panel:#ffffff; --ink:#0f1d33; --muted:#586a84; --line:#d9e1ec; --soft:#f2f5fa;
+  --bg:#eef2fb; --panel:#ffffff; --ink:#0d1b5e; --muted:#55618f; --line:#d8e0f3; --soft:#f1f4fc;
   /* --teal is the Studio colour (blue) and --violet is the Vini colour (gold); names kept so the charts keep working */
-  --teal:#2563eb; --violet:#cf7f00; --blue:#5b7fb8; --amber:#0d9488; --rose:#be3a5b;
+  --teal:#2d5be3; --violet:#cf7f00; --blue:#2d5be3; --amber:#0d9488; --rose:#be3a5b;
   --c1:#2d5be3; --c2:#ffb800; --c3:#22cfa3; --c4:#1e9bff; --c5:#b8479d; --c2ink:#b86e00;
-  --t1:#0b2545; --t2:#13406b; --t3:#1a5589; --t4:#1f6aa5; --t5:#0f766e; --t6:#7a2e4b; --tS:#1d4ed8; --tV:#b86e00;
-  --good:#0a7d4f; --bad:#b4392f; --chip-bg:#e7efff;
+  --t1:#0d1b5e; --t2:#2d5be3; --t3:#1e86e8; --t4:#0fa98a; --t5:#b8479d; --t6:#8e3a8f; --tS:#1d4ed8; --tV:#b86e00;
+  --good:#0a7d4f; --bad:#b4392f; --chip-bg:#e3ebff;
   color-scheme:light;
   --font-ui:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --font-num:"Sora","DM Sans",system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#0a1220; --panel:#111c30; --ink:#e6edf8; --muted:#93a4bf; --line:#1f2e48; --soft:#16233a;
-  --teal:#5b9bff; --violet:#f5a524; --blue:#8aa6d9; --amber:#2dd4bf; --rose:#f0809b;
+  --bg:#0f1716; --panel:#172120; --ink:#e8f1ef; --muted:#95aaa6; --line:#263533; --soft:#1d2a29;
+  --teal:#2bb3a8; --violet:#f4f46a; --blue:#8fe3d9; --amber:#2dd4bf; --rose:#f0809b;
   --c1:#2bb3a8; --c2:#f4f46a; --c3:#a4c600; --c4:#8fe3d9; --c5:#7d9c00; --c2ink:#f4f46a;
-  --t1:#0e2f57; --t2:#16466f; --t3:#1b5688; --t4:#216a9c; --t5:#12706a; --t6:#8a3555; --tS:#2a5fd0; --tV:#a86400;
-  --good:#4cc99a; --bad:#f08a80; --chip-bg:#15294a; color-scheme:dark; } }
+  --t1:#0f3f3b; --t2:#17564f; --t3:#1e6f66; --t4:#56700a; --t5:#2c8a80; --t6:#7d7a12; --tS:#2a5fd0; --tV:#a86400;
+  --good:#4cc99a; --bad:#f08a80; --chip-bg:#1b3532; color-scheme:dark; } }
 :root[data-theme="dark"]{
-  --bg:#0a1220; --panel:#111c30; --ink:#e6edf8; --muted:#93a4bf; --line:#1f2e48; --soft:#16233a;
-  --teal:#5b9bff; --violet:#f5a524; --blue:#8aa6d9; --amber:#2dd4bf; --rose:#f0809b;
+  --bg:#0f1716; --panel:#172120; --ink:#e8f1ef; --muted:#95aaa6; --line:#263533; --soft:#1d2a29;
+  --teal:#2bb3a8; --violet:#f4f46a; --blue:#8fe3d9; --amber:#2dd4bf; --rose:#f0809b;
   --c1:#2bb3a8; --c2:#f4f46a; --c3:#a4c600; --c4:#8fe3d9; --c5:#7d9c00; --c2ink:#f4f46a;
-  --t1:#0e2f57; --t2:#16466f; --t3:#1b5688; --t4:#216a9c; --t5:#12706a; --t6:#8a3555; --tS:#2a5fd0; --tV:#a86400;
-  --good:#4cc99a; --bad:#f08a80; --chip-bg:#15294a; color-scheme:dark; }
+  --t1:#0f3f3b; --t2:#17564f; --t3:#1e6f66; --t4:#56700a; --t5:#2c8a80; --t6:#7d7a12; --tS:#2a5fd0; --tV:#a86400;
+  --good:#4cc99a; --bad:#f08a80; --chip-bg:#1b3532; color-scheme:dark; }
 
 :root[data-theme="light"]{color-scheme:light}
 *{box-sizing:border-box}
