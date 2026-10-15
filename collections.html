@@ -450,7 +450,7 @@ function trendChart(id,labels,years,part,series,muted,line){
      segment:{borderDash:function(c){return part[c.p1DataIndex]?[4,3]:undefined}}}})},
    options:Object.assign(baseOpts(),{interaction:{mode:"index",intersect:false},layout:{padding:{right:40,top:2}},
     plugins:{legend:{display:false},trendDeco:{years:years,series:series},tooltip:{callbacks:{title:function(c){var l=labels[c[0].dataIndex];return(Array.isArray(l)?l.join(" "):l)+(part[c[0].dataIndex]?" (so far)":"")},label:function(c){return" "+c.dataset.label+": "+inr(series[c.datasetIndex].v[c.dataIndex])}}}},
-    scales:{x:{grid:{display:false},ticks:{color:muted,maxRotation:0,minRotation:0,font:{size:9}}},y:{beginAtZero:true,grace:"30%",grid:{color:line},ticks:{color:muted,callback:function(v){return(v/1e7).toFixed(v/1e7<10?1:0)}}}}})});
+    scales:{x:{grid:{display:false},ticks:{color:muted,maxRotation:0,minRotation:0,autoSkip:false,font:{size:9}}},y:{beginAtZero:true,grace:"30%",grid:{color:line},ticks:{color:muted,callback:function(v){return(v/1e7).toFixed(v/1e7<10?1:0)}}}}})});
 }
 function stackChart(id,labels,s,v,P,muted,line){
   var lines=st.prod;
