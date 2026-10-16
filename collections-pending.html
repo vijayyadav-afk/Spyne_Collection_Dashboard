@@ -205,6 +205,9 @@
   .chip.bad{color:var(--b4);border-color:color-mix(in srgb,var(--b4) 35%,var(--line))}
   .chip.warn{color:var(--b2);border-color:color-mix(in srgb,var(--b2) 40%,var(--line))}
 
+  #fillH{position:fixed;width:12px;height:12px;background:var(--bar1);border:2px solid var(--card);border-radius:3px;cursor:crosshair;z-index:60;display:none;touch-action:none;box-shadow:0 0 0 1px var(--bar1)}
+  body.filling{user-select:none;cursor:crosshair}
+  input.noteIn.fillsel{outline:2px dashed var(--bar1);outline-offset:-2px;background:color-mix(in srgb,var(--bar1) 14%,transparent)}
   td.notecell{padding:3px 6px}
   input.noteIn{font:inherit;font-size:12px;width:180px;min-width:140px;padding:4px 7px;
     border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ink)}
@@ -661,6 +664,57 @@ document.addEventListener('input',e=>{
   el.classList.toggle('filled',!!el.value.trim());
 });
 
+
+/* ---------------- fill down: drag the little square under a remark / date cell ---------------- */
+(function(){
+  const h=document.createElement('div');h.id='fillH';
+  h.title='Drag down to copy this value into the rows below. Double-click to fill every row below.';
+  document.body.appendChild(h);
+  let src=null,drag=false,range=[],hideT=null,scroller=null,lastY=0,auto=null;
+  const colInputs=inp=>{const td=inp.closest('td');if(!td)return[];const idx=td.cellIndex;
+    return Array.from(td.parentNode.parentNode.rows).map(r=>r.cells[idx]&&r.cells[idx].querySelector('input.noteIn')).filter(Boolean);};
+  const place=inp=>{src=inp;const r=inp.getBoundingClientRect();
+    h.style.left=(r.right-8)+'px';h.style.top=(r.bottom-8)+'px';h.style.display='block';};
+  const hide=()=>{if(!drag){h.style.display='none';}};
+  const clearSel=()=>{range.forEach(i=>i.classList.remove('fillsel'));range=[];};
+  const apply=list=>{const v=src.value;list.forEach(i=>{if(i!==src&&i.value!==v){i.value=v;i.dispatchEvent(new Event('input',{bubbles:true}));}});};
+  document.addEventListener('mouseover',e=>{
+    const t=e.target;
+    if(t.classList&&t.classList.contains('noteIn')&&t.closest('#t-pend')){clearTimeout(hideT);if(!drag)place(t);}
+    else if(t===h){clearTimeout(hideT);}
+  });
+  document.addEventListener('mouseout',e=>{
+    const t=e.target;
+    if(t===h||(t.classList&&t.classList.contains('noteIn'))){clearTimeout(hideT);hideT=setTimeout(hide,350);}
+  });
+  document.addEventListener('focusin',e=>{const t=e.target;
+    if(t.classList&&t.classList.contains('noteIn')&&t.closest('#t-pend')&&!drag)place(t);});
+  document.addEventListener('scroll',()=>{if(!drag)h.style.display='none';},true);
+  const overRow=y=>{const x=src.getBoundingClientRect().left+10;h.style.pointerEvents='none';
+    const el=document.elementFromPoint(x,y);h.style.pointerEvents='';
+    const tr=el&&el.closest&&el.closest('tr');return tr;};
+  const update=y=>{
+    const tr=overRow(y);if(!tr)return;
+    const all=colInputs(src);const a=all.indexOf(src);
+    const td=src.closest('td');const tgt=tr.cells[td.cellIndex]&&tr.cells[td.cellIndex].querySelector('input.noteIn');
+    const b=all.indexOf(tgt);if(a<0||b<0)return;
+    clearSel();range=all.slice(Math.min(a,b),Math.max(a,b)+1);range.forEach(i=>i.classList.add('fillsel'));
+  };
+  const findScroller=el=>{let p=el.parentElement;while(p&&p!==document.body){const o=getComputedStyle(p).overflowY;
+    if((o==='auto'||o==='scroll')&&p.scrollHeight>p.clientHeight)return p;p=p.parentElement;}return null;};
+  h.addEventListener('pointerdown',e=>{
+    if(!src)return;e.preventDefault();drag=true;scroller=findScroller(src);lastY=e.clientY;
+    document.body.classList.add('filling');
+    auto=setInterval(()=>{if(!scroller)return;const r=scroller.getBoundingClientRect();
+      if(lastY>r.bottom-28)scroller.scrollTop+=14;else if(lastY<r.top+28)scroller.scrollTop-=14;update(lastY);},60);
+    const move=ev=>{lastY=ev.clientY;update(ev.clientY);h.style.left=(src.getBoundingClientRect().right-8)+'px';};
+    const up=()=>{document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);
+      clearInterval(auto);document.body.classList.remove('filling');
+      apply(range);clearSel();drag=false;place(src);};
+    document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
+  });
+  h.addEventListener('dblclick',e=>{if(!src)return;const all=colInputs(src);apply(all.slice(all.indexOf(src)));});
+})();
 /* ---------------- chart helpers ---------------- */
 /* generic donut: parts [{k,label,color,v}], clicking a slice or legend row calls toggle(k) */
 function donutChart(pieEl,lgEl,parts,activeKey,toggle,aria){
