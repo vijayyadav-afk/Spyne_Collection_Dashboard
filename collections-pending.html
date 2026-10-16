@@ -451,7 +451,7 @@ const DATA_URL='data', DATA_URL_FULL='full', PROBE_URL='probe';
 /* ---------------- access: Google sign-in for the spyne.ai domain ---------------- */
 const CLIENT_ID='706399438904-1ijn6ih2tq6svot6iguosob7nf68no5o.apps.googleusercontent.com';
 let token=null, gsiInit=false;
-const OWNER='accounts@spyne.ai';let me='';
+const OWNER='vijay.yadav@spyne.ai';let me='';
 const setMe=e=>{me=String(e||'').toLowerCase();document.body.classList.toggle('owner',me===OWNER);};
 let sess=false;const sessReady=fetch('/api/session',{cache:'no-store'}).then(r=>{sess=r.ok;return r.ok?r.json():null;}).then(j=>{if(j&&j.email)setMe(j.email);}).catch(()=>{});
 const mkSession=t=>fetch('/api/session',{method:'POST',headers:{Authorization:'Bearer '+t}}).then(r=>r.json()).then(j=>{sess=!!(j&&j.session);if(j&&j.email)setMe(j.email);}).catch(()=>{});
