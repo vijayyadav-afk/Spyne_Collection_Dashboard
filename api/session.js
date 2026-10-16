@@ -13,7 +13,7 @@ export default async function handler(request) {
   if (request.method === 'DELETE') return json(200, { session: false }, clearCookie());
   if (request.method === 'GET') {
     const e = await cookieEmail(request);
-    return e ? json(200, { session: true }) : json(401, { session: false });
+    return e ? json(200, { session: true, email: e }) : json(401, { session: false });
   }
   if (request.method !== 'POST') return json(405, { error: 'method' });
   const m = /^Bearer\s+(.+)$/i.exec(request.headers.get('authorization') || '');
@@ -23,6 +23,6 @@ export default async function handler(request) {
     v = await verifyGoogleToken(m[1], await getJwks(), { clientId: GOOGLE_CLIENT_ID, domain: ALLOWED_DOMAIN });
   } catch (e) { return json(503, { error: 'auth_unavailable' }); }
   if (!v.ok) return json(v.reason === 'domain' || v.reason === 'unverified' ? 403 : 401, { error: 'unauthorized' });
-  if (!(await sessionEnabled())) return json(200, { session: false });
-  return json(200, { session: true }, await makeCookie(v.email));
+  if (!(await sessionEnabled())) return json(200, { session: false, email: v.email });
+  return json(200, { session: true, email: v.email }, await makeCookie(v.email));
 }

@@ -215,6 +215,7 @@
   table.fixedcols th,table.fixedcols td{overflow:hidden;text-overflow:ellipsis}
   table.fixedcols input.noteIn,table.fixedcols input.noteIn:focus{width:100%;min-width:0}
   td.notecell{padding:3px 6px}
+  body:not(.owner) #btnColReset,body:not(.owner) #fReset{display:none}
   th[data-k="note"]{text-align:left}
   input.noteIn{font:inherit;font-size:12px;width:180px;min-width:140px;padding:4px 7px;
     border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ink)}
@@ -450,11 +451,14 @@ const DATA_URL='data', DATA_URL_FULL='full', PROBE_URL='probe';
 /* ---------------- access: Google sign-in for the spyne.ai domain ---------------- */
 const CLIENT_ID='706399438904-1ijn6ih2tq6svot6iguosob7nf68no5o.apps.googleusercontent.com';
 let token=null, gsiInit=false;
-let sess=false;const sessReady=fetch('/api/session',{cache:'no-store'}).then(r=>{sess=r.ok;}).catch(()=>{});
-const mkSession=t=>fetch('/api/session',{method:'POST',headers:{Authorization:'Bearer '+t}}).then(r=>r.json()).then(j=>{sess=!!(j&&j.session);}).catch(()=>{});
+const OWNER='accounts@spyne.ai';let me='';
+const setMe=e=>{me=String(e||'').toLowerCase();document.body.classList.toggle('owner',me===OWNER);};
+let sess=false;const sessReady=fetch('/api/session',{cache:'no-store'}).then(r=>{sess=r.ok;return r.ok?r.json():null;}).then(j=>{if(j&&j.email)setMe(j.email);}).catch(()=>{});
+const mkSession=t=>fetch('/api/session',{method:'POST',headers:{Authorization:'Bearer '+t}}).then(r=>r.json()).then(j=>{sess=!!(j&&j.session);if(j&&j.email)setMe(j.email);}).catch(()=>{});
 try{token=localStorage.getItem('spyneTok')||sessionStorage.getItem('spyneTok');}catch(e){}
 const tokExp=t=>{try{return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).exp*1000;}catch(e){return 0;}};
 if(token&&tokExp(token)<Date.now()+30000)token=null;
+if(token){try{const pl=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));if(pl.email)setMe(pl.email);}catch(e){}}
 const showGate=msg=>{document.getElementById('gate').hidden=false;if(msg)document.getElementById('gateMsg').textContent=msg;};
 const hideGate=()=>{document.getElementById('gate').hidden=true;};
 const setToken=t=>{token=t;try{localStorage.setItem('spyneTok',t);}catch(e){}};
@@ -668,6 +672,9 @@ const noteFoot=rows=>{const n=rows.filter(r=>r.note).length;
 document.addEventListener('input',e=>{
   const el=e.target;
   if(!el.classList||!el.classList.contains('noteIn'))return;
+  if(!el.value.trim()&&NOTES[el.dataset.c]&&me!==OWNER){el.value=NOTES[el.dataset.c];
+    const m=document.getElementById('noteMsg');if(m){m.className='status err';m.textContent='Only the dashboard owner can delete a remark or date. You can change it by typing a new value.';setTimeout(()=>{if(m.className.indexOf('err')>=0)m.textContent='';},5000);}
+    return;}
   noteSet(el.dataset.c,el.value);
   el.classList.toggle('filled',!!el.value.trim());
 });
