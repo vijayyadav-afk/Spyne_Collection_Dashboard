@@ -215,7 +215,7 @@
   table.fixedcols th,table.fixedcols td{overflow:hidden;text-overflow:ellipsis}
   table.fixedcols input.noteIn,table.fixedcols input.noteIn:focus{width:100%;min-width:0}
   td.notecell{padding:3px 6px}
-  body:not(.owner) #btnColReset,body:not(.owner) #fReset{display:none}
+  body:not(.owner) #fReset{display:none}
   th[data-k="note"]{text-align:left}
   input.noteIn{font:inherit;font-size:12px;width:180px;min-width:140px;padding:4px 7px;
     border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ink)}
@@ -425,7 +425,6 @@
   <div class="card">
     <header><h2>Invoice line detail</h2><span class="cap gone" id="cap-pend"></span>
       <div class="vwrap"><div class="seg" id="segView" role="group" aria-label="Table level"><button type="button" data-v="customer" aria-pressed="false">Customer level</button><button type="button" data-v="invoice" aria-pressed="false">Invoice level</button><button type="button" data-v="item" aria-pressed="true">Item level</button></div>
-      <button class="btn" id="btnColReset" title="Drag the right edge of any column heading to change its width. Click here to go back to automatic widths.">Reset column widths</button>
       <button class="btn" data-export="pend">Export CSV</button></div></header>
     <div class="scroll"><table id="t-pend"><thead><tr></tr></thead><tbody></tbody><tfoot></tfoot></table></div>
   </div>
@@ -1009,9 +1008,6 @@ function addGrips(){
     });
   });
 }
-document.addEventListener('click',e=>{
-  if(e.target&&e.target.id==='btnColReset'){delete CW[LEVEL];cwSave();applyWidths();}
-});
 function buildLevel(level){
   LEVEL=level;
   const keys=LEVELS[level];
