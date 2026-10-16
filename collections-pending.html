@@ -439,13 +439,14 @@ const DATA_URL='data', DATA_URL_FULL='full', PROBE_URL='probe';
 /* ---------------- access: Google sign-in for the spyne.ai domain ---------------- */
 const CLIENT_ID='706399438904-1ijn6ih2tq6svot6iguosob7nf68no5o.apps.googleusercontent.com';
 let token=null, gsiInit=false;
-try{token=sessionStorage.getItem('spyneTok');}catch(e){}
+try{token=localStorage.getItem('spyneTok')||sessionStorage.getItem('spyneTok');}catch(e){}
 const tokExp=t=>{try{return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).exp*1000;}catch(e){return 0;}};
 if(token&&tokExp(token)<Date.now()+30000)token=null;
 const showGate=msg=>{document.getElementById('gate').hidden=false;if(msg)document.getElementById('gateMsg').textContent=msg;};
 const hideGate=()=>{document.getElementById('gate').hidden=true;};
-const setToken=t=>{token=t;try{sessionStorage.setItem('spyneTok',t);}catch(e){}};
-const clearToken=()=>{token=null;try{sessionStorage.removeItem('spyneTok');}catch(e){}};
+const setToken=t=>{token=t;try{localStorage.setItem('spyneTok',t);}catch(e){}};
+const clearToken=()=>{token=null;try{localStorage.removeItem('spyneTok');sessionStorage.removeItem('spyneTok');}catch(e){}};
+const renewTok=()=>{try{if(window.google&&google.accounts&&google.accounts.id)google.accounts.id.prompt();}catch(e){}};
 const authFail=m=>{const e=new Error('sign-in required');e.authFail=true;return e;};
 function initGoogle(){
   if(gsiInit||!(window.google&&google.accounts&&google.accounts.id))return;
@@ -456,7 +457,7 @@ function initGoogle(){
   if(!token)google.accounts.id.prompt();
 }
 async function relay(kind){
-  if(!token||tokExp(token)<Date.now()+30000){clearToken();showGate('Sign in with your Spyne Google account to continue.');initGoogle();throw authFail();}
+  if(!token||tokExp(token)<Date.now()+30000){clearToken();showGate('Sign in with your Spyne Google account to continue.');initGoogle();renewTok();throw authFail();}
   const r=await fetch('/api/pending?kind='+kind+'&cb='+Date.now(),{cache:'no-store',headers:{Authorization:'Bearer '+token}});
   if(r.status===401){clearToken();showGate('Your session expired. Please sign in again.');initGoogle();throw authFail();}
   if(r.status===403){clearToken();showGate('Access denied. Please sign in with your @spyne.ai Google account.');try{google.accounts.id.disableAutoSelect();}catch(e){}initGoogle();throw authFail();}
@@ -465,6 +466,7 @@ async function relay(kind){
 }
 function startLive(){refreshLive().then(()=>{if(token)return probeSig().then(s=>{if(s)lastSig=s;});});}
 function bootAuth(){
+  setInterval(()=>{if(token&&tokExp(token)<Date.now()+600000)renewTok();},60000);
   const gt=setInterval(()=>{if(window.google&&google.accounts&&google.accounts.id){clearInterval(gt);initGoogle();}},200);
   if(token)startLive(); else {showGate('Sign in with your Spyne Google account to continue.');}
 }

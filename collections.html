@@ -533,13 +533,14 @@ function setLive(ok,msg){var e=document.getElementById("liveTag");e.className="l
 function hhmm(){var d=new Date(),h=d.getHours(),m=d.getMinutes();return(h<10?"0":"")+h+":"+(m<10?"0":"")+m}
 function sig(t){var h=0;for(var i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))|0;return t.length+":"+h}
 var CLIENT_ID="706399438904-1ijn6ih2tq6svot6iguosob7nf68no5o.apps.googleusercontent.com",token=null,gsiInit=false;
-try{token=sessionStorage.getItem("spyneTok")}catch(e){}
+try{token=localStorage.getItem("spyneTok")||sessionStorage.getItem("spyneTok")}catch(e){}
 function tokExp(t){try{var p=t.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");return JSON.parse(atob(p)).exp*1000}catch(e){return 0}}
 if(token&&tokExp(token)<Date.now()+30000)token=null;
 function showGate(msg){document.getElementById("gate").hidden=false;if(msg)document.getElementById("gateMsg").textContent=msg}
 function hideGate(){document.getElementById("gate").hidden=true}
-function setToken(t){token=t;try{sessionStorage.setItem("spyneTok",t)}catch(e){}}
-function clearToken(){token=null;try{sessionStorage.removeItem("spyneTok")}catch(e){}}
+function setToken(t){token=t;try{localStorage.setItem("spyneTok",t)}catch(e){}}
+function clearToken(){token=null;try{localStorage.removeItem("spyneTok");sessionStorage.removeItem("spyneTok")}catch(e){}}
+function renewTok(){try{if(window.google&&google.accounts&&google.accounts.id)google.accounts.id.prompt()}catch(e){}}
 function initGoogle(){
   if(gsiInit||!(window.google&&google.accounts&&google.accounts.id))return;
   gsiInit=true;
@@ -548,7 +549,7 @@ function initGoogle(){
   if(!token)google.accounts.id.prompt();
 }
 function liveRefresh(){
-  if(!token||tokExp(token)<Date.now()+30000){clearToken();showGate("Sign in with your Spyne Google account to continue.");initGoogle();return Promise.resolve()}
+  if(!token||tokExp(token)<Date.now()+30000){clearToken();showGate("Sign in with your Spyne Google account to continue.");initGoogle();renewTok();return Promise.resolve()}
   return fetch("/api/sheet",{cache:"no-store",headers:{Authorization:"Bearer "+token}}).then(function(r){
     if(r.status===401){clearToken();showGate("Your session expired. Please sign in again.");initGoogle();return null}
     if(r.status===403){clearToken();showGate("Access denied. Please sign in with your @spyne.ai Google account.");try{google.accounts.id.disableAutoSelect()}catch(e){}initGoogle();return null}
@@ -561,7 +562,7 @@ function liveRefresh(){
     hideGate();setLive(true,hhmm());
   }).catch(function(){setLive(false)});
 }
-var gsiTimer=setInterval(function(){if(window.google&&google.accounts&&google.accounts.id){clearInterval(gsiTimer);initGoogle()}},200);setInterval(function(){if(!document.hidden)liveRefresh()},60000);
+var gsiTimer=setInterval(function(){if(window.google&&google.accounts&&google.accounts.id){clearInterval(gsiTimer);initGoogle()}},200);setInterval(function(){if(token&&tokExp(token)<Date.now()+600000)renewTok();if(!document.hidden)liveRefresh()},60000);
 document.addEventListener("visibilitychange",function(){if(!document.hidden)liveRefresh()});
 /* ---------------- multi-select customer picker ---------------- */
 (function(){
