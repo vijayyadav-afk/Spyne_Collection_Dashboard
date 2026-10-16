@@ -4,6 +4,7 @@
 // so the page no longer contains the sheet address.
 // NOTE: the sign-in check below is a copy of the one in api/sheet.js; keep the two in step.
 export const config = { runtime: 'edge' };
+import { cookieEmail } from './_sess.js';
 
 const SHEET_ID = '10A5kLP9hWZeMaRNbLsplLj43U0YljsreS_c0qDlgfK8';
 const GID = '0';
@@ -77,6 +78,7 @@ function json(status, obj) {
 }
 
 export default async function handler(request) {
+  if (!(await cookieEmail(request))) {
   const m = /^Bearer\s+(.+)$/i.exec(request.headers.get('authorization') || '');
   if (!m) return json(401, { error: 'unauthorized' });
   let v;
@@ -86,6 +88,7 @@ export default async function handler(request) {
     return json(503, { error: 'auth_unavailable' });
   }
   if (!v.ok) return json(v.reason === 'domain' || v.reason === 'unverified' ? 403 : 401, { error: v.reason === 'domain' || v.reason === 'unverified' ? 'domain' : 'unauthorized' });
+  }
   const kind = new URL(request.url).searchParams.get('kind') || 'data';
   const src = SOURCES[kind];
   if (!src) return json(400, { error: 'bad_kind' });

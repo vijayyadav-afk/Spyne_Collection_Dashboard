@@ -4,6 +4,7 @@
 // The sheet (tab gid 0, shared "anyone with the link") is then read, reduced to the columns the
 // dashboard uses, and returned as compact JSON.
 export const config = { runtime: 'edge' };
+import { cookieEmail } from './_sess.js';
 
 const SHEET_ID = '15CEMjqr2CEPu86ji0uEXCQ7K9qbgmOxPwzQdJ5pC1lg';
 const SHEET_GID = '0';
@@ -176,6 +177,7 @@ async function readAutopay() {
 let dataCache = { t: 0, body: '' };
 
 export default async function handler(request) {
+  if (!(await cookieEmail(request))) {
   const m = /^Bearer\s+(.+)$/i.exec(request.headers.get('authorization') || '');
   if (!m) return json(401, { error: 'unauthorized' });
   let v;
@@ -185,6 +187,7 @@ export default async function handler(request) {
     return json(503, { error: 'auth_unavailable' });
   }
   if (!v.ok) return json(v.reason === 'domain' || v.reason === 'unverified' ? 403 : 401, { error: v.reason === 'domain' || v.reason === 'unverified' ? 'domain' : 'unauthorized' });
+  }
   try {
     if (!dataCache.body || Date.now() - dataCache.t > 30000) {
       const url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&gid=' + SHEET_GID;
