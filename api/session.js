@@ -12,6 +12,7 @@ function json(status, obj, cookie) {
 export default async function handler(request) {
   if (request.method === 'DELETE') return json(200, { session: false }, clearCookie());
   if (request.method === 'GET') {
+    if (new URL(request.url).searchParams.get('diag') === '1') return json(200, { secretSet: await sessionEnabled() });
     const e = await cookieEmail(request);
     if (e) await logUser(e, false);
     return e ? json(200, { session: true, email: e }) : json(401, { session: false });

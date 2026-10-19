@@ -6,7 +6,7 @@ export const GOOGLE_CLIENT_ID = '706399438904-1ijn6ih2tq6svot6iguosob7nf68no5o.a
 export const ALLOWED_DOMAIN = 'spyne.ai';
 const JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
 const NAME = 'spyne_sess';
-const DAYS = 90;
+const DAYS = 400;
 
 function b64urlToBytes(s) {
   s = String(s).replace(/-/g, '+').replace(/_/g, '/');
