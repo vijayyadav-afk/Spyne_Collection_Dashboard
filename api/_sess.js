@@ -6,7 +6,7 @@ export const GOOGLE_CLIENT_ID = '706399438904-1ijn6ih2tq6svot6iguosob7nf68no5o.a
 export const ALLOWED_DOMAIN = 'spyne.ai';
 const JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
 const NAME = 'spyne_sess';
-const DAYS = 30;
+const DAYS = 90;
 
 function b64urlToBytes(s) {
   s = String(s).replace(/-/g, '+').replace(/_/g, '/');
@@ -94,4 +94,36 @@ export async function cookieEmail(request) {
     if (!p.x || p.x < Date.now() / 1000) return null;
     return String(p.e || '').toLowerCase().endsWith('@' + ALLOWED_DOMAIN) ? p.e : null;
   } catch (e) { return null; }
+}
+
+// ---- who has signed in (kept in the same Redis store as the shared remarks) ----
+const findEnv = (re) => {
+  const e = (typeof process !== 'undefined' && process.env) || {};
+  const k = Object.keys(e).find((n) => re.test(n) && e[n]);
+  return k ? e[k] : '';
+};
+export async function logUser(email, isLogin) {
+  try {
+    const url = findEnv(/(KV_REST_API_URL|REDIS_REST_URL)$/), tok = findEnv(/(KV_REST_API_TOKEN|REDIS_REST_TOKEN)$/);
+    if (!url || !tok || !email) return;
+    const now = new Date().toISOString(), em = String(email).toLowerCase();
+    const cmds = [['HSETNX', 'spyne:users:first', em, now], ['HSET', 'spyne:users:last', em, now]];
+    if (isLogin) cmds.push(['HINCRBY', 'spyne:users:logins', em, 1]);
+    await fetch(url.replace(/\/$/, '') + '/pipeline', {
+      method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'content-type': 'application/json' }, body: JSON.stringify(cmds),
+    });
+  } catch (e) { /* the log must never block a sign-in */ }
+}
+export async function readUsers() {
+  const url = findEnv(/(KV_REST_API_URL|REDIS_REST_URL)$/), tok = findEnv(/(KV_REST_API_TOKEN|REDIS_REST_TOKEN)$/);
+  if (!url || !tok) return null;
+  const r = await fetch(url.replace(/\/$/, '') + '/pipeline', {
+    method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'content-type': 'application/json' },
+    body: JSON.stringify([['HGETALL', 'spyne:users:first'], ['HGETALL', 'spyne:users:last'], ['HGETALL', 'spyne:users:logins']]),
+  });
+  const out = await r.json();
+  const toMap = (a) => { const m = {}; for (let i = 0; i + 1 < (a || []).length; i += 2) m[a[i]] = a[i + 1]; return m; };
+  const first = toMap(out[0].result), last = toMap(out[1].result), logins = toMap(out[2].result);
+  return Object.keys(first).map((e) => ({ email: e, first_seen: first[e], last_seen: last[e] || first[e], sign_ins: +(logins[e] || 0) }))
+    .sort((a, b) => (a.last_seen < b.last_seen ? 1 : -1));
 }

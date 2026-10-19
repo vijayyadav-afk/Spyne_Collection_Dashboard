@@ -1,6 +1,6 @@
 // Login cookie endpoint. POST with a Google ID token (Bearer) -> verifies it and sets a 30-day signed cookie.
 // GET -> 200 if the cookie is valid, else 401. DELETE -> clears the cookie.
-import { GOOGLE_CLIENT_ID, ALLOWED_DOMAIN, verifyGoogleToken, getJwks, makeCookie, clearCookie, cookieEmail, sessionEnabled } from './_sess.js';
+import { GOOGLE_CLIENT_ID, ALLOWED_DOMAIN, verifyGoogleToken, getJwks, makeCookie, clearCookie, cookieEmail, sessionEnabled, logUser } from './_sess.js';
 export const config = { runtime: 'edge' };
 
 function json(status, obj, cookie) {
@@ -13,6 +13,7 @@ export default async function handler(request) {
   if (request.method === 'DELETE') return json(200, { session: false }, clearCookie());
   if (request.method === 'GET') {
     const e = await cookieEmail(request);
+    if (e) await logUser(e, false);
     return e ? json(200, { session: true, email: e }) : json(401, { session: false });
   }
   if (request.method !== 'POST') return json(405, { error: 'method' });
@@ -23,6 +24,7 @@ export default async function handler(request) {
     v = await verifyGoogleToken(m[1], await getJwks(), { clientId: GOOGLE_CLIENT_ID, domain: ALLOWED_DOMAIN });
   } catch (e) { return json(503, { error: 'auth_unavailable' }); }
   if (!v.ok) return json(v.reason === 'domain' || v.reason === 'unverified' ? 403 : 401, { error: 'unauthorized' });
+  await logUser(v.email, true);
   if (!(await sessionEnabled())) return json(200, { session: false, email: v.email });
   return json(200, { session: true, email: v.email }, await makeCookie(v.email));
 }
