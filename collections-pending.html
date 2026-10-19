@@ -215,6 +215,7 @@
   table.fixedcols th,table.fixedcols td{overflow:hidden;text-overflow:ellipsis}
   table.fixedcols .noteIn,table.fixedcols .noteIn:focus{width:100%;min-width:0}
   td.notecell{padding:3px 6px}
+  body:not(.owner) #noteClear,body:not(.owner) label[for=noteLoad]{display:none}
   select.noteIn option{background:var(--card);color:var(--ink)}
   body:not(.owner) #fReset{display:none}
   th[data-k="note"]{text-align:left}
@@ -483,7 +484,7 @@ async function relay(kind){
   hideGate();
   return r;
 }
-function startLive(){refreshLive().then(()=>{if(token)return probeSig().then(s=>{if(s)lastSig=s;});});}
+function startLive(){setTimeout(()=>{try{pullNotes();}catch(e){}},1500);refreshLive().then(()=>{if(token)return probeSig().then(s=>{if(s)lastSig=s;});});}
 function bootAuth(){
   setInterval(()=>{if(token&&tokExp(token)<Date.now()+600000)renewTok();},60000);
   const gt=setInterval(()=>{if(window.google&&google.accounts&&google.accounts.id){clearInterval(gt);initGoogle();}},200);
@@ -660,7 +661,7 @@ function noteSet(cust,text){
   const t=String(text||'').slice(0,300);
   if(t)NOTES[cust]=t;else delete NOTES[cust];
   ALL.forEach(r=>{if(r.cust===cust)r.note=t;});
-  notesSave(); renderNoteBar();
+  notesSave(); renderNoteBar(); if(SHARED)pushNotes({set:{[cust]:t}});
 }
 function renderNoteBar(){const el=document.getElementById('noteCount');if(!el)return;
   const n=noteCount();el.textContent=n?n+(n===1?' remark saved':' remarks saved'):'no remarks yet';}
@@ -735,6 +736,42 @@ document.addEventListener('input',e=>{
   });
   h.addEventListener('dblclick',e=>{if(!src)return;const all=colInputs(src);apply(all.slice(all.indexOf(src)));});
 })();
+
+/* ---------------- shared remarks (server) ---------------- */
+let SHARED=false,pushing=0,migrated=false,needRedraw=false;
+const remCall=body=>{const h={'content-type':'application/json'};if(!sess&&token)h.Authorization='Bearer '+token;
+  return fetch('/api/remarks',{method:body?'POST':'GET',cache:'no-store',headers:h,body:body?JSON.stringify(body):undefined});};
+function applyShared(notes){
+  const next=notes||{};
+  if(JSON.stringify(next)===JSON.stringify(NOTES))return;
+  NOTES=next;notesSave();
+  ALL.forEach(r=>r.note=NOTES[r.cust]||'');
+  const ae=document.activeElement;
+  if(ae&&ae.classList&&ae.classList.contains('noteIn')){needRedraw=true;}   /* never redraw under someone's cursor */
+  else{needRedraw=false;renderAll();}
+  renderNoteBar();
+}
+document.addEventListener('focusout',()=>{if(needRedraw)setTimeout(()=>{const ae=document.activeElement;
+  if(!(ae&&ae.classList&&ae.classList.contains('noteIn'))){needRedraw=false;renderAll();}},300);});
+async function pullNotes(){
+  if(pushing)return;
+  try{
+    await sessReady;if(!sess&&!token)return;
+    const r=await remCall();if(!r.ok)return;
+    SHARED=true;
+    const j=await r.json();
+    if(!Object.keys(j.notes||{}).length&&me===OWNER&&Object.keys(NOTES).length&&!migrated){
+      migrated=true;await pushNotes({set:NOTES});noteMsg('good','Your saved remarks were copied to the shared store.');return;}
+    applyShared(j.notes);
+  }catch(e){}
+}
+function pushNotes(body){
+  pushing++;
+  return remCall(body).then(async r=>{if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();return j;})
+    .catch(()=>{noteMsg('err','Could not save to the shared store. Your change is only on this computer for now.');})
+    .finally(()=>{pushing--;});
+}
+setInterval(pullNotes,30000);
 /* ---------------- chart helpers ---------------- */
 /* generic donut: parts [{k,label,color,v}], clicking a slice or legend row calls toggle(k) */
 function donutChart(pieEl,lgEl,parts,activeKey,toggle,aria){
@@ -1298,7 +1335,7 @@ document.getElementById('noteLoad').addEventListener('change',e=>{
       if(!inc||typeof inc!=='object')throw new Error('not a remarks file');
       let n=0;
       Object.keys(inc).forEach(k=>{const t=String(inc[k]||'').slice(0,300);if(t){NOTES[k]=t;n++;}});
-      notesSave(); ALL.forEach(r=>r.note=NOTES[r.cust]||''); renderAll();
+      notesSave(); ALL.forEach(r=>r.note=NOTES[r.cust]||''); renderAll(); if(SHARED)pushNotes({set:NOTES});
       noteMsg('good','Loaded '+n+' remarks; '+noteCount()+' in total.');
     }catch(err){noteMsg('err','Could not read that remarks file.');}};
   fr.readAsText(f); e.target.value='';
@@ -1307,7 +1344,7 @@ document.getElementById('noteClear').onclick=()=>{
   const n=noteCount();
   if(!n){noteMsg('err','Nothing to clear.');return;}
   if(!confirm('Delete all '+n+' manual remarks? Save them first if you want a copy.'))return;
-  NOTES={}; notesSave(); ALL.forEach(r=>r.note=''); renderAll();
+  NOTES={}; notesSave(); ALL.forEach(r=>r.note=''); renderAll(); if(SHARED)pushNotes({clearAll:true});
   noteMsg('','All manual remarks cleared.');
 };
 
