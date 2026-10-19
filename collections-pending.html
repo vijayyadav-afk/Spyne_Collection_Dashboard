@@ -207,22 +207,23 @@
 
   #fillH{position:fixed;width:12px;height:12px;background:var(--bar1);border:2px solid var(--card);border-radius:3px;cursor:crosshair;z-index:60;display:none;touch-action:none;box-shadow:0 0 0 1px var(--bar1)}
   body.filling{user-select:none;cursor:crosshair}
-  input.noteIn.fillsel{outline:2px dashed var(--bar1);outline-offset:-2px;background:color-mix(in srgb,var(--bar1) 14%,transparent)}
+  .noteIn.fillsel{outline:2px dashed var(--bar1);outline-offset:-2px;background:color-mix(in srgb,var(--bar1) 14%,transparent)}
   th .cgrip{position:absolute;right:0;top:0;bottom:0;width:8px;cursor:col-resize;z-index:3}
   th .cgrip:hover,body.colresizing th .cgrip.on{background:color-mix(in srgb,var(--bar1) 55%,transparent)}
   body.colresizing{cursor:col-resize;user-select:none}
   table.fixedcols{table-layout:fixed;min-width:100%}
   table.fixedcols th,table.fixedcols td{overflow:hidden;text-overflow:ellipsis}
-  table.fixedcols input.noteIn,table.fixedcols input.noteIn:focus{width:100%;min-width:0}
+  table.fixedcols .noteIn,table.fixedcols .noteIn:focus{width:100%;min-width:0}
   td.notecell{padding:3px 6px}
+  select.noteIn option{background:var(--card);color:var(--ink)}
   body:not(.owner) #fReset{display:none}
   th[data-k="note"]{text-align:left}
-  input.noteIn{font:inherit;font-size:12px;width:180px;min-width:140px;padding:4px 7px;
+  input.noteIn,select.noteIn{font:inherit;font-size:12px;width:180px;min-width:140px;padding:4px 7px;
     border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ink)}
   input.noteIn::placeholder{color:var(--ink3);opacity:.7}
-  input.noteIn:hover{border-color:var(--line)}
-  input.noteIn:focus{outline:none;border-color:var(--b1);background:var(--bg);width:250px}
-  input.noteIn.filled{background:color-mix(in srgb,var(--b2) 13%,transparent);
+  input.noteIn:hover,select.noteIn:hover{border-color:var(--line)}
+  input.noteIn:focus,select.noteIn:focus{outline:none;border-color:var(--b1);background:var(--bg);width:250px}
+  input.noteIn.filled,select.noteIn.filled{background:color-mix(in srgb,var(--b2) 13%,transparent);
     border-color:color-mix(in srgb,var(--b2) 40%,var(--line))}
 
   .legend{display:flex;gap:11px;flex-wrap:wrap;font-size:11.5px;color:var(--ink2)}
@@ -663,9 +664,14 @@ function noteSet(cust,text){
 }
 function renderNoteBar(){const el=document.getElementById('noteCount');if(!el)return;
   const n=noteCount();el.textContent=n?n+(n===1?' remark saved':' remarks saved'):'no remarks yet';}
+const REMARK_OPTS=['Invoice Write Off','Need To Send Legal','Payment Will Receive','Invoice Need To Be Change'];
 const NOTE_COL={k:'note',txt:1,cls:'notecell',
-  f:r=>`<input class="noteIn${r.note?' filled':''}" data-c="${esc(r.noteKey||r.cust)}" value="${esc(r.note||'')}" `+
-       `placeholder="add remark…" maxlength="300" spellcheck="false">`};
+  f:r=>{const v=r.note||'';
+    /* a remark typed before the list existed stays visible until someone picks from the list */
+    const opts=(v&&!REMARK_OPTS.includes(v)?[v]:[]).concat(REMARK_OPTS);
+    return `<select class="noteIn${v?' filled':''}" data-c="${esc(r.noteKey||r.cust)}" aria-label="Manual remark">`+
+      `<option value="">Select remark…</option>`+
+      opts.map(o=>`<option value="${esc(o)}"${o===v?' selected':''}>${esc(o)}</option>`).join('')+`</select>`;}};
 const noteFoot=rows=>{const n=rows.filter(r=>r.note).length;
   return n?`<span class="muted">${n} remark${n===1?'':'s'} in view</span>`:'';};
 document.addEventListener('input',e=>{
@@ -686,12 +692,12 @@ document.addEventListener('input',e=>{
   document.body.appendChild(h);
   let src=null,drag=false,range=[],hideT=null,scroller=null,lastY=0,auto=null;
   const colInputs=inp=>{const td=inp.closest('td');if(!td)return[];const idx=td.cellIndex;
-    return Array.from(td.parentNode.parentNode.rows).map(r=>r.cells[idx]&&r.cells[idx].querySelector('input.noteIn')).filter(Boolean);};
+    return Array.from(td.parentNode.parentNode.rows).map(r=>r.cells[idx]&&r.cells[idx].querySelector('.noteIn')).filter(Boolean);};
   const place=inp=>{src=inp;const r=inp.getBoundingClientRect();
     h.style.left=(r.right-8)+'px';h.style.top=(r.bottom-8)+'px';h.style.display='block';};
   const hide=()=>{if(!drag){h.style.display='none';}};
   const clearSel=()=>{range.forEach(i=>i.classList.remove('fillsel'));range=[];};
-  const apply=list=>{const v=src.value;list.forEach(i=>{if(i!==src&&i.value!==v){i.value=v;i.dispatchEvent(new Event('input',{bubbles:true}));}});};
+  const apply=list=>{const v=src.value;list.forEach(i=>{if(i.tagName==="SELECT"&&!Array.from(i.options).some(o=>o.value===v))return;if(i!==src&&i.value!==v){i.value=v;i.dispatchEvent(new Event('input',{bubbles:true}));}});};
   document.addEventListener('mouseover',e=>{
     const t=e.target;
     if(t.classList&&t.classList.contains('noteIn')&&t.closest('#t-pend')){clearTimeout(hideT);if(!drag)place(t);}
@@ -710,7 +716,7 @@ document.addEventListener('input',e=>{
   const update=y=>{
     const tr=overRow(y);if(!tr)return;
     const all=colInputs(src);const a=all.indexOf(src);
-    const td=src.closest('td');const tgt=tr.cells[td.cellIndex]&&tr.cells[td.cellIndex].querySelector('input.noteIn');
+    const td=src.closest('td');const tgt=tr.cells[td.cellIndex]&&tr.cells[td.cellIndex].querySelector('.noteIn');
     const b=all.indexOf(tgt);if(a<0||b<0)return;
     clearSel();range=all.slice(Math.min(a,b),Math.max(a,b)+1);range.forEach(i=>i.classList.add('fillsel'));
   };
