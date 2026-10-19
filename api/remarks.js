@@ -16,7 +16,14 @@ function json(status, obj) {
   });
 }
 const env = (k) => (typeof process !== 'undefined' && process.env && process.env[k]) || '';
-// Variable names depend on the prefix chosen when the database was connected, so find them by their ending.const findEnv = (re) => {  const e = (typeof process !== 'undefined' && process.env) || {};  const k = Object.keys(e).find((n) => re.test(n) && e[n]);  return k ? e[k] : '';};const URL_ = () => findEnv(/(KV_REST_API_URL|REDIS_REST_URL)$/);const TOKEN = () => findEnv(/(KV_REST_API_TOKEN|REDIS_REST_TOKEN)$/);
+// Variable names depend on the prefix chosen when the database was connected, so find them by their ending.
+const findEnv = (re) => {
+  const e = (typeof process !== 'undefined' && process.env) || {};
+  const k = Object.keys(e).find((n) => re.test(n) && e[n]);
+  return k ? e[k] : '';
+};
+const URL_ = () => findEnv(/(KV_REST_API_URL|REDIS_REST_URL)$/);
+const TOKEN = () => findEnv(/(KV_REST_API_TOKEN|REDIS_REST_TOKEN)$/);
 
 async function redis(cmds) {
   const r = await fetch(URL_().replace(/\/$/, '') + '/pipeline', {
