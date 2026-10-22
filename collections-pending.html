@@ -215,7 +215,7 @@
   table.fixedcols th,table.fixedcols td{overflow:hidden;text-overflow:ellipsis}
   table.fixedcols .noteIn,table.fixedcols .noteIn:focus{width:100%;min-width:0}
   td.notecell{padding:3px 6px}
-  body:not(.owner) #noteClear,body:not(.owner) #btnCopyInv,body:not(.owner) label[for=noteLoad]{display:none}
+  body:not(.owner) #noteClear,body:not(.owner) #btnCopyInv,body:not(.owner) #btnCopyAnuj,body:not(.owner) label[for=noteLoad]{display:none}
   select.noteIn option{background:var(--card);color:var(--ink)}
   body:not(.owner) #fReset{display:none}
   th[data-k="note"]{text-align:left}
@@ -428,6 +428,7 @@
   <div class="card">
     <header><h2>Invoice line detail</h2><span class="cap gone" id="cap-pend"></span>
       <div class="vwrap"><div class="seg" id="segView" role="group" aria-label="Table level"><button type="button" data-v="customer" aria-pressed="false">Customer level</button><button type="button" data-v="invoice" aria-pressed="false">Invoice level</button><button type="button" data-v="item" aria-pressed="true">Item level</button></div>
+      <button class="btn" id="btnCopyAnuj" title="Owner only: copy Item-level remarks and expected dates into Invoice level for Anuj">Copy Item → Invoice (Anuj)</button>
       <button class="btn" data-export="pend">Export CSV</button></div></header>
     <div class="scroll"><table id="t-pend"><thead><tr></tr></thead><tbody></tbody><tfoot></tfoot></table></div>
   </div>
@@ -1351,8 +1352,8 @@ document.getElementById('noteClear').onclick=()=>{
 
 
 /* owner tool: copy Item-level remarks and expected dates into Invoice level for one SPOC */
-document.getElementById('btnCopyInv').onclick=()=>{
-  const who=(prompt('Copy the Item-level remarks and expected dates to Invoice level for which SPOC?','Anuj')||'').trim();
+function copyItemToInvoice(preset){
+  const who=(preset||prompt('Copy the Item-level remarks and expected dates to Invoice level for which SPOC?','Anuj')||'').trim();
   if(!who)return;
   const set={},seen=new Set();let nR=0,nD=0,nInv=0;
   ALL.forEach(r=>{
@@ -1368,7 +1369,9 @@ document.getElementById('btnCopyInv').onclick=()=>{
   if(SHARED)pushNotes({set});
   renderAll();
   alert('Done. Copied '+nR+' remarks and '+nD+' expected dates to Invoice level for '+who+'.');
-};
+}
+document.getElementById('btnCopyInv').onclick=()=>copyItemToInvoice();
+document.getElementById('btnCopyAnuj').onclick=()=>copyItemToInvoice('Anuj');
 /* ---------------- go ---------------- */
 notesLoad(); renderNoteBar();
 setEmptyState('Reading the sheet…');
