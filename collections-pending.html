@@ -215,7 +215,7 @@
   table.fixedcols th,table.fixedcols td{overflow:hidden;text-overflow:ellipsis}
   table.fixedcols .noteIn,table.fixedcols .noteIn:focus{width:100%;min-width:0}
   td.notecell{padding:3px 6px}
-  body:not(.owner) #noteClear,body:not(.owner) #btnCopyInv,body:not(.owner) #btnCopyAnuj,body:not(.owner) label[for=noteLoad]{display:none}
+  body:not(.owner) #noteClear,body:not(.owner) label[for=noteLoad]{display:none}
   select.noteIn option{background:var(--card);color:var(--ink)}
   body:not(.owner) #fReset{display:none}
   th[data-k="note"]{text-align:left}
@@ -355,7 +355,6 @@
       <label class="btn" for="csvFile">Load invoice CSV…</label>
       <input type="file" id="csvFile" accept=".csv,text/csv">
       <button class="btn" id="noteClear">Clear all remarks</button>
-      <button class="btn" id="btnCopyInv" title="Copy the Item-level remarks and expected dates into the Invoice-level view for one SPOC">Copy item remarks to invoice level…</button>
       <span class="status" id="noteMsg"></span>
     </div>
   </details>
@@ -429,7 +428,6 @@
   <div class="card">
     <header><h2>Invoice line detail</h2><span class="cap gone" id="cap-pend"></span>
       <div class="vwrap"><div class="seg" id="segView" role="group" aria-label="Table level"><button type="button" data-v="customer" aria-pressed="false">Customer level</button><button type="button" data-v="invoice" aria-pressed="false">Invoice level</button><button type="button" data-v="item" aria-pressed="true">Item level</button></div>
-      <button class="btn" id="btnCopyAnuj" title="Owner only: copy Item-level remarks and expected dates into Invoice level for Anuj">Copy Item → Invoice (Anuj)</button>
       <button class="btn" data-export="pend">Export CSV</button></div></header>
     <div class="scroll"><table id="t-pend"><thead><tr></tr></thead><tbody></tbody><tfoot></tfoot></table></div>
   </div>
@@ -1367,17 +1365,6 @@ function buildItemToInvoice(who){
   });
   return {set,nR,nD,nInv};
 }
-function copyItemToInvoice(preset){
-  const who=(preset||prompt('Copy the Item-level remarks and expected dates to Invoice level for which SPOC?','Anuj')||'').trim();
-  if(!who)return;
-  const {set,nR,nD,nInv}=buildItemToInvoice(who);
-  if(!nR&&!nD){alert('No Item-level remarks or expected dates were found for SPOC "'+who+'".');return;}
-  if(!confirm('SPOC '+who+': '+nInv+' invoices.\nThis will copy '+nR+' remarks and '+nD+' expected dates from Item level into Invoice level, replacing anything already there for those invoices.\n\nContinue?'))return;
-  Object.assign(NOTES,set);notesSave();renderNoteBar();
-  if(SHARED)pushNotes({set});
-  renderAll();
-  alert('Done. Copied '+nR+' remarks and '+nD+' expected dates to Invoice level for '+who+'.');
-}
 /* one-time automatic copy for Anuj, done the first time the owner opens the page after this update */
 async function autoCopyOnce(){
   const FLAG='META::copy-item-to-invoice-anuj-v1';
@@ -1390,8 +1377,6 @@ async function autoCopyOnce(){
   renderNoteBar();renderAll();
   noteMsg('good','Copied '+nR+' remarks and '+nD+' expected dates from Item level to Invoice level for Anuj.');
 }
-document.getElementById('btnCopyInv').onclick=()=>copyItemToInvoice();
-document.getElementById('btnCopyAnuj').onclick=()=>copyItemToInvoice('Anuj');
 /* ---------------- go ---------------- */
 notesLoad(); renderNoteBar();
 setEmptyState('Reading the sheet…');
