@@ -45,6 +45,88 @@ async function readAll() {
   return notes;
 }
 
+
+// ---- one-time import of invoice remarks and expected dates from the team's remarks sheet (matched by invoice number) ----
+const IMPORT_FLAG = 'META::import-invoice-sheet-v1';
+const REMARKS_SHEET = 'https://docs.google.com/spreadsheets/d/1r9AU3T3nJomNiLEC3_jOOYP52lepXYfXZ5Ax7szQAx4/export?format=csv&gid=0';
+const PENDING_SHEET = 'https://docs.google.com/spreadsheets/d/10A5kLP9hWZeMaRNbLsplLj43U0YljsreS_c0qDlgfK8/gviz/tq?tqx=out:csv&gid=0&tq='
+  + encodeURIComponent('select A,C,D,E,F,G,H,K,M,N,Z,AC,AD,AE,AF,AG,AH,AI,AJ,AM,AN');
+const DUMMY = new Set(['asdf', 'na', 'asdfasdf', '#1 vincue']);
+function csvParse(s) {
+  const rows = [];
+  let row = [], f = '', q = false, i = 0;
+  const n = s.length;
+  while (i < n) {
+    const c = s.charCodeAt(i);
+    if (q) {
+      if (c === 34) {
+        if (s.charCodeAt(i + 1) === 34) { f += '"'; i += 2; continue; }
+        q = false; i++; continue;
+      }
+      f += s[i]; i++; continue;
+    }
+    if (c === 34) { q = true; i++; continue; }
+    if (c === 44) { row.push(f); f = ''; i++; continue; }
+    if (c === 10 || c === 13) {
+      if (c === 13 && s.charCodeAt(i + 1) === 10) i++;
+      row.push(f); f = ''; rows.push(row); row = []; i++; continue;
+    }
+    f += s[i]; i++;
+  }
+  if (f !== '' || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
+const cln = (v) => { const s = String(v == null ? '' : v).replace(/\s+/g, ' ').trim(); return s === '#N/A' ? '' : s; };
+const MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+const iso = (y, m, d) => y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+function toDate(s) {
+  s = cln(s);
+  let m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s);
+  if (m) return iso(m[3], +m[2], +m[1]);
+  m = /^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/.exec(s);
+  if (m && MON[m[2].toLowerCase()]) return iso(m[3], MON[m[2].toLowerCase()], +m[1]);
+  return '';
+}
+async function importFromSheet(email) {
+  const [claimed] = await redis([['HSETNX', HASH, IMPORT_FLAG, JSON.stringify({ v: new Date().toISOString().slice(0, 10), by: 'sheet-import' })]]);
+  if (!claimed) return; // already done (or running) elsewhere
+  try {
+    const [pr, rr] = await Promise.all([fetch(PENDING_SHEET, { cache: 'no-store' }), fetch(REMARKS_SHEET, { cache: 'no-store' })]);
+    if (!pr.ok || !rr.ok) throw new Error('sheets ' + pr.status + '/' + rr.status);
+    const pg = csvParse(await pr.text()), rg = csvParse(await rr.text());
+    const ph = pg[0].map((c) => cln(c).toLowerCase());
+    const iInv = ph.findIndex((c) => ['invoice_number', 'invoice number', 'invoice no', 'invoice no.'].includes(c));
+    const iCus = ph.findIndex((c) => ['customer_name', 'customer name', 'customer'].includes(c));
+    if (iInv < 0 || iCus < 0) throw new Error('pending columns not found');
+    const byInv = new Map();
+    for (let i = 1; i < pg.length; i++) {
+      const inv = cln(pg[i][iInv]), cus = cln(pg[i][iCus]);
+      if (!inv || !cus || DUMMY.has(cus.toLowerCase())) continue;
+      let s = byInv.get(inv); if (!s) byInv.set(inv, s = new Set()); s.add(cus);
+    }
+    let hi = -1;
+    for (let i = 0; i < Math.min(rg.length, 10); i++) {
+      const low = rg[i].map((c) => cln(c).toLowerCase());
+      if (low.includes('invoice') && low.includes('manual remark')) { hi = i; break; }
+    }
+    if (hi < 0) throw new Error('remarks header not found');
+    const low = rg[hi].map((c) => cln(c).toLowerCase());
+    const iI = low.indexOf('invoice'), iR = low.indexOf('manual remark'), iD = low.indexOf('expected date');
+    const now = new Date().toISOString(), args = [];
+    for (let i = hi + 1; i < rg.length; i++) {
+      const inv = cln(rg[i][iI] || ''); if (!inv) continue;
+      const custs = byInv.get(inv); if (!custs) continue;
+      const rem = cln(rg[i][iR] || ''), dt = iD > -1 ? toDate(rg[i][iD] || '') : '';
+      custs.forEach((c) => {
+        if (ALLOWED.includes(rem)) args.push('INV::' + inv + '|' + c, JSON.stringify({ v: rem, by: 'sheet-import', at: now }));
+        if (dt) args.push('EXP::INV::' + inv + '|' + c, JSON.stringify({ v: dt, by: 'sheet-import', at: now }));
+      });
+    }
+    if (args.length) await redis([['HSET', HASH, ...args]]);
+  } catch (e) {
+    await redis([['HDEL', HASH, IMPORT_FLAG]]).catch(() => {}); // let the next visit try again
+  }
+}
 async function who(request) {
   const c = await cookieEmail(request);
   if (c) return c.toLowerCase();
@@ -62,7 +144,10 @@ export default async function handler(request) {
   if (!email) return json(401, { error: 'unauthorized' });
   const owner = email === OWNER;
   try {
-    if (request.method === 'GET') return json(200, { notes: await readAll(), owner });
+    if (request.method === 'GET') {
+      try { await importFromSheet(email); } catch (e) { /* never block reading the remarks */ }
+      return json(200, { notes: await readAll(), owner });
+    }
     if (request.method !== 'POST') return json(405, { error: 'method' });
     let body;
     try { body = await request.json(); } catch (e) { return json(400, { error: 'bad_json' }); }
