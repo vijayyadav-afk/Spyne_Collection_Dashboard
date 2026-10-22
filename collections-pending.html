@@ -634,6 +634,7 @@ function view(){
     (!F.band.size || [...F.band].some(k=>BANDS[k](r))) &&
     (!F.pay.size || [...F.pay].some(k=>k==='auto'?r.autopay:!r.autopay)));
 }
+function viewNoCust(){const a=F.custSet,b=F.q;F.custSet=new Set();F.q='';try{return view();}finally{F.custSet=a;F.q=b;}}
 function viewNoProduct(){const sv=F.product;F.product=new Set();try{return view();}finally{F.product=sv;}}
 function viewNoBand(){const sv=F.band;F.band=new Set();try{return view();}finally{F.band=sv;}}
 const bucketOf=r=>r.aging<=30?'b0':r.aging<=60?'b1':r.aging<=90?'b2':'b3';
@@ -1162,10 +1163,11 @@ document.getElementById('fReset').onclick=()=>{
   const chips=document.getElementById('mchips'), cnt=document.getElementById('mCount'), box=document.getElementById('msel');
   const paste=document.getElementById('mPaste'), pasteTxt=document.getElementById('mPasteTxt'), pasteMsg=document.getElementById('mPasteMsg');
   const apply=()=>{renderAll();};
-  const custTotals=()=>{const m=new Map();ALL.forEach(r=>m.set(r.cust,(m.get(r.cust)||0)+r.inr));
+  /* the list follows the other filters: pick a SPOC and only that SPOC's customers are offered */
+  const custTotals=()=>{const m=new Map();viewNoCust().forEach(r=>m.set(r.cust,(m.get(r.cust)||0)+r.inr));
     return [...m.entries()].sort((a,b)=>b[1]-a[1]);};
   const matches=()=>{const s=q.value.trim().toLowerCase();let all=custTotals();
-    if(s){const inv=new Set(ALL.filter(r=>r.invNo.toLowerCase().includes(s)).map(r=>r.cust));
+    if(s){const inv=new Set(viewNoCust().filter(r=>r.invNo.toLowerCase().includes(s)).map(r=>r.cust));
       all=all.filter(([c])=>c.toLowerCase().includes(s)||inv.has(c));}
     return all;};
   function drawChips(){
