@@ -634,6 +634,7 @@ function view(){
     (!F.band.size || [...F.band].some(k=>BANDS[k](r))) &&
     (!F.pay.size || [...F.pay].some(k=>k==='auto'?r.autopay:!r.autopay)));
 }
+function viewExcept(key){const sv=F[key];F[key]=new Set();try{return view();}finally{F[key]=sv;}}
 function viewNoCust(){const a=F.custSet,b=F.q;F.custSet=new Set();F.q='';try{return view();}finally{F.custSet=a;F.q=b;}}
 function viewNoProduct(){const sv=F.product;F.product=new Set();try{return view();}finally{F.product=sv;}}
 function viewNoBand(){const sv=F.band;F.band=new Set();try{return view();}finally{F.band=sv;}}
@@ -865,6 +866,16 @@ function fillSel(id,label,vals,keep){
   if(keep&&vals.includes(keep))el.value=keep;
 }
 const uniqVals=(rows,k)=>[...new Set(rows.map(r=>r[k]))].filter(v=>v&&v!=='—').sort();
+/* every filter list is narrowed by the other filters; whatever is already ticked always stays listed */
+function scopedVals(key,field){const set=new Set(uniqVals(viewExcept(key),field));F[key].forEach(v=>set.add(v));return [...set].sort();}
+function optAvail(key,v){
+  if(F[key].has(v))return true;
+  const rows=viewExcept(key);
+  if(key==='band')return rows.some(BANDS[v]);
+  if(key==='pay')return rows.some(r=>v==='auto'?r.autopay:!r.autopay);
+  if(key==='remark')return rows.some(r=>(NOTES['INV::'+r.invNo+'|'+r.cust]||'__none')===v);
+  return true;
+}
 
 /* ---------------- table engine ---------------- */
 function mkTable(id,getRows,cols,foot){
@@ -1130,11 +1141,11 @@ document.getElementById('fReset').onclick=()=>{
 (function(){
   const CFG=[
     {id:'fRemark',key:'remark',label:'Invoice remark',opts:[['Invoice Write Off','Invoice Write Off'],['Need To Send Legal','Need To Send Legal'],['Payment Will Receive','Payment Will Receive'],['Invoice Need To Be Change','Invoice Need To Be Change'],['__none','No remark']]},
-    {id:'fRegion',key:'region',label:'All regions',vals:()=>uniqVals(ALL,'region')},
-    {id:'fAm',key:'am',label:'All account managers',vals:()=>uniqVals(ALL,'am')},
-    {id:'fSpoc',key:'spoc',label:'All SPOCs',vals:()=>uniqVals(ALL,'spoc'),search:1},
-    {id:'fProduct',key:'product',label:'All products',vals:()=>uniqVals(ALL,'product')},
-    {id:'fAcct',key:'acct',label:'Account Status',vals:()=>uniqVals(ALL,'acctStatus')},
+    {id:'fRegion',key:'region',label:'All regions',vals:()=>scopedVals('region','region')},
+    {id:'fAm',key:'am',label:'All account managers',vals:()=>scopedVals('am','am')},
+    {id:'fSpoc',key:'spoc',label:'All SPOCs',vals:()=>scopedVals('spoc','spoc'),search:1},
+    {id:'fProduct',key:'product',label:'All products',vals:()=>scopedVals('product','product')},
+    {id:'fAcct',key:'acct',label:'Account Status',vals:()=>scopedVals('acct','acctStatus')},
     {id:'fBand',key:'band',label:'Any aging',opts:[['a','0 - 30 days'],['b','31 - 60 days'],['c','61 - 90 days'],['d','Over 90 days']]},
     {id:'fPay',key:'pay',label:'Payment Mode',opts:[['auto','Autopay'],['manual','Manual']]}];
   const parts=CFG.map(c=>{
@@ -1142,7 +1153,7 @@ document.getElementById('fReset').onclick=()=>{
     root.innerHTML='<button type="button" class="mfbtn"></button><div class="mfpanel" hidden>'+(c.search?'<input type="search" class="mfq" placeholder="Search…">':'')+
       '<div class="mftools"><button type="button" class="mlink">Clear</button><span class="mcount"></span></div><div class="mflist"></div></div>';
     const o={c,root,btn:root.querySelector('.mfbtn'),panel:root.querySelector('.mfpanel'),list:root.querySelector('.mflist'),cnt:root.querySelector('.mcount'),q:root.querySelector('.mfq')};
-    const items=()=>{const all=c.opts||c.vals().map(v=>[v,v]),s=o.q?o.q.value.trim().toLowerCase():'';return s?all.filter(x=>x[1].toLowerCase().includes(s)):all;};
+    const items=()=>{const all=c.opts?c.opts.filter(x=>optAvail(c.key,x[0])):c.vals().map(v=>[v,v]),s=o.q?o.q.value.trim().toLowerCase():'';return s?all.filter(x=>x[1].toLowerCase().includes(s)):all;};
     o.label=v=>{const x=(c.opts||[]).find(y=>y[0]===v);return x?x[1]:v;};
     o.drawBtn=()=>{const s=F[c.key];o.btn.textContent=s.size===0?c.label:s.size===1?o.label([...s][0]):s.size+' selected';o.btn.classList.toggle('on',s.size>0);};
     o.drawList=()=>{const it=items(),s=F[c.key];o.cnt.textContent=s.size?s.size+' selected':it.length+' options';
