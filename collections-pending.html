@@ -215,6 +215,7 @@
   table.fixedcols th,table.fixedcols td{overflow:hidden;text-overflow:ellipsis}
   table.fixedcols .noteIn,table.fixedcols .noteIn:focus{width:100%;min-width:0}
   td.notecell{padding:3px 6px}
+  #t-pend th[data-k="entId"],#t-pend td.entid{text-align:left}
   body:not(.owner) #noteClear,body:not(.owner) label[for=noteLoad]{display:none}
   select.noteIn option{background:var(--card);color:var(--ink)}
   body:not(.owner) #fReset{display:none}
@@ -982,10 +983,11 @@ function renderPend(){
 }
 /* Three views of the same lines: Item level (every invoice line), Invoice level (one row per invoice),
    Customer level (one row per customer). Amounts add up; aging shows the oldest line. */
-const TH={cust:'Customer',invNo:'Invoice no.',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Acct mgr',
+const TH={cust:'Customer',entId:'Enterprise ID',invNo:'Invoice no.',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Acct mgr',
   acctStatus:'Account status',aging:'Aging days',invCount:'Invoices',usd:'Due USD',inr:'Outstanding',exp:'Expected Date',note:'Manual remark'};
 const COLDEF={
   cust:{k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
+  entId:{k:'entId',f:r=>esc(r.entId)||'—',cls:'muted entid',txt:1},
   invNo:{k:'invNo',f:r=>esc(r.invNo)||'—',cls:'muted',txt:1},
   callType:{k:'callType',f:r=>r.callType?`<span class="chip">${r.callType}</span>`:'',txt:1},
   product:{k:'product',f:r=>`<span class="chip">${esc(r.product)}</span>`,txt:1},
@@ -999,9 +1001,9 @@ const COLDEF={
   exp:{k:'exp',txt:1,cls:'notecell',f:r=>`<input type="date" class="noteIn dateIn${r.exp?' filled':''}" data-c="${esc(r.expKey)}" value="${esc(r.exp||'')}" aria-label="Expected date">`},
   note:NOTE_COL};
 const LEVELS={
-  item:['cust','invNo','callType','product','spoc','am','acctStatus','aging','usd','inr','exp','note'],
-  invoice:['cust','invNo','spoc','am','acctStatus','aging','usd','inr','exp','note'],
-  customer:['cust','spoc','am','acctStatus','aging','invCount','usd','inr','exp','note']};
+  item:['cust','entId','invNo','callType','product','spoc','am','acctStatus','aging','usd','inr','exp','note'],
+  invoice:['cust','entId','invNo','spoc','am','acctStatus','aging','usd','inr','exp','note'],
+  customer:['cust','entId','spoc','am','acctStatus','aging','invCount','usd','inr','exp','note']};
 const groupRows=(rows,keyOf)=>{const m=new Map();
   rows.forEach(r=>{const k=keyOf(r);let g=m.get(k);
     if(!g){g=Object.assign({},r,{usd:0,inr:0});m.set(k,g);}
@@ -1205,8 +1207,8 @@ document.getElementById('fReset').onclick=()=>{
 /* ---------------- export ---------------- */
 const EXPORT={
   pend:()=>{
-    const hd={invCount:'Invoices',cust:'Customer',invNo:'Invoice',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Account manager',acctStatus:'Account status',aging:'Aging days',invCount:'Invoices',usd:'Due USD',inr:'Outstanding INR',exp:'Expected Date',note:'Manual remark'};
-    const keys=LEVEL==='item'?['cust','invNo','invDate','item','callType','product','spoc','am','acctStatus','aging','usd','inr','exp','note']:LEVELS[LEVEL];
+    const hd={entId:'Enterprise ID',invCount:'Invoices',cust:'Customer',invNo:'Invoice',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Account manager',acctStatus:'Account status',aging:'Aging days',invCount:'Invoices',usd:'Due USD',inr:'Outstanding INR',exp:'Expected Date',note:'Manual remark'};
+    const keys=LEVEL==='item'?['cust','entId','invNo','invDate','item','callType','product','spoc','am','acctStatus','aging','usd','inr','exp','note']:LEVELS[LEVEL];
     return [keys.map(k=>k==='invDate'?'Invoice date':k==='item'?'Item':hd[k]),ROWS[LEVEL]().map(r=>keys.map(k=>r[k])),
     LEVEL==='item'?'invoice-lines':LEVEL==='invoice'?'invoice-level':'customer-level'];},
 };
