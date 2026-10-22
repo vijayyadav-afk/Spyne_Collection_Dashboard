@@ -87,6 +87,9 @@ td.neg{color:var(--bad)}
 .more:hover{background:var(--soft)}
 thead th{background:var(--panel)}
 td.l{text-align:left}
+.dtools{display:flex;align-items:center;gap:8px}
+.xbtn{font:inherit;font-weight:600;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:5px 12px;cursor:pointer}
+.xbtn:hover{border-color:var(--blue);color:var(--blue)}
 #det th:nth-child(-n+7){text-align:left}
 #det th,#det td{padding:2px 8px;font-size:11px}
 #det thead th{position:sticky;top:0;background:var(--panel);z-index:1;box-shadow:0 1px 0 var(--line)}
@@ -213,7 +216,7 @@ html,body{height:100%}
     <section class="panel s6"><h2 id="yearTitle">Monthly collections and MoM growth</h2><div class="cap">Total collected per month (bars) and growth vs the previous month (line)</div><div class="ch"><canvas id="cYear" role="img" aria-label="Monthly collections and month-on-month growth, last 12 months"></canvas></div></section>
 
   </div></div>
-  <section class="panel s12" id="details"><div class="scopebar"><div><h2>Details table view</h2><div class="note" id="detNote"></div></div><div class="seg" id="segDet" role="group" aria-label="Table range"><button data-v="all" aria-pressed="true">All data</button><button data-v="period" aria-pressed="false">Selected period</button></div></div><div class="tw" id="detWrap" style="margin-top:6px;overflow:auto;max-height:245px"><table id="det"></table></div><div class="pager"><span id="pgInfo"></span></div></section>
+  <section class="panel s12" id="details"><div class="scopebar"><div><h2>Details table view</h2><div class="note" id="detNote"></div></div><div class="dtools"><div class="seg" id="segDet" role="group" aria-label="Table range"><button data-v="all" aria-pressed="true">All data</button><button data-v="period" aria-pressed="false">Selected period</button></div><button type="button" class="xbtn" id="detCsv" title="Download every entry in this table (with the current filters) as a CSV file">Export CSV</button></div></div><div class="tw" id="detWrap" style="margin-top:6px;overflow:auto;max-height:245px"><table id="det"></table></div><div class="pager"><span id="pgInfo"></span></div></section>
 
 
   <p class="note" id="foot"></p>
@@ -502,6 +505,16 @@ clickHandlers.cWeek=function(i){var e=H.weekEnds[i];act(function(){st.asof=e;st.
 clickHandlers.cMonth=function(i){if(H.trendMode!=="m")return;var e=H.monthEnds[i];act(function(){st.asof=e;st.scope="mtd"})};
 document.getElementById("reset").addEventListener("click",function(){act(function(){st.prod=st.ent=st.am=-1;st.ms.clear();st.cs.clear();ci.value="";st.amSet=null;st.amLabel="";st.asof=MAXD;st.scope="mtd"})});document.getElementById("detWrap").addEventListener("scroll",detMore);
 document.getElementById("segDet").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;st.detAll=b.getAttribute("data-v")==="all";setSeg("segDet",st.detAll?"all":"period");render()});
+document.getElementById("detCsv").addEventListener("click",function(){
+  var rs=DET.rs;if(!rs.length)return;
+  var q=function(v){var s=String(v==null?"":v);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return'"'+s.replace(/"/g,'""')+'"'};
+  var lines=[["Account manager","AE name","Customer","Product","Date","Deposit to","Currency","Received amount","Amount INR"].map(q).join(",")];
+  rs.forEach(function(r){lines.push([D.am[r.am],D.ae[r.ae]||"",D.cust[r.c],PRODS[r.p],lblY(r.d),D.dep[r.dp],D.cur[r.cu],r.o,r.a].map(function(v,i){return i>=7?v:q(v)}).join(","))});
+  var blob=new Blob(["﻿"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download="collections-"+(st.detAll?"all-data":"selected-period")+"-"+new Date().toISOString().slice(0,10)+".csv";
+  document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(a.href)},2000);
+});
 
 function effTheme(){var d=document.documentElement.getAttribute("data-theme");if(d)return d;return window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}
 document.getElementById("segTheme").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;var v=b.getAttribute("data-v");document.documentElement.setAttribute("data-theme",v);try{localStorage.setItem("spyneTheme",v)}catch(x){}setSeg("segTheme",v)});
