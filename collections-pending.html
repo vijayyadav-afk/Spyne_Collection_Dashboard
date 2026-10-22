@@ -1013,7 +1013,7 @@ const ROWS={item:()=>withExp(view(),'I',r=>r.cust),
   invoice:()=>withExp(groupRows(view(),r=>r.invNo+'|'+r.cust).map(g=>{g.noteKey='INV::'+g.invNo+'|'+g.cust;g.note=NOTES[g.noteKey]||'';return g;}),'INV',g=>g.invNo+'|'+g.cust),
   customer:()=>{const rs=view(),inv=new Map();rs.forEach(r=>{let s=inv.get(r.cust);if(!s)inv.set(r.cust,s=new Set());s.add(r.invNo);});
     return groupRows(rs,r=>r.cust).map(g=>{g.invCount=inv.get(g.cust).size;g.noteKey='CUS::'+g.cust;g.note=NOTES[g.noteKey]||'';return g;}).map(g=>{g.expKey='EXP::C::'+g.cust;g.exp=NOTES[g.expKey]||'';return g;});}};
-let LEVEL='item', drawPend=()=>{};
+let LEVEL='invoice', drawPend=()=>{};
 
 /* ---------------- adjustable column widths for the invoice detail table ---------------- */
 const CW_KEY='spyne.pending.colwidths.v1';
@@ -1064,7 +1064,7 @@ function buildLevel(level){
   document.querySelectorAll('#segView button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===level?'true':'false'));
 }
 document.getElementById('segView').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;buildLevel(b.dataset.v);drawPend();});
-buildLevel('item');
+buildLevel('invoice');
 
 /* ---------------- shell ---------------- */
 function renderProv(){
