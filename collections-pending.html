@@ -766,7 +766,7 @@ async function pullNotes(){
     if(!Object.keys(j.notes||{}).length&&me===OWNER&&Object.keys(NOTES).length&&!migrated){
       migrated=true;await pushNotes({set:NOTES});noteMsg('good','Your saved remarks were copied to the shared store.');return;}
     applyShared(j.notes);
-    autoCopyOnce();
+    autoCopyOnce().finally(autoImportSheet);
   }catch(e){}
 }
 function pushNotes(body){
@@ -1366,6 +1366,40 @@ function buildItemToInvoice(who){
     if(dt){set['EXP::INV::'+id]=dt;nD++;}
   });
   return {set,nR,nD,nInv};
+}
+/* one-time import of invoice-level remarks and expected dates from the team's remarks sheet, matched by invoice number */
+let importing=false;
+async function autoImportSheet(){
+  const FLAG='META::import-invoice-sheet-v1';
+  if(importing||me!==OWNER||!SHARED||!ALL.length||NOTES[FLAG])return;
+  importing=true;
+  try{
+    const r=await relay('remarks');const g=parseCSV(await r.text());
+    let hi=-1;
+    for(let i=0;i<Math.min(g.length,10);i++){const low=g[i].map(c=>cln(c).toLowerCase());if(low.includes('invoice')&&low.includes('manual remark')){hi=i;break;}}
+    if(hi<0)return;
+    const low=g[hi].map(c=>cln(c).toLowerCase());
+    const iI=low.indexOf('invoice'),iR=low.indexOf('manual remark'),iD=low.indexOf('expected date');
+    const byInv=new Map();ALL.forEach(x=>{let s=byInv.get(x.invNo);if(!s)byInv.set(x.invNo,s=new Set());s.add(x.cust);});
+    const MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+    const iso=(y,m,d)=>y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const toDate=s=>{s=cln(s);let m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s);if(m)return iso(m[3],+m[2],+m[1]);
+      m=/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/.exec(s);if(m&&MON[m[2].toLowerCase()])return iso(m[3],MON[m[2].toLowerCase()],+m[1]);return '';};
+    const set={};let nR=0,nD=0,miss=0;
+    for(let i=hi+1;i<g.length;i++){
+      const row=g[i];const inv=cln(row[iI]||'');if(!inv)continue;
+      const custs=byInv.get(inv);if(!custs){miss++;continue;}
+      const rem=cln(row[iR]||''),dt=iD>-1?toDate(row[iD]||''):'';
+      custs.forEach(c=>{
+        if(REMARK_OPTS.includes(rem)){set['INV::'+inv+'|'+c]=rem;nR++;}
+        if(dt){set['EXP::INV::'+inv+'|'+c]=dt;nD++;}});
+    }
+    set[FLAG]=new Date().toISOString().slice(0,10);
+    Object.assign(NOTES,set);notesSave();
+    await pushNotes({set});
+    renderNoteBar();renderAll();
+    noteMsg('good','Imported '+nR+' invoice remarks and '+nD+' expected dates from the remarks sheet ('+miss+' invoices not found).');
+  }catch(e){}finally{importing=false;}
 }
 /* one-time automatic copy for Anuj, done the first time the owner opens the page after this update */
 async function autoCopyOnce(){
