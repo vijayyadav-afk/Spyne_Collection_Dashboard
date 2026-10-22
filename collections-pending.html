@@ -215,7 +215,7 @@
   table.fixedcols th,table.fixedcols td{overflow:hidden;text-overflow:ellipsis}
   table.fixedcols .noteIn,table.fixedcols .noteIn:focus{width:100%;min-width:0}
   td.notecell{padding:3px 6px}
-  body:not(.owner) #noteClear,body:not(.owner) label[for=noteLoad]{display:none}
+  body:not(.owner) #noteClear,body:not(.owner) #btnCopyInv,body:not(.owner) label[for=noteLoad]{display:none}
   select.noteIn option{background:var(--card);color:var(--ink)}
   body:not(.owner) #fReset{display:none}
   th[data-k="note"]{text-align:left}
@@ -355,6 +355,7 @@
       <label class="btn" for="csvFile">Load invoice CSV…</label>
       <input type="file" id="csvFile" accept=".csv,text/csv">
       <button class="btn" id="noteClear">Clear all remarks</button>
+      <button class="btn" id="btnCopyInv" title="Copy the Item-level remarks and expected dates into the Invoice-level view for one SPOC">Copy item remarks to invoice level…</button>
       <span class="status" id="noteMsg"></span>
     </div>
   </details>
@@ -1348,6 +1349,26 @@ document.getElementById('noteClear').onclick=()=>{
   noteMsg('','All manual remarks cleared.');
 };
 
+
+/* owner tool: copy Item-level remarks and expected dates into Invoice level for one SPOC */
+document.getElementById('btnCopyInv').onclick=()=>{
+  const who=(prompt('Copy the Item-level remarks and expected dates to Invoice level for which SPOC?','Anuj')||'').trim();
+  if(!who)return;
+  const set={},seen=new Set();let nR=0,nD=0,nInv=0;
+  ALL.forEach(r=>{
+    if(String(r.spoc||'').toLowerCase()!==who.toLowerCase())return;
+    const id=r.invNo+'|'+r.cust;if(seen.has(id))return;seen.add(id);nInv++;
+    const rem=NOTES[r.cust],dt=NOTES['EXP::I::'+r.cust];
+    if(rem){set['INV::'+id]=rem;nR++;}
+    if(dt){set['EXP::INV::'+id]=dt;nD++;}
+  });
+  if(!nR&&!nD){alert('No Item-level remarks or expected dates were found for SPOC "'+who+'".');return;}
+  if(!confirm('SPOC '+who+': '+nInv+' invoices.\nThis will copy '+nR+' remarks and '+nD+' expected dates from Item level into Invoice level, replacing anything already there for those invoices.\n\nContinue?'))return;
+  Object.assign(NOTES,set);notesSave();renderNoteBar();
+  if(SHARED)pushNotes({set});
+  renderAll();
+  alert('Done. Copied '+nR+' remarks and '+nD+' expected dates to Invoice level for '+who+'.');
+};
 /* ---------------- go ---------------- */
 notesLoad(); renderNoteBar();
 setEmptyState('Reading the sheet…');
