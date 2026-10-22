@@ -362,6 +362,7 @@
 </div>
 
 <div class="toolbar">
+  <div id="fRemark"></div>
   <div class="msel" id="msel"><div class="mbox" id="mbox"><span id="mchips"></span><input type="search" id="fq" placeholder="Search customer or invoice…" autocomplete="off"></div>
     <div class="mpanel" id="mpanel" hidden>
       <div class="mtools"><button type="button" class="mlink" id="mAll">Select all matches</button><button type="button" class="mlink" id="mClear">Clear</button><button type="button" class="mlink" id="mPasteBtn">Paste list</button><span class="mcount" id="mCount"></span></div>
@@ -618,7 +619,7 @@ function buildRows(text,label){
 
 /* ---------------- state ---------------- */
 let ALL=[], provText='', ragged=0;
-const F={q:'',region:new Set(),am:new Set(),spoc:new Set(),product:new Set(),acct:new Set(),band:new Set(),pay:new Set(),custSet:new Set()};
+const F={q:'',remark:new Set(),region:new Set(),am:new Set(),spoc:new Set(),product:new Set(),acct:new Set(),band:new Set(),pay:new Set(),custSet:new Set()};
 function isOn(a,k){return !!a&&(typeof a==='string'?a===k:a.has(k));}
 function anyOn(a){return !!a&&(typeof a==='string'?!!a:a.size>0);}
 
@@ -630,6 +631,7 @@ function view(){
     (!F.region.size || F.region.has(r.region)) && (!F.am.size || F.am.has(r.am)) &&
     (!F.spoc.size || F.spoc.has(r.spoc)) && (!F.product.size || F.product.has(r.product)) &&
     (!F.acct.size || F.acct.has(r.acctStatus)) &&
+    (!F.remark.size || F.remark.has(NOTES['INV::'+r.invNo+'|'+r.cust]||'__none')) &&
     (!F.band.size || [...F.band].some(k=>BANDS[k](r))) &&
     (!F.pay.size || [...F.pay].some(k=>k==='auto'?r.autopay:!r.autopay)));
 }
@@ -658,7 +660,7 @@ function notesSave(){
     }
   }
 }
-const noteCount=()=>Object.keys(NOTES).filter(k=>NOTES[k]).length;
+const noteCount=()=>Object.keys(NOTES).filter(k=>NOTES[k]&&k.indexOf('META::')!==0).length;
 function noteSet(cust,text){
   const t=String(text||'').slice(0,300);
   if(t)NOTES[cust]=t;else delete NOTES[cust];
@@ -765,6 +767,7 @@ async function pullNotes(){
     if(!Object.keys(j.notes||{}).length&&me===OWNER&&Object.keys(NOTES).length&&!migrated){
       migrated=true;await pushNotes({set:NOTES});noteMsg('good','Your saved remarks were copied to the shared store.');return;}
     applyShared(j.notes);
+    autoCopyOnce();
   }catch(e){}
 }
 function pushNotes(body){
@@ -1116,7 +1119,7 @@ wire('fq','q',1);
 
 
 document.getElementById('fReset').onclick=()=>{
-  Object.assign(F,{q:'',region:new Set(),am:new Set(),spoc:new Set(),product:new Set(),acct:new Set(),band:new Set(),pay:new Set(),custSet:new Set()});
+  Object.assign(F,{q:'',remark:new Set(),region:new Set(),am:new Set(),spoc:new Set(),product:new Set(),acct:new Set(),band:new Set(),pay:new Set(),custSet:new Set()});
   syncFilters(); renderAll();
 };
 
@@ -1125,6 +1128,7 @@ document.getElementById('fReset').onclick=()=>{
 /* ---------------- tick-box filter dropdowns ---------------- */
 (function(){
   const CFG=[
+    {id:'fRemark',key:'remark',label:'Invoice remark',opts:[['Invoice Write Off','Invoice Write Off'],['Need To Send Legal','Need To Send Legal'],['Payment Will Receive','Payment Will Receive'],['Invoice Need To Be Change','Invoice Need To Be Change'],['__none','No remark']]},
     {id:'fRegion',key:'region',label:'All regions',vals:()=>uniqVals(ALL,'region')},
     {id:'fAm',key:'am',label:'All account managers',vals:()=>uniqVals(ALL,'am')},
     {id:'fSpoc',key:'spoc',label:'All SPOCs',vals:()=>uniqVals(ALL,'spoc'),search:1},
@@ -1352,9 +1356,7 @@ document.getElementById('noteClear').onclick=()=>{
 
 
 /* owner tool: copy Item-level remarks and expected dates into Invoice level for one SPOC */
-function copyItemToInvoice(preset){
-  const who=(preset||prompt('Copy the Item-level remarks and expected dates to Invoice level for which SPOC?','Anuj')||'').trim();
-  if(!who)return;
+function buildItemToInvoice(who){
   const set={},seen=new Set();let nR=0,nD=0,nInv=0;
   ALL.forEach(r=>{
     if(String(r.spoc||'').toLowerCase()!==who.toLowerCase())return;
@@ -1363,12 +1365,30 @@ function copyItemToInvoice(preset){
     if(rem){set['INV::'+id]=rem;nR++;}
     if(dt){set['EXP::INV::'+id]=dt;nD++;}
   });
+  return {set,nR,nD,nInv};
+}
+function copyItemToInvoice(preset){
+  const who=(preset||prompt('Copy the Item-level remarks and expected dates to Invoice level for which SPOC?','Anuj')||'').trim();
+  if(!who)return;
+  const {set,nR,nD,nInv}=buildItemToInvoice(who);
   if(!nR&&!nD){alert('No Item-level remarks or expected dates were found for SPOC "'+who+'".');return;}
   if(!confirm('SPOC '+who+': '+nInv+' invoices.\nThis will copy '+nR+' remarks and '+nD+' expected dates from Item level into Invoice level, replacing anything already there for those invoices.\n\nContinue?'))return;
   Object.assign(NOTES,set);notesSave();renderNoteBar();
   if(SHARED)pushNotes({set});
   renderAll();
   alert('Done. Copied '+nR+' remarks and '+nD+' expected dates to Invoice level for '+who+'.');
+}
+/* one-time automatic copy for Anuj, done the first time the owner opens the page after this update */
+async function autoCopyOnce(){
+  const FLAG='META::copy-item-to-invoice-anuj-v1';
+  if(me!==OWNER||!SHARED||!ALL.length||NOTES[FLAG])return;
+  const {set,nR,nD}=buildItemToInvoice('Anuj');
+  if(!nR&&!nD)return;   /* nothing to copy yet: try again on the next refresh */
+  set[FLAG]=new Date().toISOString().slice(0,10);
+  Object.assign(NOTES,set);notesSave();
+  await pushNotes({set});
+  renderNoteBar();renderAll();
+  noteMsg('good','Copied '+nR+' remarks and '+nD+' expected dates from Item level to Invoice level for Anuj.');
 }
 document.getElementById('btnCopyInv').onclick=()=>copyItemToInvoice();
 document.getElementById('btnCopyAnuj').onclick=()=>copyItemToInvoice('Anuj');
