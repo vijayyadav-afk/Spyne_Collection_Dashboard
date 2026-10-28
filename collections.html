@@ -546,8 +546,10 @@ function setLive(ok,msg){var e=document.getElementById("liveTag");e.className="l
 function hhmm(){var d=new Date(),h=d.getHours(),m=d.getMinutes();return(h<10?"0":"")+h+":"+(m<10?"0":"")+m}
 function sig(t){var h=0;for(var i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))|0;return t.length+":"+h}
 var CLIENT_ID="706399438904-1ijn6ih2tq6svot6iguosob7nf68no5o.apps.googleusercontent.com",token=null,gsiInit=false;
+/* the signed login value is also kept in this browser and sent as a header, so a browser that drops the cookie still stays signed in */
+(function(){var f0=window.fetch;window.fetch=function(u,o){try{var s=localStorage.getItem("spyneSess");if(s&&String(u).indexOf("/api/")===0){o=Object.assign({},o);o.headers=Object.assign({},o.headers,{"X-Session":s})}}catch(e){}return f0.call(this,u,o)}})();
 var sess=false,sessReady=fetch("/api/session",{cache:"no-store"}).then(function(r){sess=r.ok;if(!r.ok&&token&&tokExp(token)>Date.now()+30000)return mkSession(token)}).catch(function(){});
-function mkSession(t){return fetch("/api/session",{method:"POST",headers:{Authorization:"Bearer "+t}}).then(function(r){return r.json()}).then(function(j){sess=!!(j&&j.session)}).catch(function(){})}
+function mkSession(t){return fetch("/api/session",{method:"POST",headers:{Authorization:"Bearer "+t}}).then(function(r){return r.json()}).then(function(j){sess=!!(j&&j.session);if(j&&j.token){try{localStorage.setItem("spyneSess",j.token)}catch(e){}}}).catch(function(){})}
 try{token=localStorage.getItem("spyneTok")||sessionStorage.getItem("spyneTok")}catch(e){}
 function tokExp(t){try{var p=t.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");return JSON.parse(atob(p)).exp*1000}catch(e){return 0}}
 if(token&&tokExp(token)<Date.now()+30000)token=null;
@@ -563,12 +565,12 @@ function initGoogle(){
   google.accounts.id.renderButton(document.getElementById("gBtn"),{theme:"outline",size:"large",text:"signin_with",shape:"rectangular",width:260});
   if(!token)sessReady.then(function(){if(!sess)google.accounts.id.prompt()});
 }
-function liveRefresh(){return sessReady.then(liveRefresh0)}
+function liveRefresh(){return liveRefresh0()}
 function liveRefresh0(){
-  if(!sess&&(!token||tokExp(token)<Date.now()+30000)){clearToken();showGate("Sign in with your Spyne Google account to continue.");initGoogle();renewTok();return Promise.resolve()}
-  return fetch("/api/sheet",{cache:"no-store",headers:sess?{}:{Authorization:"Bearer "+token}}).then(function(r){
-    if(r.status===401&&sess){sess=false;return liveRefresh0().then(function(){return null})}
-    if(r.status===401){clearToken();showGate("Your session expired. Please sign in again.");initGoogle();return null}
+  /* no waiting for the sign-in check: the saved login rides along with this request, and a 401 shows the sign-in screen */
+  var tk=(token&&tokExp(token)>Date.now()+30000)?token:null;
+  return fetch("/api/sheet",{cache:"no-store",headers:tk?{Authorization:"Bearer "+tk}:{}}).then(function(r){
+    if(r.status===401){clearToken();showGate("Sign in with your Spyne Google account to continue.");initGoogle();renewTok();return null}
     if(r.status===403){clearToken();showGate("Access denied. Please sign in with your @spyne.ai Google account.");try{google.accounts.id.disableAutoSelect()}catch(e){}initGoogle();return null}
     if(!r.ok)throw new Error("HTTP "+r.status);
     return r.text();

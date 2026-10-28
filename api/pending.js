@@ -79,6 +79,12 @@ function json(status, obj) {
   });
 }
 
+const cache = new Map();
+const csv = (text) => new Response(text, {
+  status: 200,
+  headers: { 'content-type': 'text/csv; charset=utf-8', 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex, nofollow' },
+});
+
 export default async function handler(request) {
   if (!(await cookieEmail(request))) {
   const m = /^Bearer\s+(.+)$/i.exec(request.headers.get('authorization') || '');
@@ -95,12 +101,14 @@ export default async function handler(request) {
   const src = SOURCES[kind];
   if (!src) return json(400, { error: 'bad_kind' });
   try {
+    // One Google read serves everyone for a few seconds; the page stays live because it re-reads every minute.
+    const hit = cache.get(kind);
+    if (hit && Date.now() - hit.t < (kind === 'probe' ? 0 : 20000)) return csv(hit.text);
     const r = await fetch(src, { cache: 'no-store' });
     if (!r.ok) throw new Error('sheet responded ' + r.status);
-    return new Response(r.body, {
-      status: 200,
-      headers: { 'content-type': 'text/csv; charset=utf-8', 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex, nofollow' },
-    });
+    const text = await r.text();
+    if (kind !== 'probe') cache.set(kind, { t: Date.now(), text });
+    return csv(text);
   } catch (e) {
     return json(502, { error: 'sheet_unavailable', message: String((e && e.message) || e) });
   }

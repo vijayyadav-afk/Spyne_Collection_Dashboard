@@ -70,12 +70,16 @@ async function hmacKey() {
 export async function sessionEnabled() { return !!(await hmacKey()); }
 
 // Set-Cookie value for a signed session, or null when no secret is configured.
-export async function makeCookie(email) {
+export async function makeSessionValue(email) {
   const key = await hmacKey();
   if (!key) return null;
   const body = toB64url(enc.encode(JSON.stringify({ e: email, x: Math.floor(Date.now() / 1000) + DAYS * 86400 })));
   const sig = toB64url(new Uint8Array(await crypto.subtle.sign('HMAC', key, enc.encode(body))));
-  return NAME + '=' + body + '.' + sig + '; Max-Age=' + DAYS * 86400 + '; Path=/; HttpOnly; Secure; SameSite=Lax';
+  return body + '.' + sig;
+}
+export async function makeCookie(email) {
+  const v = await makeSessionValue(email);
+  return v ? NAME + '=' + v + '; Max-Age=' + DAYS * 86400 + '; Path=/; HttpOnly; Secure; SameSite=Lax' : null;
 }
 export function clearCookie() { return NAME + '=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax'; }
 
@@ -84,9 +88,12 @@ export async function cookieEmail(request) {
   try {
     const key = await hmacKey();
     if (!key) return null;
-    const m = new RegExp('(?:^|;\s*)' + NAME + '=([^;]+)').exec(request.headers.get('cookie') || '');
-    if (!m) return null;
-    const [body, sig] = m[1].split('.');
+    // The cookie can sit anywhere in the header (Google adds its own g_state cookie), so match it by name.
+    const m = /(?:^|;\s*)spyne_sess=([^;]+)/.exec(request.headers.get('cookie') || '');
+    // Fallback for browsers that drop the cookie: the page keeps the same signed value and sends it as a header.
+    const raw = m ? m[1] : (request.headers.get('x-session') || '');
+    if (!raw) return null;
+    const [body, sig] = raw.split('.');
     if (!body || !sig) return null;
     const ok = await crypto.subtle.verify('HMAC', key, b64urlToBytes(sig), enc.encode(body));
     if (!ok) return null;

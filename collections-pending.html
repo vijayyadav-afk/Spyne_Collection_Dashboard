@@ -454,10 +454,12 @@ const DATA_URL='data', DATA_URL_FULL='full', PROBE_URL='probe';
 /* ---------------- access: Google sign-in for the spyne.ai domain ---------------- */
 const CLIENT_ID='706399438904-1ijn6ih2tq6svot6iguosob7nf68no5o.apps.googleusercontent.com';
 let token=null, gsiInit=false;
+/* the signed login value is also kept here and sent as a header, so a browser that drops the cookie still stays signed in */
+(function(){const f0=window.fetch;window.fetch=function(u,o){try{const s=localStorage.getItem('spyneSess');if(s&&String(u).indexOf('/api/')===0){o=Object.assign({},o);o.headers=Object.assign({},o.headers,{'X-Session':s});}}catch(e){}return f0.call(this,u,o);};})();
 const OWNER='vijay.yadav@spyne.ai';let me='';
 const setMe=e=>{me=String(e||'').toLowerCase();document.body.classList.toggle('owner',me===OWNER);};
 let sess=false;const sessReady=fetch('/api/session',{cache:'no-store'}).then(r=>{sess=r.ok;return r.ok?r.json():null;}).then(j=>{if(j&&j.email)setMe(j.email);else if(token&&tokExp(token)>Date.now()+30000)return mkSession(token);}).catch(()=>{});
-const mkSession=t=>fetch('/api/session',{method:'POST',headers:{Authorization:'Bearer '+t}}).then(r=>r.json()).then(j=>{sess=!!(j&&j.session);if(j&&j.email)setMe(j.email);}).catch(()=>{});
+const mkSession=t=>fetch('/api/session',{method:'POST',headers:{Authorization:'Bearer '+t}}).then(r=>r.json()).then(j=>{sess=!!(j&&j.session);if(j&&j.token){try{localStorage.setItem('spyneSess',j.token);}catch(e){}}if(j&&j.email)setMe(j.email);}).catch(()=>{});
 try{token=localStorage.getItem('spyneTok')||sessionStorage.getItem('spyneTok');}catch(e){}
 const tokExp=t=>{try{return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).exp*1000;}catch(e){return 0;}};
 if(token&&tokExp(token)<Date.now()+30000)token=null;
@@ -477,20 +479,19 @@ function initGoogle(){
   if(!token)sessReady.then(()=>{if(!sess)google.accounts.id.prompt();});
 }
 async function relay(kind){
-  await sessReady;
-  if(!sess&&(!token||tokExp(token)<Date.now()+30000)){clearToken();showGate('Sign in with your Spyne Google account to continue.');initGoogle();renewTok();throw authFail();}
-  const r=await fetch('/api/pending?kind='+kind+'&cb='+Date.now(),{cache:'no-store',headers:sess?{}:{Authorization:'Bearer '+token}});
-  if(r.status===401&&sess){sess=false;return relay(kind);}
-  if(r.status===401){clearToken();showGate('Your session expired. Please sign in again.');initGoogle();throw authFail();}
+  /* no waiting for the sign-in check: the saved login rides along with this request, and a 401 shows the sign-in screen */
+  const tk=(token&&tokExp(token)>Date.now()+30000)?token:null;
+  const r=await fetch('/api/pending?kind='+kind+'&cb='+Date.now(),{cache:'no-store',headers:tk?{Authorization:'Bearer '+tk}:{}});
+  if(r.status===401){clearToken();showGate('Sign in with your Spyne Google account to continue.');initGoogle();renewTok();throw authFail();}
   if(r.status===403){clearToken();showGate('Access denied. Please sign in with your @spyne.ai Google account.');try{google.accounts.id.disableAutoSelect();}catch(e){}initGoogle();throw authFail();}
   hideGate();
   return r;
 }
-function startLive(){setTimeout(()=>{try{pullNotes();}catch(e){}},1500);refreshLive().then(()=>{if(token)return probeSig().then(s=>{if(s)lastSig=s;});});}
+function startLive(){try{pullNotes();}catch(e){}refreshLive().then(()=>{if(token)return probeSig().then(s=>{if(s)lastSig=s;});});}
 function bootAuth(){
   setInterval(()=>{if(token&&tokExp(token)<Date.now()+600000)renewTok();},60000);
   const gt=setInterval(()=>{if(window.google&&google.accounts&&google.accounts.id){clearInterval(gt);initGoogle();}},200);
-  sessReady.then(()=>{if(sess||token)startLive(); else showGate('Sign in with your Spyne Google account to continue.');});
+  startLive();
 }
 
 /* ---------------- formatting ---------------- */
@@ -762,7 +763,7 @@ document.addEventListener('focusout',()=>{if(needRedraw)setTimeout(()=>{const ae
 async function pullNotes(){
   if(pushing)return;
   try{
-    await sessReady;if(!sess&&!token)return;
+
     const r=await remCall();if(!r.ok)return;
     SHARED=true;
     const j=await r.json();

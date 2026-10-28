@@ -145,8 +145,11 @@ export default async function handler(request) {
   const owner = email === OWNER;
   try {
     if (request.method === 'GET') {
-      try { await importFromSheet(email); } catch (e) { /* never block reading the remarks */ }
-      return json(200, { notes: await readAll(), owner });
+      let notes = await readAll();
+      if (!notes[IMPORT_FLAG]) {
+        try { await importFromSheet(email); notes = await readAll(); } catch (e) { /* never block reading the remarks */ }
+      }
+      return json(200, { notes, owner });
     }
     if (request.method !== 'POST') return json(405, { error: 'method' });
     let body;
@@ -156,6 +159,7 @@ export default async function handler(request) {
     if (body.clearAll) {
       if (!owner) return json(403, { error: 'owner_only' });
       cmds.push(['DEL', HASH]);
+      cmds.push(['HSET', HASH, IMPORT_FLAG, JSON.stringify({ v: now.slice(0, 10), by: 'clear-all' })]); // clearing must not trigger the one-time sheet import again
     }
     const set = body.set && typeof body.set === 'object' ? Object.entries(body.set).slice(0, 2000) : [];
     const dels = Array.isArray(body.del) ? body.del.slice(0, 2000) : [];
