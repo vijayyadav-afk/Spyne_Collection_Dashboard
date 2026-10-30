@@ -1,4 +1,4 @@
-// Protected relay for the Item Level Collection Pending dashboard (Vercel edge function).
+// Protected relay for the Item Level Collection Pending dashboard (edge function; runs on Vercel or Cloudflare Pages).
 // Only people signed in with a Google account on ALLOWED_DOMAIN get data: the request must carry
 // a Google ID token, which is verified here. The sheet id and column list live only on the server,
 // so the page no longer contains the sheet address.

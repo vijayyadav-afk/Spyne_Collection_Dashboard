@@ -1,4 +1,4 @@
-// Live data relay for the Collections dashboard (Vercel edge function).
+// Live data relay for the Collections dashboard (edge function; runs on Vercel or Cloudflare Pages).
 // Only people signed in with a Google account on ALLOWED_DOMAIN get data: the request must carry
 // a Google ID token, which is verified here (signature, audience, expiry, hosted domain).
 // The sheet (tab gid 0, shared "anyone with the link") is then read, reduced to the columns the
