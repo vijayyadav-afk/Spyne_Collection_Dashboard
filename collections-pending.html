@@ -161,13 +161,37 @@
   .barrow .fill{height:100%;border-radius:4px;background:var(--b1);display:flex}
   .barrow .v{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 
-  .grid3eq{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px;align-items:stretch}
-  @media (max-width:1180px){.grid3eq{grid-template-columns:1fr}}
+  .grid3eq{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;align-items:stretch}
+  @media (max-width:1180px){.grid3eq{grid-template-columns:1fr 1fr}}
   .grid3eq>.card{display:flex;flex-direction:column}
   .grid3eq>.card>.pad{flex:1 1 auto;display:flex;align-items:center}
   .agewrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap;width:100%}
   #pie-age svg,#pie-prod svg{width:150px;height:150px;display:block}
   #b-pend-am{width:100%}
+  /* four cards across: smaller pies and one-line legend rows so nothing wraps or gets clipped */
+  .grid3eq .agewrap{gap:10px;flex-wrap:nowrap}
+  .grid3eq .lgrow{grid-template-columns:12px minmax(0,1fr) auto 42px;gap:6px;font-size:11.5px}
+  .grid3eq .lgrow>*{white-space:nowrap}
+  .grid3eq #lg-age,.grid3eq #lg-prod{flex:1 1 0;min-width:0}
+  .grid3eq #pie-age,.grid3eq #pie-prod{flex:0 0 auto}
+  .grid3eq #pie-age svg,.grid3eq #pie-prod svg{width:118px;height:118px}
+  /* hub chart: the orb in the middle of the left, one card per remark on the right joined by curved lines */
+  #hub-rem{width:100%;height:100%;min-height:150px}
+  .hub{position:relative;display:flex;align-items:center;gap:30px;width:100%;height:100%}
+  .hublines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+  .orb{position:relative;flex:0 0 84px;width:84px;height:84px;display:flex;align-items:center;justify-content:center}
+  .orbring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 20deg,var(--bar1-lt),var(--g1),var(--b2),var(--b4),var(--bar1-lt));opacity:.55;-webkit-mask:radial-gradient(circle,transparent 61%,#000 63%);mask:radial-gradient(circle,transparent 61%,#000 63%)}
+  .orbball{width:62px;height:62px;border-radius:50%;background:radial-gradient(circle at 34% 28%,color-mix(in srgb,var(--bar1-lt) 85%,#fff),var(--bar1) 58%,color-mix(in srgb,var(--bar1) 55%,#000));box-shadow:0 0 18px color-mix(in srgb,var(--bar1) 45%,transparent);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;line-height:1.1}
+  .orbball b{font-size:17px;font-variant-numeric:tabular-nums}
+  .orbball span{font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;opacity:.9}
+  .hubchips{position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:5px;height:100%;max-height:230px}
+  .hchip{--c:var(--b1);flex:1 1 0;min-height:28px;display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:8px;text-align:left;font:inherit;cursor:pointer;color:var(--ink);padding:0 10px 0 9px;border-radius:9px;border:1px solid color-mix(in srgb,var(--c) 38%,var(--line));border-left:3px solid var(--c);background:linear-gradient(100deg,color-mix(in srgb,var(--c) 16%,var(--card)),var(--card) 70%)}
+  .hchip:hover{border-color:var(--c)}
+  .hchip b{font-size:15px;font-variant-numeric:tabular-nums}
+  .hchip .hl{font-size:11px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink2)}
+  .hchip .ha{font-size:10.5px;font-variant-numeric:tabular-nums;color:var(--ink3);white-space:nowrap}
+  .hchip.on{box-shadow:0 0 0 2px var(--c);border-color:var(--c)}
+  .hchip.dim{opacity:.45}
   #pie-age circle.seg,#pie-prod circle.seg{cursor:pointer;transition:opacity .15s}
   #lg-age,#lg-prod{flex:1 1 170px;min-width:160px}
   .lgrow{display:grid;grid-template-columns:14px 1fr auto 52px;gap:8px;align-items:center;padding:7px 4px;
@@ -276,7 +300,7 @@
     .vcols{flex:1 1 0;height:auto;min-height:0}
     .vlabs{height:28px}
     .agewrap{gap:12px;height:100%;min-height:0}
-    #pie-age,#pie-prod{height:100%;max-height:150px;aspect-ratio:1/1}
+    #pie-age,#pie-prod{height:100%;max-height:118px;aspect-ratio:1/1;flex:0 0 auto}
     #pie-age svg,#pie-prod svg{width:100%;height:100%}
     .lgrow{padding:4px 4px}
     .hbars{gap:6px;padding:2px}
@@ -417,6 +441,10 @@
     <div class="card" id="c-prod">
       <header><h2>Total outstanding by product</h2><span class="cap">click to filter</span></header>
       <div class="pad"><div class="agewrap"><div id="pie-prod"></div><div id="lg-prod"></div></div></div>
+    </div>
+    <div class="card" id="c-rem">
+      <header><h2>Invoice remarks</h2><span class="cap">click to filter</span></header>
+      <div class="pad"><div id="hub-rem"></div></div>
     </div>
   </div>
   <div class="card">
@@ -782,6 +810,32 @@ function pushNotes(body){
 }
 setInterval(pullNotes,30000);
 /* ---------------- chart helpers ---------------- */
+/* hub chart: invoices by manual remark (invoice level), click a card to filter */
+const REM_META=[['Invoice Write Off','var(--b4)'],['Need To Send Legal','var(--b3)'],['Payment Will Receive','var(--g1)'],['Invoice Need To Be Change','var(--b2)'],['__none','var(--ink3)']];
+function drawHubLines(el){
+  const hub=el.querySelector('.hub');if(!hub)return;
+  const svg=hub.querySelector('.hublines'),orb=hub.querySelector('.orb'),h=hub.getBoundingClientRect(),o=orb.getBoundingClientRect();
+  const cx=o.right-h.left-2,cy=o.top-h.top+o.height/2;
+  svg.setAttribute('viewBox','0 0 '+h.width+' '+h.height);
+  svg.innerHTML=[...hub.querySelectorAll('.hchip')].map(c=>{
+    const r=c.getBoundingClientRect(),x=r.left-h.left,y=r.top-h.top+r.height/2,mx=(cx+x)/2;
+    const on=c.classList.contains('on');
+    return `<path d="M${cx},${cy} C${mx},${cy} ${mx},${y} ${x},${y}" fill="none" stroke="${on?c.style.getPropertyValue('--c'):'currentColor'}" stroke-width="${on?1.8:1}" opacity="${on?.95:.3}" style="color:var(--ink3)"/>`;}).join('');
+}
+function remarkHub(el,rows,active){
+  const st={};REM_META.forEach(([k])=>st[k]={inv:new Set(),amt:0});
+  rows.forEach(r=>{const id=r.invNo+'|'+r.cust;let k=NOTES['INV::'+id]||'__none';if(!st[k])k='__none';st[k].inv.add(id);st[k].amt+=r.inr;});
+  const total=new Set(rows.map(r=>r.invNo+'|'+r.cust)).size;
+  const label=k=>k==='__none'?'No remark':k;
+  el.innerHTML='<div class="hub"><svg class="hublines" aria-hidden="true"></svg>'+
+    '<div class="orb"><div class="orbring"></div><div class="orbball"><b>'+total+'</b><span>invoices</span></div></div>'+
+    '<div class="hubchips">'+REM_META.map(([k,c])=>
+      `<button type="button" class="hchip${isOn(active,k)?' on':anyOn(active)?' dim':''}" data-k="${esc(k)}" style="--c:${c}" title="${esc(label(k))}: ${st[k].inv.size} invoices, ${short(st[k].amt)}">`+
+      `<b>${st[k].inv.size}</b><span class="hl">${esc(label(k))}</span><span class="ha">${short(st[k].amt)}</span></button>`).join('')+'</div></div>';
+  el.querySelectorAll('.hchip').forEach(b=>b.onclick=()=>{const k=b.dataset.k;F.remark.has(k)?F.remark.delete(k):F.remark.add(k);syncFilters();renderAll();});
+  requestAnimationFrame(()=>drawHubLines(el));
+}
+window.addEventListener('resize',()=>{const el=document.getElementById('hub-rem');if(el)drawHubLines(el);});
 /* generic donut: parts [{k,label,color,v}], clicking a slice or legend row calls toggle(k) */
 function donutChart(pieEl,lgEl,parts,activeKey,toggle,aria){
   const tot=parts.reduce((s,p)=>s+Math.max(p.v,0),0);
@@ -989,6 +1043,7 @@ function renderPend(){
   ]);
   pieAge(document.getElementById('pie-age'),document.getElementById('lg-age'),viewNoBand(),F.band);
   pieProduct(document.getElementById('pie-prod'),document.getElementById('lg-prod'),viewNoProduct(),F.product);
+  remarkHub(document.getElementById('hub-rem'),viewExcept('remark'),F.remark);
   hBars(document.getElementById('b-pend-am'),groupSum(v,'am','inr'),lakh,
     k=>{F.am.has(k)?F.am.delete(k):F.am.add(k);syncFilters();renderAll();},F.am);
   vCols(document.getElementById('b-pend-spoc'),groupSum(v,'spoc','inr',18),lakh,
