@@ -127,6 +127,69 @@ async function importFromSheet(email) {
     await redis([['HDEL', HASH, IMPORT_FLAG]]).catch(() => {}); // let the next visit try again
   }
 }
+// ---- one-time fill of Anuj's blank invoice-level remarks and expected dates, worked out from the live data (no names in code) ----
+// A remark goes in only where the owner's own entries point to it:
+//   - the customer's other invoices all carry the same remark -> the same remark;
+//   - otherwise an invoice not yet 30 days old -> "Payment Will Receive" (what the owner uses for every new invoice);
+//   - anything else (older, nothing to go by) stays blank for the owner to decide.
+// A Manual-payment "Payment Will Receive" invoice also gets the expected date most of Anuj's other ones use.
+// HSETNX is used so nothing already chosen for an invoice is ever overwritten.
+const FILL_FLAG = 'META::fill-anuj-blank-v1';
+const FILL_SPOC = 'anuj';
+async function fillBlanksOnce() {
+  const now = new Date().toISOString();
+  const [claimed] = await redis([['HSETNX', HASH, FILL_FLAG, JSON.stringify({ v: now.slice(0, 10), by: 'auto-fill' })]]);
+  if (!claimed) return;
+  try {
+    const pr = await fetch(PENDING_SHEET, { cache: 'no-store' });
+    if (!pr.ok) throw new Error('pending ' + pr.status);
+    const g = csvParse(await pr.text());
+    const h = g[0].map((c) => cln(c).toLowerCase());
+    const ix = (names) => h.findIndex((c) => names.includes(c));
+    const iInv = ix(['invoice_number', 'invoice number', 'invoice no', 'invoice no.']);
+    const iCus = ix(['customer_name', 'customer name', 'customer']);
+    const iSp = ix(['spoc name', 'spoc', 'spoc_name']);
+    const iAg = ix(['aging due days', 'tat', 'aging_due_days']);
+    const iAp = ix(['auto_pay', 'autopay', 'auto pay', 'mapping']);
+    if ([iInv, iCus, iSp, iAg].some((i) => i < 0)) throw new Error('pending columns not found');
+    const inv = new Map(); // "invoice|customer" -> { cust, spoc, aging, auto }
+    for (let i = 1; i < g.length; i++) {
+      const r = g[i], n = cln(r[iInv]), c = cln(r[iCus]);
+      const ag = Math.round(parseFloat(String(r[iAg]).replace(/,/g, '')) || 0);
+      if (!n || !c || DUMMY.has(c.toLowerCase()) || ag < 0) continue;
+      const k = n + '|' + c, o = inv.get(k) || { cust: c, spoc: cln(r[iSp]).toLowerCase(), aging: 0, auto: false };
+      o.aging = Math.max(o.aging, ag);
+      if (iAp > -1 && /autopay/i.test(cln(r[iAp]))) o.auto = true;
+      inv.set(k, o);
+    }
+    const notes = await readAll();
+    const byCust = new Map(); // customer -> set of remarks already chosen on its invoices
+    const dateCount = new Map();
+    for (const [k, o] of inv) {
+      const rem = notes['INV::' + k];
+      if (rem) { let s = byCust.get(o.cust); if (!s) byCust.set(o.cust, s = new Set()); s.add(rem); }
+      const d = notes['EXP::INV::' + k];
+      if (d && o.spoc === FILL_SPOC && rem === 'Payment Will Receive' && !o.auto) dateCount.set(d, (dateCount.get(d) || 0) + 1);
+    }
+    let usual = '', best = 0;
+    for (const [d, n] of dateCount) if (n > best) { best = n; usual = d; }
+    const cmds = [];
+    for (const [k, o] of inv) {
+      if (o.spoc !== FILL_SPOC || notes['INV::' + k]) continue;
+      const seen = byCust.get(o.cust);
+      const rem = seen && seen.size === 1 ? [...seen][0] : (o.aging <= 30 ? 'Payment Will Receive' : '');
+      if (!rem || !ALLOWED.includes(rem)) continue;
+      cmds.push(['HSETNX', HASH, 'INV::' + k, JSON.stringify({ v: rem, by: 'auto-fill', at: now })]);
+      if (rem === 'Payment Will Receive' && !o.auto && usual && !notes['EXP::INV::' + k]) {
+        cmds.push(['HSETNX', HASH, 'EXP::INV::' + k, JSON.stringify({ v: usual, by: 'auto-fill', at: now })]);
+      }
+    }
+    if (cmds.length) await redis(cmds);
+  } catch (e) {
+    await redis([['HDEL', HASH, FILL_FLAG]]).catch(() => {}); // let the next visit try again
+  }
+}
+
 async function who(request) {
   const c = await cookieEmail(request);
   if (c) return c.toLowerCase();
@@ -148,6 +211,9 @@ export default async function handler(request) {
       let notes = await readAll();
       if (!notes[IMPORT_FLAG]) {
         try { await importFromSheet(email); notes = await readAll(); } catch (e) { /* never block reading the remarks */ }
+      }
+      if (!notes[FILL_FLAG]) {
+        try { await fillBlanksOnce(); notes = await readAll(); } catch (e) { /* never block reading the remarks */ }
       }
       return json(200, { notes, owner });
     }
