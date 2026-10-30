@@ -216,7 +216,7 @@
   table.fixedcols .noteIn,table.fixedcols .noteIn:focus{width:100%;min-width:0}
   td.notecell{padding:3px 6px}
   #t-pend th[data-k="entId"],#t-pend td.entid{text-align:left}
-  body:not(.owner) #noteClear,body:not(.owner) label[for=noteLoad]{display:none}
+  body:not(.owner) #noteClear,body:not(.owner) #btnImportInv,body:not(.owner) label[for=noteLoad]{display:none}
   select.noteIn option{background:var(--card);color:var(--ink)}
   body:not(.owner) #fReset{display:none}
   th[data-k="note"]{text-align:left}
@@ -429,6 +429,7 @@
   <div class="card">
     <header><h2>Invoice line detail</h2><span class="cap gone" id="cap-pend"></span>
       <div class="vwrap"><div class="seg" id="segView" role="group" aria-label="Table level"><button type="button" data-v="customer" aria-pressed="false">Customer level</button><button type="button" data-v="invoice" aria-pressed="false">Invoice level</button><button type="button" data-v="item" aria-pressed="true">Item level</button></div>
+      <button class="btn" id="btnImportInv" title="Owner only: import remarks and expected dates for one SPOC from an exported invoice-level CSV, matched by invoice number">Import remarks from file…</button><input type="file" id="fileImportInv" accept=".csv,text/csv" hidden>
       <button class="btn" data-export="pend">Export CSV</button></div></header>
     <div class="scroll"><table id="t-pend"><thead><tr></tr></thead><tbody></tbody><tfoot></tfoot></table></div>
   </div>
@@ -1430,6 +1431,55 @@ async function autoCopyOnce(){
   renderNoteBar();renderAll();
   noteMsg('good','Copied '+nR+' remarks and '+nD+' expected dates from Item level to Invoice level for Anuj.');
 }
+
+/* owner tool: import remarks and expected dates for one SPOC from an exported invoice-level CSV, matched by invoice number.
+   The file is read in the browser only; nothing from it is stored in the code. */
+(function(){
+  const btn=document.getElementById('btnImportInv'),inp=document.getElementById('fileImportInv');
+  if(!btn||!inp)return;
+  btn.onclick=()=>inp.click();
+  const MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  const iso=(y,m,d)=>y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  const toDate=s=>{s=cln(s);if(!s)return '';
+    let m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s);if(m)return s;
+    m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s);          /* slashes: month/day/year, unless the first number can only be a day */
+    if(m){const a=+m[1],b=+m[2];return a>12?iso(m[3],b,a):iso(m[3],a,b);}
+    m=/^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(s);if(m)return iso(m[3],+m[2],+m[1]);   /* dashes: day-month-year */
+    m=/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/.exec(s);if(m&&MON[m[2].toLowerCase()])return iso(m[3],MON[m[2].toLowerCase()],+m[1]);
+    return '';};
+  inp.addEventListener('change',e=>{
+    const f=e.target.files[0];if(!f)return;
+    const fr=new FileReader();
+    fr.onload=()=>{try{
+      const g=parseCSV(String(fr.result).replace(/^﻿/,''));
+      const low=(g[0]||[]).map(c=>cln(c).toLowerCase());
+      const iI=low.indexOf('invoice'),iS=low.indexOf('spoc'),iR=low.indexOf('manual remark'),iD=low.indexOf('expected date');
+      if(iI<0||iR<0)throw new Error('This does not look like an invoice-level export (Invoice and Manual remark columns are needed).');
+      const spocs=[...new Set(g.slice(1).map(r=>cln(r[iS]||'')).filter(Boolean))];
+      const who=(spocs.length===1?spocs[0]:(prompt('Which SPOC should be imported? File has: '+spocs.join(', '),spocs[0]||'')||'')).trim();
+      if(!who)return;
+      const byInv=new Map();ALL.forEach(x=>{let s=byInv.get(x.invNo);if(!s)byInv.set(x.invNo,s=new Set());s.add(x.cust);});
+      const set={};let nR=0,nD=0,rows=0,miss=0,skipped=0;
+      g.slice(1).forEach(r=>{
+        if(iS>-1&&cln(r[iS]||'').toLowerCase()!==who.toLowerCase())return;
+        const inv=cln(r[iI]||'');if(!inv)return;rows++;
+        const custs=byInv.get(inv);if(!custs){miss++;return;}
+        const rem=cln(r[iR]||''),dt=iD>-1?toDate(r[iD]||''):'';
+        if(rem&&!REMARK_OPTS.includes(rem))skipped++;
+        custs.forEach(c=>{
+          if(REMARK_OPTS.includes(rem)){set['INV::'+inv+'|'+c]=rem;nR++;}
+          if(dt){set['EXP::INV::'+inv+'|'+c]=dt;nD++;}});
+      });
+      if(!nR&&!nD){alert('Nothing to import for SPOC "'+who+'" from this file.');return;}
+      if(!confirm('SPOC '+who+': '+rows+' invoices in the file ('+miss+' not on the dashboard).\nThis will set '+nR+' remarks and '+nD+' expected dates, replacing what is there for those invoices. Blank cells in the file leave the dashboard as it is.\n\nContinue?'))return;
+      Object.assign(NOTES,set);notesSave();renderNoteBar();
+      if(SHARED)pushNotes({set});
+      renderAll();
+      alert('Done. Imported '+nR+' remarks and '+nD+' expected dates for '+who+'.'+(skipped?'\n'+skipped+' remark(s) were not one of the four allowed choices and were skipped.':''));
+    }catch(err){alert(String(err&&err.message||err));}};
+    fr.readAsText(f);e.target.value='';
+  });
+})();
 /* ---------------- go ---------------- */
 notesLoad(); renderNoteBar();
 setEmptyState('Reading the sheet…');
