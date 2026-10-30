@@ -176,7 +176,9 @@
   .grid3eq #pie-age,.grid3eq #pie-prod{flex:0 0 auto}
   .grid3eq #pie-age svg,.grid3eq #pie-prod svg{width:118px;height:118px}
   /* hub chart: the orb in the middle of the left, one card per remark on the right joined by curved lines */
-  #hub-rem{width:100%;height:100%;min-height:0}
+  #hub-rem,#hub-age{width:100%;height:100%;min-height:0}
+  .hchip.wide{grid-template-columns:52px minmax(0,1fr) auto}
+  .orbball.sm b{font-size:12.5px}
   .hub{position:relative;display:flex;align-items:center;gap:30px;width:100%;height:100%}
   .hublines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
   .orb{position:relative;flex:0 0 84px;width:84px;height:84px;display:flex;align-items:center;justify-content:center}
@@ -432,7 +434,7 @@
   <div class="grid3eq">
     <div class="card" id="c-age">
       <header><h2>Total outstanding % by age bucket</h2><span class="cap">click to filter</span></header>
-      <div class="pad"><div class="agewrap"><div id="pie-age"></div><div id="lg-age"></div></div></div>
+      <div class="pad"><div id="hub-age"></div></div>
     </div>
     <div class="card" id="c-am">
       <header><h2>Outstanding by Account Manager</h2><span class="cap">click to filter</span></header>
@@ -822,20 +824,38 @@ function drawHubLines(el){
     const on=c.classList.contains('on');
     return `<path d="M${cx},${cy} C${mx},${cy} ${mx},${y} ${x},${y}" fill="none" stroke="${on?c.style.getPropertyValue('--c'):'currentColor'}" stroke-width="${on?1.8:1}" opacity="${on?.95:.3}" style="color:var(--ink3)"/>`;}).join('');
 }
+/* hub chart: an orb in the middle, one card per slice joined by curved lines; clicking a card filters */
+function hubChart(el,center,items,active,toggle){
+  el.innerHTML='<div class="hub"><svg class="hublines" aria-hidden="true"></svg>'+
+    '<div class="orb"><div class="orbring"></div><div class="orbball'+(String(center.big).length>5?' sm':'')+'"><b>'+esc(center.big)+'</b><span>'+esc(center.small)+'</span></div></div>'+
+    '<div class="hubchips">'+items.map(it=>
+      `<button type="button" class="hchip${it.wide?' wide':''}${isOn(active,it.k)?' on':anyOn(active)?' dim':''}" data-k="${esc(it.k)}" style="--c:${it.color}" title="${esc(it.title)}">`+
+      `<b>${esc(it.big)}</b><span class="hl">${esc(it.label)}</span><span class="ha">${esc(it.amt)}</span></button>`).join('')+'</div></div>';
+  el.querySelectorAll('.hchip').forEach(b=>b.onclick=()=>toggle(b.dataset.k));
+  requestAnimationFrame(()=>drawHubLines(el));
+}
 function remarkHub(el,rows,active){
   const st={};REM_META.forEach(([k])=>st[k]={inv:new Set(),amt:0});
   rows.forEach(r=>{const id=r.invNo+'|'+r.cust;let k=NOTES['INV::'+id]||'__none';if(!st[k])k='__none';st[k].inv.add(id);st[k].amt+=r.inr;});
   const total=new Set(rows.map(r=>r.invNo+'|'+r.cust)).size;
   const label=k=>k==='__none'?'No remark':k;
-  el.innerHTML='<div class="hub"><svg class="hublines" aria-hidden="true"></svg>'+
-    '<div class="orb"><div class="orbring"></div><div class="orbball"><b>'+total+'</b><span>invoices</span></div></div>'+
-    '<div class="hubchips">'+REM_META.map(([k,c])=>
-      `<button type="button" class="hchip${isOn(active,k)?' on':anyOn(active)?' dim':''}" data-k="${esc(k)}" style="--c:${c}" title="${esc(label(k))}: ${st[k].inv.size} invoices, ${short(st[k].amt)}">`+
-      `<b>${st[k].inv.size}</b><span class="hl">${esc(label(k))}</span><span class="ha">${short(st[k].amt)}</span></button>`).join('')+'</div></div>';
-  el.querySelectorAll('.hchip').forEach(b=>b.onclick=()=>{const k=b.dataset.k;F.remark.has(k)?F.remark.delete(k):F.remark.add(k);syncFilters();renderAll();});
-  requestAnimationFrame(()=>drawHubLines(el));
+  hubChart(el,{big:total,small:'invoices'},REM_META.map(([k,c])=>({k,color:c,label:label(k),big:st[k].inv.size,amt:short(st[k].amt),
+    title:label(k)+': '+st[k].inv.size+' invoices, '+short(st[k].amt)})),active,
+    k=>{F.remark.has(k)?F.remark.delete(k):F.remark.add(k);syncFilters();renderAll();});
 }
-window.addEventListener('resize',()=>{const el=document.getElementById('hub-rem');if(el)drawHubLines(el);});
+function ageHub(el,rows,active){
+  const parts=[
+    {k:'a',b:'b0',label:'0 - 30 days',color:'var(--g1)'},
+    {k:'b',b:'b1',label:'31 - 60 days',color:'var(--b2)'},
+    {k:'c',b:'b2',label:'61 - 90 days',color:'var(--b3)'},
+    {k:'d',b:'b3',label:'Over 90 days',color:'var(--b4)'}];
+  parts.forEach(p=>{p.v=sum(rows.filter(r=>bucketOf(r)===p.b),r=>r.inr);});
+  const tot=sum(parts,p=>p.v);
+  hubChart(el,{big:short(tot),small:'total'},parts.map(p=>({k:p.k,color:p.color,label:p.label,big:pct(p.v,tot),amt:short(p.v),wide:1,
+    title:p.label+': '+short(p.v)+' ('+pct(p.v,tot)+')'})),active,
+    k=>{F.band.has(k)?F.band.delete(k):F.band.add(k);syncFilters();renderAll();});
+}
+window.addEventListener('resize',()=>['hub-rem','hub-age'].forEach(id=>{const el=document.getElementById(id);if(el)drawHubLines(el);}));
 /* generic donut: parts [{k,label,color,v}], clicking a slice or legend row calls toggle(k) */
 function donutChart(pieEl,lgEl,parts,activeKey,toggle,aria){
   const tot=parts.reduce((s,p)=>s+Math.max(p.v,0),0);
@@ -1041,7 +1061,7 @@ function renderPend(){
       return ['Autopay this month',AUTO_OK?short(ap.amt):'—',AUTO_OK?(ap.n+' autopay customers'):'autopay data not loaded','good',
         AUTO_OK?`<div><span>Of outstanding</span><b>${pct(ap.amt,tot)}</b></div><div><span>Outstanding in view</span><b>${short(tot)}</b></div>`:'']})()
   ]);
-  pieAge(document.getElementById('pie-age'),document.getElementById('lg-age'),viewNoBand(),F.band);
+  ageHub(document.getElementById('hub-age'),viewNoBand(),F.band);
   pieProduct(document.getElementById('pie-prod'),document.getElementById('lg-prod'),viewNoProduct(),F.product);
   remarkHub(document.getElementById('hub-rem'),viewExcept('remark'),F.remark);
   hBars(document.getElementById('b-pend-am'),groupSum(v,'am','inr'),lakh,
