@@ -1,5 +1,0 @@
-name = "spyne-collection-dashboard"
-pages_build_output_dir = "public"
-compatibility_date = "2025-06-01"
-# nodejs_compat makes the dashboard settings (SESSION_SECRET, Upstash url/token) readable as process.env
-compatibility_flags = ["nodejs_compat"]
