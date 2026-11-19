@@ -1146,12 +1146,17 @@ function addGrips(){
     });
   });
 }
+/* invoice count for the footer: distinct invoices in view (customer level already carries a count per customer) */
+function invTotal(rows){
+  const n=LEVEL==='customer'?sum(rows,r=>r.invCount):new Set(rows.map(r=>r.invNo+'|'+r.cust)).size;
+  return n.toLocaleString('en-IN')+(n===1?' invoice':' invoices');
+}
 function buildLevel(level){
   LEVEL=level;
   const keys=LEVELS[level];
   document.querySelector('#t-pend thead tr').innerHTML=keys.map(k=>`<th data-k="${k}">${TH[k]}</th>`).join('');
   drawPend=mkTable('t-pend',ROWS[level],keys.map(k=>COLDEF[k]),
-    rows=>keys.map((k,i)=>k==='invCount'?sum(rows,r=>r.invCount):k==='usd'?usd(sum(rows,r=>r.usd)):k==='inr'?money(sum(rows,r=>r.inr)):k==='note'?noteFoot(rows):i===0?'Grand total':''));
+    rows=>keys.map((k,i)=>k==='invCount'?sum(rows,r=>r.invCount):k==='usd'?usd(sum(rows,r=>r.usd)):k==='inr'?money(sum(rows,r=>r.inr)):k==='note'?noteFoot(rows):i===0?'Grand total · '+invTotal(rows):''));
   addGrips();applyWidths();
   document.querySelectorAll('#segView button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===level?'true':'false'));
 }
