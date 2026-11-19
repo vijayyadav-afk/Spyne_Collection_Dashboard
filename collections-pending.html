@@ -1149,7 +1149,7 @@ function addGrips(){
 /* invoice count for the footer: distinct invoices in view (customer level already carries a count per customer) */
 function invTotal(rows){
   const n=LEVEL==='customer'?sum(rows,r=>r.invCount):new Set(rows.map(r=>r.invNo+'|'+r.cust)).size;
-  return n.toLocaleString('en-IN')+(n===1?' invoice':' invoices');
+  return n.toLocaleString('en-IN');
 }
 function buildLevel(level){
   LEVEL=level;
