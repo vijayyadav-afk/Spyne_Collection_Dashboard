@@ -192,6 +192,14 @@
   .hchip b{font-size:15px;font-variant-numeric:tabular-nums}
   .hchip .hl{font-size:11px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink2)}
   .hchip .ha{font-size:10.5px;font-variant-numeric:tabular-nums;color:var(--ink3);white-space:nowrap}
+  /* six cards (when some remarks are free text): a little smaller so the numbers and names stay readable */
+  .hub.dense{gap:16px}
+  .hub.dense .orb{flex-basis:76px;width:76px;height:76px}
+  .hub.dense .hubchips{gap:4px}
+  .hub.dense .hchip{grid-template-columns:30px minmax(0,1fr) auto;gap:6px;padding:0 8px 0 7px;border-radius:8px}
+  .hub.dense .hchip b{font-size:13px;line-height:1}
+  .hub.dense .hchip .hl{font-size:10.5px}
+  .hub.dense .hchip .ha{font-size:10px}
   .hchip.on{box-shadow:0 0 0 2px var(--c);border-color:var(--c)}
   .hchip.dim{opacity:.45}
   #pie-age circle.seg,#pie-prod circle.seg{cursor:pointer;transition:opacity .15s}
@@ -828,7 +836,7 @@ function drawHubLines(el){
 }
 /* hub chart: an orb in the middle, one card per slice joined by curved lines; clicking a card filters */
 function hubChart(el,center,items,active,toggle){
-  el.innerHTML='<div class="hub"><svg class="hublines" aria-hidden="true"></svg>'+
+  el.innerHTML='<div class="hub'+(items.length>5?' dense':'')+'"><svg class="hublines" aria-hidden="true"></svg>'+
     '<div class="orb"><div class="orbring"></div><div class="orbball'+(String(center.big).length>5?' sm':'')+'"><b>'+esc(center.big)+'</b><span>'+esc(center.small)+'</span></div></div>'+
     '<div class="hubchips">'+items.map(it=>
       `<button type="button" class="hchip${it.wide?' wide':''}${isOn(active,it.k)?' on':anyOn(active)?' dim':''}" data-k="${esc(it.k)}" style="--c:${it.color}" title="${esc(it.title)}">`+
