@@ -1156,7 +1156,7 @@ function buildLevel(level){
   const keys=LEVELS[level];
   document.querySelector('#t-pend thead tr').innerHTML=keys.map(k=>`<th data-k="${k}">${TH[k]}</th>`).join('');
   drawPend=mkTable('t-pend',ROWS[level],keys.map(k=>COLDEF[k]),
-    rows=>keys.map((k,i)=>k==='invCount'?sum(rows,r=>r.invCount):k==='usd'?usd(sum(rows,r=>r.usd)):k==='inr'?money(sum(rows,r=>r.inr)):k==='note'?noteFoot(rows):i===0?'Grand total · '+invTotal(rows):''));
+    rows=>keys.map((k,i)=>k==='invCount'?sum(rows,r=>r.invCount):k==='usd'?usd(sum(rows,r=>r.usd)):k==='inr'?money(sum(rows,r=>r.inr)):k==='note'?noteFoot(rows):k==='invNo'?invTotal(rows):i===0?'Grand total':''));
   addGrips();applyWidths();
   document.querySelectorAll('#segView button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===level?'true':'false'));
 }
