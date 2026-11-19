@@ -663,7 +663,7 @@ function view(){
     (!F.region.size || F.region.has(r.region)) && (!F.am.size || F.am.has(r.am)) &&
     (!F.spoc.size || F.spoc.has(r.spoc)) && (!F.product.size || F.product.has(r.product)) &&
     (!F.acct.size || F.acct.has(r.acctStatus)) &&
-    (!F.remark.size || F.remark.has(NOTES['INV::'+r.invNo+'|'+r.cust]||'__none')) &&
+    (!F.remark.size || F.remark.has(remKey(r))) &&
     (!F.band.size || [...F.band].some(k=>BANDS[k](r))) &&
     (!F.pay.size || [...F.pay].some(k=>k==='auto'?r.autopay:!r.autopay)));
 }
@@ -704,6 +704,8 @@ function noteSet(cust,text){
 function renderNoteBar(){const el=document.getElementById('noteCount');if(!el)return;
   const n=noteCount();el.textContent=n?n+(n===1?' remark saved':' remarks saved'):'no remarks yet';}
 const REMARK_OPTS=['Invoice Write Off','Need To Send Legal','Payment Will Receive','Invoice Need To Be Change'];
+/* an invoice's remark bucket: blank = '__none'; free text that is not one of the four choices = '__other' */
+function remKey(r){const v=NOTES['INV::'+r.invNo+'|'+r.cust];return !v?'__none':REMARK_OPTS.includes(v)?v:'__other';}
 const NOTE_COL={k:'note',txt:1,cls:'notecell',
   f:r=>{const v=r.note||'';
     /* a remark typed before the list existed stays visible until someone picks from the list */
@@ -813,7 +815,7 @@ function pushNotes(body){
 setInterval(pullNotes,30000);
 /* ---------------- chart helpers ---------------- */
 /* hub chart: invoices by manual remark (invoice level), click a card to filter */
-const REM_META=[['Invoice Write Off','var(--b4)'],['Need To Send Legal','var(--b3)'],['Payment Will Receive','var(--g1)'],['Invoice Need To Be Change','var(--b2)'],['__none','var(--ink3)']];
+const REM_META=[['Invoice Write Off','var(--b4)'],['Need To Send Legal','var(--b3)'],['Payment Will Receive','var(--g1)'],['Invoice Need To Be Change','var(--b2)'],['__other','var(--p1)'],['__none','var(--ink3)']];
 function drawHubLines(el){
   const hub=el.querySelector('.hub');if(!hub)return;
   const svg=hub.querySelector('.hublines'),orb=hub.querySelector('.orb'),h=hub.getBoundingClientRect(),o=orb.getBoundingClientRect();
@@ -836,9 +838,9 @@ function hubChart(el,center,items,active,toggle){
 }
 function remarkHub(el,rows,active){
   const st={};REM_META.forEach(([k])=>st[k]={inv:new Set(),amt:0});
-  rows.forEach(r=>{const id=r.invNo+'|'+r.cust;let k=NOTES['INV::'+id]||'__none';if(!st[k])k='__none';st[k].inv.add(id);st[k].amt+=r.inr;});
+  rows.forEach(r=>{const id=r.invNo+'|'+r.cust,k=remKey(r);st[k].inv.add(id);st[k].amt+=r.inr;});
   const total=new Set(rows.map(r=>r.invNo+'|'+r.cust)).size;
-  const label=k=>k==='__none'?'No remark':k;
+  const label=k=>k==='__none'?'No remark':k==='__other'?'Other remark':k;
   hubChart(el,{big:total,small:'invoices'},REM_META.map(([k,c])=>({k,color:c,label:label(k),big:st[k].inv.size,amt:short(st[k].amt),
     title:label(k)+': '+st[k].inv.size+' invoices, '+short(st[k].amt)})),active,
     k=>{F.remark.has(k)?F.remark.delete(k):F.remark.add(k);syncFilters();renderAll();});
@@ -938,7 +940,7 @@ function optAvail(key,v){
   const rows=viewExcept(key);
   if(key==='band')return rows.some(BANDS[v]);
   if(key==='pay')return rows.some(r=>v==='auto'?r.autopay:!r.autopay);
-  if(key==='remark')return rows.some(r=>(NOTES['INV::'+r.invNo+'|'+r.cust]||'__none')===v);
+  if(key==='remark')return rows.some(r=>remKey(r)===v);
   return true;
 }
 
@@ -1208,7 +1210,7 @@ document.getElementById('fReset').onclick=()=>{
 /* ---------------- tick-box filter dropdowns ---------------- */
 (function(){
   const CFG=[
-    {id:'fRemark',key:'remark',label:'Invoice remark',opts:[['Invoice Write Off','Invoice Write Off'],['Need To Send Legal','Need To Send Legal'],['Payment Will Receive','Payment Will Receive'],['Invoice Need To Be Change','Invoice Need To Be Change'],['__none','No remark']]},
+    {id:'fRemark',key:'remark',label:'Invoice remark',opts:[['Invoice Write Off','Invoice Write Off'],['Need To Send Legal','Need To Send Legal'],['Payment Will Receive','Payment Will Receive'],['Invoice Need To Be Change','Invoice Need To Be Change'],['__other','Other remark'],['__none','No remark']]},
     {id:'fRegion',key:'region',label:'All regions',vals:()=>scopedVals('region','region')},
     {id:'fAm',key:'am',label:'All account managers',vals:()=>scopedVals('am','am')},
     {id:'fSpoc',key:'spoc',label:'All SPOCs',vals:()=>scopedVals('spoc','spoc'),search:1},
