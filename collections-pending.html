@@ -849,7 +849,8 @@ function remarkHub(el,rows,active){
   rows.forEach(r=>{const id=r.invNo+'|'+r.cust,k=remKey(r);st[k].inv.add(id);st[k].amt+=r.inr;});
   const total=new Set(rows.map(r=>r.invNo+'|'+r.cust)).size;
   const label=k=>k==='__none'?'No remark':k==='__other'?'Other remark':k;
-  hubChart(el,{big:total,small:'invoices'},REM_META.map(([k,c])=>({k,color:c,label:label(k),big:st[k].inv.size,amt:short(st[k].amt),
+  /* a remark with no invoices is left out (it comes back by itself once one has it); a selected one stays so it can be unticked */
+  hubChart(el,{big:total,small:'invoices'},REM_META.filter(([k])=>st[k].inv.size||isOn(active,k)).map(([k,c])=>({k,color:c,label:label(k),big:st[k].inv.size,amt:short(st[k].amt),
     title:label(k)+': '+st[k].inv.size+' invoices, '+short(st[k].amt)})),active,
     k=>{F.remark.has(k)?F.remark.delete(k):F.remark.add(k);syncFilters();renderAll();});
 }
