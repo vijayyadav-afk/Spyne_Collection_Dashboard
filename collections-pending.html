@@ -228,7 +228,7 @@
   tbody tr:hover{background:var(--line2)}
   tfoot td{font-weight:650;border-top:2px solid var(--line);border-bottom:none;background:var(--card);position:sticky;bottom:0;z-index:2}
   .scroll{max-height:560px;overflow:auto}
-  .name{max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .clickrow{cursor:pointer}
   .clickrow.active{background:color-mix(in srgb,var(--b1) 12%,transparent)}
   .stack{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--line2);min-width:100px}
@@ -254,7 +254,7 @@
   select.noteIn option{background:var(--card);color:var(--ink)}
   body:not(.owner) #fReset{display:none}
   th[data-k="note"]{text-align:left}
-  input.noteIn,select.noteIn{font:inherit;font-size:12px;width:180px;min-width:140px;padding:4px 7px;
+  input.noteIn,select.noteIn{font:inherit;font-size:12px;width:100%;max-width:180px;min-width:128px;padding:4px 7px;
     border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ink)}
   input.noteIn::placeholder{color:var(--ink3);opacity:.7}
   input.noteIn:hover,select.noteIn:hover{border-color:var(--line)}
@@ -596,8 +596,21 @@ const WANT={
   spoc:['spoc name','spoc','spoc_name'],
   am:['account manager name','account manager','account_manager_name'],
   acctStatus:['accouunt status','account status','account_status','acccount status'],
-  autopay:['auto_pay','autopay','auto pay','mapping']
+  autopay:['auto_pay','autopay','auto pay','mapping'],
+  svcStart:['service_start_date','service start date'],
+  ae:['ae name','ae_name']
 };
+/* service start date -> timestamp (0 when blank or unreadable); shown as Mon'YY */
+function svcStamp(s){
+  s=cln(s);if(!s)return 0;
+  const M={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  let m=/^(\d{1,2})[-\/ ]([A-Za-z]{3})[a-z]*[-\/ ,]*(\d{2,4})$/.exec(s);
+  if(m){const y=+m[3]<100?2000+ +m[3]:+m[3];const mo=M[m[2].toLowerCase()];if(mo!==undefined)return Date.UTC(y,mo,+m[1]);}
+  m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
+  if(m)return Date.UTC(+m[1],+m[2]-1,+m[3]);
+  const t=Date.parse(s);return isNaN(t)?0:t;
+}
+const svcLbl=t=>{if(!t)return '—';const d=new Date(t);return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()]+"'"+String(d.getUTCFullYear()).slice(2);};
 const REQUIRED=['cust','inr','aging','spoc'];
 
 function buildRows(text,label){
@@ -647,6 +660,8 @@ function buildRows(text,label){
       am:cln(pick(r,'am',''))||'—',
       /* the sheet mixes "active" and "Active" */
       acctStatus:(cln(pick(r,'acctStatus',''))||'—').toLowerCase(),
+      svcTs:svcStamp(pick(r,'svcStart','')),
+      ae:cln(pick(r,'ae','')),
       autopay:/autopay/i.test(cln(pick(r,'autopay','')))?1:0,
       payLbl:/autopay/i.test(cln(pick(r,'autopay','')))?'Autopay':'Manual'
     });
@@ -1072,13 +1087,15 @@ function renderPend(){
 }
 /* Three views of the same lines: Item level (every invoice line), Invoice level (one row per invoice),
    Customer level (one row per customer). Amounts add up; aging shows the oldest line. */
-const TH={payLbl:'Payment mode',cust:'Customer',entId:'Enterprise ID',invNo:'Invoice no.',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Acct mgr',
+const TH={svcTs:'Service start',ae:'AE name',payLbl:'Payment mode',cust:'Customer',entId:'Enterprise ID',invNo:'Invoice no.',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Acct mgr',
   acctStatus:'Account status',aging:'Aging days',invCount:'Invoices',usd:'Due USD',inr:'Outstanding',exp:'Expected Date',note:'Manual remark'};
 const COLDEF={
   cust:{k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
   payLbl:{k:'payLbl',f:r=>'<span class="chip">'+esc(r.payLbl)+'</span>',txt:1},
   entId:{k:'entId',f:r=>esc(r.entId)||'—',cls:'muted entid',txt:1},
   invNo:{k:'invNo',f:r=>esc(r.invNo)||'—',cls:'muted',txt:1},
+  svcTs:{k:'svcTs',f:r=>svcLbl(r.svcTs),cls:'muted'},
+  ae:{k:'ae',f:r=>esc(r.ae)||'—',txt:1},
   callType:{k:'callType',f:r=>r.callType?`<span class="chip">${r.callType}</span>`:'',txt:1},
   product:{k:'product',f:r=>`<span class="chip">${esc(r.product)}</span>`,txt:1},
   spoc:{k:'spoc',f:r=>esc(r.spoc),txt:1},
@@ -1092,13 +1109,16 @@ const COLDEF={
   note:NOTE_COL};
 const LEVELS={
   item:['cust','entId','invNo','callType','product','spoc','am','acctStatus','payLbl','aging','usd','inr','exp','note'],
-  invoice:['cust','entId','invNo','spoc','am','acctStatus','payLbl','aging','usd','inr','exp','note'],
+  invoice:['cust','entId','invNo','svcTs','ae','spoc','am','acctStatus','payLbl','aging','usd','inr','exp','note'],
   customer:['cust','entId','spoc','am','acctStatus','payLbl','aging','invCount','usd','inr','exp','note']};
 const groupRows=(rows,keyOf)=>{const m=new Map();
   rows.forEach(r=>{const k=keyOf(r);let g=m.get(k);
     if(!g){g=Object.assign({},r,{usd:0,inr:0,apN:0,n:0});m.set(k,g);}
     g.apN+=r.autopay?1:0;g.n++;g.payLbl=g.apN===0?'Manual':g.apN===g.n?'Autopay':'Mixed';
-    g.usd+=r.usd;g.inr+=r.inr;g.aging=Math.max(g.aging,r.aging);});
+    g.usd+=r.usd;g.inr+=r.inr;g.aging=Math.max(g.aging,r.aging);
+    /* an invoice with several lines: earliest service start, first AE named */
+    if(r.svcTs&&(!g.svcTs||r.svcTs<g.svcTs))g.svcTs=r.svcTs;
+    if(!g.ae&&r.ae)g.ae=r.ae;});
   return [...m.values()];};
 const withExp=(rows,pre,keyOf)=>rows.map(r=>{r.expKey='EXP::'+pre+'::'+keyOf(r);r.exp=NOTES[r.expKey]||'';return r;});
 const ROWS={item:()=>withExp(view(),'I',r=>r.cust),
@@ -1306,7 +1326,7 @@ const EXPORT={
   pend:()=>{
     const hd={payLbl:'Payment mode',entId:'Enterprise ID',invCount:'Invoices',cust:'Customer',invNo:'Invoice',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Account manager',acctStatus:'Account status',aging:'Aging days',invCount:'Invoices',usd:'Due USD',inr:'Outstanding INR',exp:'Expected Date',note:'Manual remark'};
     const keys=LEVEL==='item'?['cust','entId','invNo','invDate','item','callType','product','spoc','am','acctStatus','payLbl','aging','usd','inr','exp','note']:LEVELS[LEVEL];
-    return [keys.map(k=>k==='invDate'?'Invoice date':k==='item'?'Item':hd[k]),ROWS[LEVEL]().map(r=>keys.map(k=>r[k])),
+    return [keys.map(k=>k==='invDate'?'Invoice date':k==='item'?'Item':k==='svcTs'?'Service start':k==='ae'?'AE name':hd[k]),ROWS[LEVEL]().map(r=>keys.map(k=>k==='svcTs'?(r.svcTs?svcLbl(r.svcTs):''):r[k])),
     LEVEL==='item'?'invoice-lines':LEVEL==='invoice'?'invoice-level':'customer-level'];},
 };
 document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>{

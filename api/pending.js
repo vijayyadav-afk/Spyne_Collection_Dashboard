@@ -9,8 +9,9 @@ import { cookieEmail } from './_sess.js';
 const SHEET_ID = '10A5kLP9hWZeMaRNbLsplLj43U0YljsreS_c0qDlgfK8';
 const GID = '0';
 const BASE = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID;
-// The 20 columns the dashboard uses (positional); "full" is the whole-sheet fallback.
-const COLS = 'select A,C,D,E,F,G,H,K,M,N,Z,AC,AD,AE,AF,AG,AH,AI,AJ,AM,AN';
+// The columns the dashboard uses (the page matches them by header name); "full" is the whole-sheet fallback.
+// X = service_start_date, AL = AE Name.
+const COLS = 'select A,C,D,E,F,G,H,K,M,N,X,Z,AC,AD,AE,AF,AG,AH,AI,AJ,AL,AM,AN';
 const SOURCES = {
   data: BASE + '/gviz/tq?tqx=out:csv&gid=' + GID + '&tq=' + encodeURIComponent(COLS),
   full: BASE + '/export?format=csv&gid=' + GID,
