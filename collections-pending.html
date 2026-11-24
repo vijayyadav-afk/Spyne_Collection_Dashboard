@@ -1087,7 +1087,7 @@ function renderPend(){
 }
 /* Three views of the same lines: Item level (every invoice line), Invoice level (one row per invoice),
    Customer level (one row per customer). Amounts add up; aging shows the oldest line. */
-const TH={svcTs:'Service start',ae:'AE name',payLbl:'Payment mode',cust:'Customer',entId:'Enterprise ID',invNo:'Invoice no.',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Acct mgr',
+const TH={svcTs:'Service month',ae:'AE name',payLbl:'Payment mode',cust:'Customer',entId:'Enterprise ID',invNo:'Invoice no.',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Acct mgr',
   acctStatus:'Account status',aging:'Aging days',invCount:'Invoices',usd:'Due USD',inr:'Outstanding',exp:'Expected Date',note:'Manual remark'};
 const COLDEF={
   cust:{k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
@@ -1326,7 +1326,7 @@ const EXPORT={
   pend:()=>{
     const hd={payLbl:'Payment mode',entId:'Enterprise ID',invCount:'Invoices',cust:'Customer',invNo:'Invoice',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Account manager',acctStatus:'Account status',aging:'Aging days',invCount:'Invoices',usd:'Due USD',inr:'Outstanding INR',exp:'Expected Date',note:'Manual remark'};
     const keys=LEVEL==='item'?['cust','entId','invNo','invDate','item','callType','product','spoc','am','acctStatus','payLbl','aging','usd','inr','exp','note']:LEVELS[LEVEL];
-    return [keys.map(k=>k==='invDate'?'Invoice date':k==='item'?'Item':k==='svcTs'?'Service start':k==='ae'?'AE name':hd[k]),ROWS[LEVEL]().map(r=>keys.map(k=>k==='svcTs'?(r.svcTs?svcLbl(r.svcTs):''):r[k])),
+    return [keys.map(k=>k==='invDate'?'Invoice date':k==='item'?'Item':k==='svcTs'?'Service month':k==='ae'?'AE name':hd[k]),ROWS[LEVEL]().map(r=>keys.map(k=>k==='svcTs'?(r.svcTs?svcLbl(r.svcTs):''):r[k])),
     LEVEL==='item'?'invoice-lines':LEVEL==='invoice'?'invoice-level':'customer-level'];},
 };
 document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>{
