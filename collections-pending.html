@@ -242,6 +242,21 @@
   #fillH{position:fixed;width:12px;height:12px;background:var(--bar1);border:2px solid var(--card);border-radius:3px;cursor:crosshair;z-index:60;display:none;touch-action:none;box-shadow:0 0 0 1px var(--bar1)}
   body.filling{user-select:none;cursor:crosshair}
   .noteIn.fillsel{outline:2px dashed var(--bar1);outline-offset:-2px;background:color-mix(in srgb,var(--bar1) 14%,transparent)}
+  th .cf{position:absolute;right:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;padding:0;border:0;background:transparent;cursor:pointer;opacity:.4;color:var(--ink3);z-index:2;display:flex;align-items:center;justify-content:center}
+  th .cf svg{width:10px;height:10px;fill:currentColor}
+  th:hover .cf{opacity:.85} th .cf.on{opacity:1;color:var(--bar1);background:color-mix(in srgb,var(--bar1) 16%,transparent);border-radius:3px}
+  #t-pend thead th{padding-right:30px}
+  .cfpop{position:fixed;z-index:200;width:230px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.28);padding:8px;font-size:12px;text-transform:none;font-weight:500;letter-spacing:0;text-align:left}
+  .cfpop input[type=search]{width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--ink);margin-bottom:6px}
+  .cfpop label{display:flex;align-items:center;gap:6px;padding:3px 2px;cursor:pointer;white-space:nowrap}
+  .cfpop label span{flex:1;overflow:hidden;text-overflow:ellipsis}
+  .cfpop label i{font-style:normal;color:var(--ink3);font-size:10.5px}
+  .cfpop .cfall{border-bottom:1px solid var(--line2);margin-bottom:2px;font-weight:600}
+  .cfpop .cflist{max-height:230px;overflow:auto}
+  .cfpop .cfmore{padding:6px 2px;color:var(--ink3)}
+  .cfpop .cfbtn{display:flex;gap:6px;margin-top:8px;justify-content:flex-end}
+  .cfpop .cfbtn button{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px}
+  .cfpop .cfbtn .cfok{background:var(--bar1);border-color:var(--bar1);color:var(--bar1-ink)}
   th .cgrip{position:absolute;right:0;top:0;bottom:0;width:8px;cursor:col-resize;z-index:3}
   th .cgrip:hover,body.colresizing th .cgrip.on{background:color-mix(in srgb,var(--bar1) 55%,transparent)}
   body.colresizing{cursor:col-resize;user-select:none}
@@ -969,11 +984,52 @@ function optAvail(key,v){
 }
 
 /* ---------------- table engine ---------------- */
+/* ---------------- Excel-style column filters (the small funnel in each header) ---------------- */
+const cfPlain=s=>String(s).replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#0?39;/g,"'").trim();
+function cfVal(c,r){
+  let v;
+  if(c.k==='exp')v=r.exp?r.exp.split('-').reverse().join('-'):'';
+  else if(c.k==='note')v=r.note||'';
+  else if(c.k==='svcTs')v=r.svcTs?svcLbl(r.svcTs):'';
+  else v=cfPlain(c.f(r));
+  return (v===''||v==='—')?'(Blank)':v;
+}
+let CFPOP=null;
+function cfClose(){if(CFPOP){CFPOP.remove();CFPOP=null;}}
+document.addEventListener('mousedown',e=>{if(CFPOP&&!CFPOP.contains(e.target)&&!(e.target.classList&&e.target.classList.contains('cf')))cfClose();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')cfClose();});
+function cfOpen(btn,col,all,cur,apply){
+  cfClose();
+  const m=new Map();
+  all.forEach(r=>{const v=cfVal(col,r);const o=m.get(v)||{v,n:0,s:r[col.k]};o.n++;m.set(v,o);});
+  let items=[...m.values()];
+  const numeric=items.every(o=>typeof o.s==='number'||o.v==='(Blank)');
+  items.sort((a,b)=>numeric?((a.s||0)-(b.s||0)):a.v.localeCompare(b.v,undefined,{numeric:true,sensitivity:'base'}));
+  const sel=new Set(cur?[...cur]:items.map(o=>o.v));
+  const pop=document.createElement('div');pop.className='cfpop';CFPOP=pop;
+  pop.innerHTML='<input type="search" placeholder="Search" aria-label="Search values"><label class="cfall"><input type="checkbox"> (Select all)</label><div class="cflist"></div><div class="cfbtn"><button type="button" class="cfok">OK</button><button type="button" class="cfclr">Clear filter</button></div>';
+  const q=pop.querySelector('input[type=search]'),allCb=pop.querySelector('.cfall input'),list=pop.querySelector('.cflist');
+  const shown=()=>{const t=q.value.trim().toLowerCase();return items.filter(o=>!t||o.v.toLowerCase().includes(t));};
+  const sync=()=>{const s=shown();allCb.checked=s.length>0&&s.every(o=>sel.has(o.v));};
+  const paint=()=>{const s=shown();
+    list.innerHTML=s.slice(0,600).map(o=>`<label><input type="checkbox" data-v="${esc(o.v)}"${sel.has(o.v)?' checked':''}> <span>${esc(o.v)}</span><i>${o.n}</i></label>`).join('')+(s.length>600?'<div class="cfmore">Showing first 600 — type to narrow</div>':'')||'<div class="cfmore">No match</div>';
+    sync();};
+  q.addEventListener('input',paint);
+  allCb.addEventListener('change',()=>{shown().forEach(o=>allCb.checked?sel.add(o.v):sel.delete(o.v));paint();});
+  list.addEventListener('change',e=>{const cb=e.target;if(!cb.dataset||cb.dataset.v===undefined)return;cb.checked?sel.add(cb.dataset.v):sel.delete(cb.dataset.v);sync();});
+  pop.querySelector('.cfok').onclick=()=>{cfClose();apply(sel.size===items.length?null:new Set(sel));};
+  pop.querySelector('.cfclr').onclick=()=>{cfClose();apply(null);};
+  document.body.appendChild(pop);
+  const r=btn.getBoundingClientRect();
+  pop.style.left=Math.max(6,Math.min(r.left-20,innerWidth-pop.offsetWidth-8))+'px';
+  pop.style.top=Math.min(r.bottom+4,innerHeight-pop.offsetHeight-8)+'px';
+  paint();q.focus();
+}
 function mkTable(id,getRows,cols,foot){
-  const st={k:cols.find(c=>c.sorted).k,asc:false};
+  const st={k:cols.find(c=>c.sorted).k,asc:false},colF={};
   const tbl=document.getElementById(id);
   function draw(){
-    const rows=[...getRows()];
+    const rows=[...getRows()].filter(r=>cols.every(c=>!colF[c.k]||colF[c.k].has(cfVal(c,r))));
     const k=st.k,dir=st.asc?1:-1;
     rows.sort((a,b)=>{const A=a[k],B=b[k];
       return (typeof A==='string')?dir*A.localeCompare(B):dir*((A||0)-(B||0));});
@@ -983,10 +1039,17 @@ function mkTable(id,getRows,cols,foot){
       :`<tr><td colspan="${cols.length}" class="empty">Nothing matches these filters.</td></tr>`;
     const tf=tbl.querySelector('tfoot');
     if(tf)tf.innerHTML=(foot&&rows.length)?'<tr>'+foot(rows).map(c=>`<td>${c}</td>`).join('')+'</tr>':'';
+    tbl.querySelectorAll("thead .cf").forEach(b=>b.classList.toggle("on",!!colF[b.dataset.k]));
     tbl.querySelectorAll('thead th').forEach(th=>{
       th.classList.toggle('sorted',th.dataset.k===st.k);
       th.classList.toggle('asc',th.dataset.k===st.k&&st.asc);});
   }
+  const FUNNEL='<svg viewBox="0 0 10 10"><path d="M0 1h10L6 5.5V10L4 8.6V5.5z"/></svg>';
+  tbl.querySelectorAll('thead th').forEach(th=>{
+    const k=th.dataset.k,col=cols.find(c=>c.k===k);if(!col)return;
+    const b=document.createElement('button');b.type='button';b.className='cf';b.dataset.k=k;b.title='Filter this column';b.setAttribute('aria-label','Filter '+th.textContent);b.innerHTML=FUNNEL;
+    b.addEventListener('click',e=>{e.stopPropagation();cfOpen(b,col,[...getRows()],colF[k],set=>{if(set)colF[k]=set;else delete colF[k];draw();});});
+    th.appendChild(b);});
   tbl.querySelectorAll('thead th').forEach(th=>th.onclick=()=>{
     const k=th.dataset.k;if(!k)return;
     const col=cols.find(c=>c.k===k);
