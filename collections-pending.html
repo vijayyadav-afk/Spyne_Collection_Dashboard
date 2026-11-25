@@ -242,10 +242,13 @@
   #fillH{position:fixed;width:12px;height:12px;background:var(--bar1);border:2px solid var(--card);border-radius:3px;cursor:crosshair;z-index:60;display:none;touch-action:none;box-shadow:0 0 0 1px var(--bar1)}
   body.filling{user-select:none;cursor:crosshair}
   .noteIn.fillsel{outline:2px dashed var(--bar1);outline-offset:-2px;background:color-mix(in srgb,var(--bar1) 14%,transparent)}
-  th .cf{position:absolute;right:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;padding:0;border:0;background:transparent;cursor:pointer;opacity:.4;color:var(--ink3);z-index:2;display:flex;align-items:center;justify-content:center}
+  th .cf{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:16px;height:16px;padding:0;border:0;background:transparent;cursor:pointer;opacity:.4;color:var(--ink3);z-index:2;display:flex;align-items:center;justify-content:center}
   th .cf svg{width:10px;height:10px;fill:currentColor}
   th:hover .cf{opacity:.85} th .cf.on{opacity:1;color:var(--bar1);background:color-mix(in srgb,var(--bar1) 16%,transparent);border-radius:3px}
-  #t-pend thead th{padding-right:30px}
+  #t-pend th,#t-pend td{padding-left:5px;padding-right:5px}
+  #t-pend thead th{padding-right:24px}
+  #t-pend{font-size:12px}
+  #t-pend .name{max-width:150px}
   .cfpop{position:fixed;z-index:200;width:230px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.28);padding:8px;font-size:12px;text-transform:none;font-weight:500;letter-spacing:0;text-align:left}
   .cfpop input[type=search]{width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--ink);margin-bottom:6px}
   .cfpop label{display:flex;align-items:center;gap:6px;padding:3px 2px;cursor:pointer;white-space:nowrap}
@@ -269,7 +272,7 @@
   select.noteIn option{background:var(--card);color:var(--ink)}
   body:not(.owner) #fReset{display:none}
   th[data-k="note"]{text-align:left}
-  input.noteIn,select.noteIn{font:inherit;font-size:12px;width:100%;max-width:180px;min-width:128px;padding:4px 7px;
+  input.noteIn,select.noteIn{font:inherit;font-size:12px;width:100%;max-width:150px;min-width:112px;padding:4px 7px;
     border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ink)}
   input.noteIn::placeholder{color:var(--ink3);opacity:.7}
   input.noteIn:hover,select.noteIn:hover{border-color:var(--line)}
@@ -367,7 +370,7 @@
   .mmsg{font-size:11.5px;color:var(--ink2)}
 .vwrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .vwrap .seg button{font-size:11.5px}
-.dateIn{font:inherit;font-size:12px;width:132px;padding:3px 5px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.dateIn{font:inherit;font-size:12px;width:112px;padding:3px 5px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
   .dateIn.filled{border-color:var(--bar1);font-weight:600}
   /* the filters share the full width of the bar, so nothing is left over before the Light / Dark switch */
   .toolbar>.mf{flex:1 1 0;min-width:112px}
@@ -1193,7 +1196,7 @@ const ROWS={item:()=>withExp(view(),'I',r=>r.cust),
 let LEVEL='invoice', drawPend=()=>{};
 
 /* ---------------- adjustable column widths for the invoice detail table ---------------- */
-const CW_KEY='spyne.pending.colwidths.v1';
+const CW_KEY='spyne.pending.colwidths.v2';
 let CW={};try{CW=JSON.parse(localStorage.getItem(CW_KEY)||'{}')||{};}catch(e){CW={};}
 const cwSave=()=>{try{localStorage.setItem(CW_KEY,JSON.stringify(CW));}catch(e){}};
 function applyWidths(){
