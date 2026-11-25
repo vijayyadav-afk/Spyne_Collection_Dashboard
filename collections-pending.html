@@ -698,6 +698,7 @@ function anyOn(a){return !!a&&(typeof a==='string'?!!a:a.size>0);}
 
 const BANDS={a:r=>r.aging<=30, b:r=>r.aging>30&&r.aging<=60, c:r=>r.aging>60&&r.aging<=90, d:r=>r.aging>90};
 function view(){
+  if(CFBUILD)return ALL;
   const q=F.q;
   return ALL.filter(r=>
     (F.custSet.size?F.custSet.has(r.cust):(!q || r.cust.toLowerCase().includes(q) || r.invNo.toLowerCase().includes(q))) &&
@@ -706,7 +707,8 @@ function view(){
     (!F.acct.size || F.acct.has(r.acctStatus)) &&
     (!F.remark.size || F.remark.has(remKey(r))) &&
     (!F.band.size || [...F.band].some(k=>BANDS[k](r))) &&
-    (!F.pay.size || [...F.pay].some(k=>k==='auto'?r.autopay:!r.autopay)));
+    (!F.pay.size || [...F.pay].some(k=>k==='auto'?r.autopay:!r.autopay)) &&
+    (!CFKEEP || CFKEEP.has(CFKEY[LEVEL](r))));
 }
 function viewExcept(key){const sv=F[key];F[key]=new Set();try{return view();}finally{F[key]=sv;}}
 function viewNoCust(){const a=F.custSet,b=F.q;F.custSet=new Set();F.q='';try{return view();}finally{F.custSet=a;F.q=b;}}
@@ -997,6 +999,18 @@ function cfVal(c,r){
   else v=cfPlain(c.f(r));
   return (v===''||v==='—')?'(Blank)':v;
 }
+/* Column filters in the invoice table narrow the whole dashboard (KPIs, charts, table), like the top filters do.
+   CF holds the ticked values per column; CFKEEP is the set of invoices / customers / lines that pass them. */
+let CF={},CFKEEP=null,CFBUILD=false;
+const CFKEY={item:r=>r,invoice:r=>r.invNo+'|'+r.cust,customer:r=>r.cust};
+function cfRebuild(){
+  if(!Object.keys(CF).length){CFKEEP=null;return;}
+  let base;CFBUILD=true;try{base=ROWS[LEVEL]();}finally{CFBUILD=false;}
+  const cols=LEVELS[LEVEL].map(k=>COLDEF[k]),keep=new Set();
+  base.forEach(g=>{if(cols.every(c=>!CF[c.k]||CF[c.k].has(cfVal(c,g))))keep.add(CFKEY[LEVEL](g));});
+  CFKEEP=keep;
+}
+function cfReset(){CF={};CFKEEP=null;}
 let CFPOP=null;
 function cfClose(){if(CFPOP){CFPOP.remove();CFPOP=null;}}
 document.addEventListener('mousedown',e=>{if(CFPOP&&!CFPOP.contains(e.target)&&!(e.target.classList&&e.target.classList.contains('cf')))cfClose();});
@@ -1029,10 +1043,10 @@ function cfOpen(btn,col,all,cur,apply){
   paint();q.focus();
 }
 function mkTable(id,getRows,cols,foot){
-  const st={k:cols.find(c=>c.sorted).k,asc:false},colF={};
+  const st={k:cols.find(c=>c.sorted).k,asc:false};
   const tbl=document.getElementById(id);
   function draw(){
-    const rows=[...getRows()].filter(r=>cols.every(c=>!colF[c.k]||colF[c.k].has(cfVal(c,r))));
+    const rows=[...getRows()];
     const k=st.k,dir=st.asc?1:-1;
     rows.sort((a,b)=>{const A=a[k],B=b[k];
       return (typeof A==='string')?dir*A.localeCompare(B):dir*((A||0)-(B||0));});
@@ -1042,7 +1056,7 @@ function mkTable(id,getRows,cols,foot){
       :`<tr><td colspan="${cols.length}" class="empty">Nothing matches these filters.</td></tr>`;
     const tf=tbl.querySelector('tfoot');
     if(tf)tf.innerHTML=(foot&&rows.length)?'<tr>'+foot(rows).map(c=>`<td>${c}</td>`).join('')+'</tr>':'';
-    tbl.querySelectorAll("thead .cf").forEach(b=>b.classList.toggle("on",!!colF[b.dataset.k]));
+    tbl.querySelectorAll("thead .cf").forEach(b=>b.classList.toggle("on",!!CF[b.dataset.k]));
     tbl.querySelectorAll('thead th').forEach(th=>{
       th.classList.toggle('sorted',th.dataset.k===st.k);
       th.classList.toggle('asc',th.dataset.k===st.k&&st.asc);});
@@ -1051,14 +1065,14 @@ function mkTable(id,getRows,cols,foot){
   tbl.querySelectorAll('thead th').forEach(th=>{
     const k=th.dataset.k,col=cols.find(c=>c.k===k);if(!col)return;
     const b=document.createElement('button');b.type='button';b.className='cf';b.dataset.k=k;b.title='Filter this column';b.setAttribute('aria-label','Filter '+th.textContent);b.innerHTML=FUNNEL;
-    b.addEventListener('click',e=>{e.stopPropagation();cfOpen(b,col,[...getRows()],colF[k],set=>{if(set)colF[k]=set;else delete colF[k];draw();});});
+    b.addEventListener("click",e=>{e.stopPropagation();const sv=CFKEEP;CFKEEP=null;let all;try{all=[...getRows()];}finally{CFKEEP=sv;}cfOpen(b,col,all,CF[k],set=>{if(set)CF[k]=set;else delete CF[k];cfRebuild();renderAll();});});
     th.appendChild(b);});
   tbl.querySelectorAll('thead th').forEach(th=>th.onclick=()=>{
     const k=th.dataset.k;if(!k)return;
     const col=cols.find(c=>c.k===k);
     st.k===k?(st.asc=!st.asc):(st.k=k,st.asc=!!(col&&col.txt));
     draw();});
-  draw.clearCol=()=>{Object.keys(colF).forEach(k=>delete colF[k]);cfClose();};
+  draw.clearCol=()=>{cfReset();cfClose();};
   return draw;
 }
 const kpiHtml=items=>items.map(([l,v,h,c,s])=>
@@ -1240,7 +1254,7 @@ function invTotal(rows){
   return n.toLocaleString('en-IN');
 }
 function buildLevel(level){
-  LEVEL=level;
+  LEVEL=level;cfReset();
   const keys=LEVELS[level];
   document.querySelector('#t-pend thead tr').innerHTML=keys.map(k=>`<th data-k="${k}">${TH[k]}</th>`).join('');
   drawPend=mkTable('t-pend',ROWS[level],keys.map(k=>COLDEF[k]),
@@ -1248,7 +1262,7 @@ function buildLevel(level){
   addGrips();applyWidths();
   document.querySelectorAll('#segView button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===level?'true':'false'));
 }
-document.getElementById('segView').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;buildLevel(b.dataset.v);drawPend();});
+document.getElementById('segView').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;buildLevel(b.dataset.v);renderAll();});
 buildLevel('invoice');
 
 /* ---------------- shell ---------------- */
@@ -1285,7 +1299,7 @@ function renderAll(){
   try{renderAll0();}finally{if(sc){sc.scrollTop=st;sc.scrollLeft=sl;}window.scrollTo(window.scrollX,wy);const fh=document.getElementById("fillH");if(fh)fh.style.display="none";}
 }
 function renderAll0(){
-  setEmptyState();
+  cfRebuild();setEmptyState();
   if(!ALL.length) return;
   renderProv(); renderNoteBar();
   renderPend(); drawPend();
