@@ -791,10 +791,10 @@ document.addEventListener('input',e=>{
     document.body.classList.add('filling');
     auto=setInterval(()=>{if(!scroller)return;const r=scroller.getBoundingClientRect();
       if(lastY>r.bottom-28)scroller.scrollTop+=14;else if(lastY<r.top+28)scroller.scrollTop-=14;update(lastY);},60);
-    const move=ev=>{lastY=ev.clientY;update(ev.clientY);h.style.left=(src.getBoundingClientRect().right-8)+'px';};
+    const move=ev=>{lastY=ev.clientY;update(ev.clientY);h.style.left=(src.getBoundingClientRect().right-8)+'px';h.style.top=(ev.clientY-6)+'px';};
     const up=()=>{document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);
       clearInterval(auto);document.body.classList.remove('filling');
-      apply(range);clearSel();drag=false;place(src);};
+      apply(range);clearSel();drag=false;const sr=src.getBoundingClientRect(),cr=scroller?scroller.getBoundingClientRect():{top:0,bottom:innerHeight};if(sr.top>=cr.top+30&&sr.bottom<=cr.bottom)place(src);else h.style.display='none';};
     document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
   });
   h.addEventListener('dblclick',e=>{if(!src)return;const all=colInputs(src);apply(all.slice(all.indexOf(src)));});
@@ -810,7 +810,7 @@ function applyShared(notes){
   NOTES=next;notesSave();
   ALL.forEach(r=>r.note=NOTES[r.cust]||'');
   const ae=document.activeElement;
-  if(ae&&ae.classList&&ae.classList.contains('noteIn')){needRedraw=true;}   /* never redraw under someone's cursor */
+  if(document.body.classList.contains('filling')||(ae&&ae.classList&&ae.classList.contains('noteIn'))){needRedraw=true;}   /* never redraw under someone's cursor */
   else{needRedraw=false;renderAll();}
   renderNoteBar();
 }
@@ -1214,6 +1214,10 @@ function setEmptyState(why){
   if(!has&&why) document.getElementById('noDataWhy').textContent=why;
 }
 function renderAll(){
+  const sc=document.querySelector("#t-pend").closest(".scroll"),st=sc?sc.scrollTop:0,sl=sc?sc.scrollLeft:0,wy=window.scrollY;
+  try{renderAll0();}finally{if(sc){sc.scrollTop=st;sc.scrollLeft=sl;}window.scrollTo(window.scrollX,wy);const fh=document.getElementById("fillH");if(fh)fh.style.display="none";}
+}
+function renderAll0(){
   setEmptyState();
   if(!ALL.length) return;
   renderProv(); renderNoteBar();
