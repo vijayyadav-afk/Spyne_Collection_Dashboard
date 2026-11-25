@@ -7,7 +7,7 @@ export const config = { runtime: 'edge' };
 
 const OWNER = 'vijay.yadav@spyne.ai';
 const HASH = 'spyne:pending:remarks';
-const ALLOWED = ['Invoice Write Off', 'Need To Send Legal', 'Payment Will Receive', 'Invoice Need To Be Change', 'Payment on hold'];
+const ALLOWED = ['Invoice Write Off', 'Need To Send Legal', 'Payment Will Receive', 'Invoice Need To Be Change', 'Invoice on hold'];
 
 function json(status, obj) {
   return new Response(JSON.stringify(obj), {
