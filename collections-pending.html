@@ -726,7 +726,7 @@ function noteSet(cust,text){
 }
 function renderNoteBar(){const el=document.getElementById('noteCount');if(!el)return;
   const n=noteCount();el.textContent=n?n+(n===1?' remark saved':' remarks saved'):'no remarks yet';}
-const REMARK_OPTS=['Invoice Write Off','Need To Send Legal','Payment Will Receive','Invoice Need To Be Change'];
+const REMARK_OPTS=['Invoice Write Off','Need To Send Legal','Payment Will Receive','Invoice Need To Be Change','Payment on hold'];
 /* an invoice's remark bucket: blank = '__none'; free text that is not one of the four choices = '__other' */
 function remKey(r){const v=NOTES['INV::'+r.invNo+'|'+r.cust];return !v?'__none':REMARK_OPTS.includes(v)?v:'__other';}
 const NOTE_COL={k:'note',txt:1,cls:'notecell',
@@ -838,7 +838,7 @@ function pushNotes(body){
 setInterval(pullNotes,30000);
 /* ---------------- chart helpers ---------------- */
 /* hub chart: invoices by manual remark (invoice level), click a card to filter */
-const REM_META=[['Invoice Write Off','var(--b4)'],['Need To Send Legal','var(--b3)'],['Payment Will Receive','var(--g1)'],['Invoice Need To Be Change','var(--b2)'],['__other','var(--p1)'],['__none','var(--ink3)']];
+const REM_META=[['Invoice Write Off','var(--b4)'],['Need To Send Legal','var(--b3)'],['Payment Will Receive','var(--g1)'],['Invoice Need To Be Change','var(--b2)'],['Payment on hold','var(--b1)'],['__other','var(--p1)'],['__none','var(--ink3)']];
 function drawHubLines(el){
   const hub=el.querySelector('.hub');if(!hub)return;
   const svg=hub.querySelector('.hublines'),orb=hub.querySelector('.orb'),h=hub.getBoundingClientRect(),o=orb.getBoundingClientRect();
@@ -1244,7 +1244,7 @@ document.getElementById('fReset').onclick=()=>{
 /* ---------------- tick-box filter dropdowns ---------------- */
 (function(){
   const CFG=[
-    {id:'fRemark',key:'remark',label:'Invoice remark',opts:[['Invoice Write Off','Invoice Write Off'],['Need To Send Legal','Need To Send Legal'],['Payment Will Receive','Payment Will Receive'],['Invoice Need To Be Change','Invoice Need To Be Change'],['__other','Other remark'],['__none','No remark']]},
+    {id:'fRemark',key:'remark',label:'Invoice remark',opts:[['Invoice Write Off','Invoice Write Off'],['Need To Send Legal','Need To Send Legal'],['Payment Will Receive','Payment Will Receive'],['Invoice Need To Be Change','Invoice Need To Be Change'],['Payment on hold','Payment on hold'],['__other','Other remark'],['__none','No remark']]},
     {id:'fRegion',key:'region',label:'All regions',vals:()=>scopedVals('region','region')},
     {id:'fAm',key:'am',label:'All account managers',vals:()=>scopedVals('am','am')},
     {id:'fSpoc',key:'spoc',label:'All SPOCs',vals:()=>scopedVals('spoc','spoc'),search:1},
