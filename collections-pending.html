@@ -1055,6 +1055,7 @@ function mkTable(id,getRows,cols,foot){
     const col=cols.find(c=>c.k===k);
     st.k===k?(st.asc=!st.asc):(st.k=k,st.asc=!!(col&&col.txt));
     draw();});
+  draw.clearCol=()=>{Object.keys(colF).forEach(k=>delete colF[k]);cfClose();};
   return draw;
 }
 const kpiHtml=items=>items.map(([l,v,h,c,s])=>
@@ -1303,6 +1304,7 @@ wire('fq','q',1);
 
 document.getElementById('fReset').onclick=()=>{
   Object.assign(F,{q:'',remark:new Set(),region:new Set(),am:new Set(),spoc:new Set(),product:new Set(),acct:new Set(),band:new Set(),pay:new Set(),custSet:new Set()});
+  if(drawPend.clearCol)drawPend.clearCol();
   syncFilters(); renderAll();
 };
 
@@ -1427,6 +1429,7 @@ function applyText(text,label){
   ALL=rows.filter(r=>r.aging>=0); ragged=rg;
   provText=label+' at <b>'+new Date().toLocaleString('en-GB',
     {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</b>';
+  if(drawPend.clearCol)drawPend.clearCol();
   syncFilters(); renderAll();
   return rows.length;
 }
