@@ -774,11 +774,12 @@ document.addEventListener('input',e=>{
   const h=document.createElement('div');h.id='fillH';
   h.title='Drag down to copy this value into the rows below. Double-click to fill every row below.';
   document.body.appendChild(h);
+  const hz=()=>parseFloat(getComputedStyle(document.documentElement).zoom)||1;
   let src=null,drag=false,range=[],hideT=null,scroller=null,lastY=0,auto=null;
   const colInputs=inp=>{const td=inp.closest('td');if(!td)return[];const idx=td.cellIndex;
     return Array.from(td.parentNode.parentNode.rows).map(r=>r.cells[idx]&&r.cells[idx].querySelector('.noteIn')).filter(Boolean);};
   const place=inp=>{src=inp;const r=inp.getBoundingClientRect();
-    h.style.left=(r.right-8)+'px';h.style.top=(r.bottom-8)+'px';h.style.display='block';};
+    const Z=hz();h.style.left=((r.right-8)/Z)+'px';h.style.top=((r.bottom-8)/Z)+'px';h.style.display='block';};
   const hide=()=>{if(!drag){h.style.display='none';}};
   const clearSel=()=>{range.forEach(i=>i.classList.remove('fillsel'));range=[];};
   const apply=list=>{const v=src.value;list.forEach(i=>{if(i.tagName==="SELECT"&&!Array.from(i.options).some(o=>o.value===v))return;if(i!==src&&i.value!==v){i.value=v;i.dispatchEvent(new Event('input',{bubbles:true}));}});};
@@ -811,7 +812,7 @@ document.addEventListener('input',e=>{
     document.body.classList.add('filling');
     auto=setInterval(()=>{if(!scroller)return;const r=scroller.getBoundingClientRect();
       if(lastY>r.bottom-28)scroller.scrollTop+=14;else if(lastY<r.top+28)scroller.scrollTop-=14;update(lastY);},60);
-    const move=ev=>{lastY=ev.clientY;update(ev.clientY);h.style.left=(src.getBoundingClientRect().right-8)+'px';h.style.top=(ev.clientY-6)+'px';};
+    const move=ev=>{lastY=ev.clientY;update(ev.clientY);const Z=hz();h.style.left=((src.getBoundingClientRect().right-8)/Z)+'px';h.style.top=((ev.clientY-6)/Z)+'px';};
     const up=()=>{document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);
       clearInterval(auto);document.body.classList.remove('filling');
       apply(range);clearSel();drag=false;const sr=src.getBoundingClientRect(),cr=scroller?scroller.getBoundingClientRect():{top:0,bottom:innerHeight};if(sr.top>=cr.top+30&&sr.bottom<=cr.bottom)place(src);else h.style.display='none';};
@@ -1038,8 +1039,8 @@ function cfOpen(btn,col,all,cur,apply){
   pop.querySelector('.cfclr').onclick=()=>{cfClose();apply(null);};
   document.body.appendChild(pop);
   const r=btn.getBoundingClientRect();
-  pop.style.left=Math.max(6,Math.min(r.left-20,innerWidth-pop.offsetWidth-8))+'px';
-  pop.style.top=Math.min(r.bottom+4,innerHeight-pop.offsetHeight-8)+'px';
+  const Z=parseFloat(getComputedStyle(document.documentElement).zoom)||1;pop.style.left=Math.max(6,Math.min(r.left-20,innerWidth-pop.offsetWidth*Z-8))/Z+'px';
+  pop.style.top=Math.max(6,Math.min(r.bottom+4,innerHeight-pop.offsetHeight*Z-8))/Z+'px';
   paint();q.focus();
 }
 function mkTable(id,getRows,cols,foot){
