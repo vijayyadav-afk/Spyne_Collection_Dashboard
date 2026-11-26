@@ -1171,7 +1171,7 @@ function renderPend(){
 }
 /* Three views of the same lines: Item level (every invoice line), Invoice level (one row per invoice),
    Customer level (one row per customer). Amounts add up; aging shows the oldest line. */
-const TH={crm:'Customer remarks',svcTs:'Service month',ae:'AE name',payLbl:'Payment mode',cust:'Customer',entId:'Enterprise ID',invNo:'Invoice no.',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Acct mgr',
+const TH={crm:'Follow-up remarks',svcTs:'Service month',ae:'AE name',payLbl:'Payment mode',cust:'Customer',entId:'Enterprise ID',invNo:'Invoice no.',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Acct mgr',
   acctStatus:'Account status',aging:'Aging days',invCount:'Invoices',usd:'Due USD',inr:'Outstanding',exp:'Expected Date',note:'Manual remark'};
 const COLDEF={
   cust:{k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
@@ -1190,7 +1190,7 @@ const COLDEF={
   usd:{k:'usd',f:r=>r.usd?usd(r.usd):'—',cls:'muted'},
   inr:{k:'inr',sorted:1,f:r=>'<b>'+money(r.inr)+'</b>'},
   exp:{k:'exp',txt:1,cls:'notecell',f:r=>`<input type="date" class="noteIn dateIn${r.exp?' filled':''}" data-c="${esc(r.expKey)}" value="${esc(r.exp||'')}" aria-label="Expected date">`},
-  crm:{k:'crm',txt:1,cls:'notecell',f:r=>`<input type="text" maxlength="300" class="noteIn crmIn${r.crm?' filled':''}" data-c="${esc(r.crmKey)}" value="${esc(r.crm||'')}" placeholder="Add remark…" aria-label="Customer remarks">`},
+  crm:{k:'crm',txt:1,cls:'notecell',f:r=>`<input type="text" maxlength="300" class="noteIn crmIn${r.crm?' filled':''}" data-c="${esc(r.crmKey)}" value="${esc(r.crm||'')}" placeholder="Add remark…" aria-label="Follow-up remarks">`},
   note:NOTE_COL};
 const LEVELS={
   item:['cust','entId','invNo','callType','product','spoc','am','acctStatus','payLbl','aging','usd','inr','exp','note','crm'],
@@ -1416,7 +1416,7 @@ const EXPORT={
   pend:()=>{
     const hd={payLbl:'Payment mode',entId:'Enterprise ID',invCount:'Invoices',cust:'Customer',invNo:'Invoice',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Account manager',acctStatus:'Account status',aging:'Aging days',invCount:'Invoices',usd:'Due USD',inr:'Outstanding INR',exp:'Expected Date',note:'Manual remark'};
     const keys=LEVEL==='item'?['cust','entId','invNo','invDate','item','callType','product','spoc','am','acctStatus','payLbl','aging','usd','inr','exp','note','crm']:LEVELS[LEVEL];
-    return [keys.map(k=>k==='invDate'?'Invoice date':k==='item'?'Item':k==='svcTs'?'Service month':k==='ae'?'AE name':k==='crm'?'Customer remarks':hd[k]),ROWS[LEVEL]().map(r=>keys.map(k=>k==='svcTs'?(r.svcTs?svcLbl(r.svcTs):''):r[k])),
+    return [keys.map(k=>k==='invDate'?'Invoice date':k==='item'?'Item':k==='svcTs'?'Service month':k==='ae'?'AE name':k==='crm'?'Follow-up remarks':hd[k]),ROWS[LEVEL]().map(r=>keys.map(k=>k==='svcTs'?(r.svcTs?svcLbl(r.svcTs):''):r[k])),
     LEVEL==='item'?'invoice-lines':LEVEL==='invoice'?'invoice-level':'customer-level'];},
 };
 document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>{
