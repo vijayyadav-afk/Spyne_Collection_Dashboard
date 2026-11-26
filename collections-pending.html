@@ -1686,7 +1686,7 @@ async function xlsxGrid(buf){
       if(!ans)return;
       const everyone=ans.toUpperCase()==='ALL',who=everyone?'all SPOCs':ans;
       const byInv=new Map();ALL.forEach(x=>{let s=byInv.get(x.invNo);if(!s)byInv.set(x.invNo,s=new Set());s.add(x.cust);});
-      const set={};let nR=0,nD=0,nF=0,nW=0,rows=0,miss=0,skipped=0,badStage=0;
+      const set={},byCust=new Map();let nR=0,nD=0,nF=0,nW=0,rows=0,miss=0,skipped=0,badStage=0;
       g.slice(1).forEach(r=>{
         if(!everyone&&iS>-1&&cln(r[iS]||'').toLowerCase()!==who.toLowerCase())return;
         const inv=cln(r[iI]||'');if(!inv)return;rows++;
@@ -1699,14 +1699,21 @@ async function xlsxGrid(buf){
           if(REMARK_OPTS.includes(rem)){set['INV::'+inv+'|'+c]=rem;nR++;}
           if(dt){set['EXP::INV::'+inv+'|'+c]=dt;nD++;}
           if(STAGE_OPTS.includes(stg)){set['CRM::INV::'+inv+'|'+c]=stg;nF++;}
-          if(why){set['RFU::INV::'+inv+'|'+c]=why;nW++;}});
+          if(why){set['RFU::INV::'+inv+'|'+c]=why;nW++;}
+          /* the same values for the Customer level table, when all of that customer's invoices in the file agree */
+          const a=byCust.get(c)||byCust.set(c,{CUS:new Set(),CRM:new Set(),RFU:new Set()}).get(c);
+          if(REMARK_OPTS.includes(rem))a.CUS.add(rem);if(STAGE_OPTS.includes(stg))a.CRM.add(stg);if(why)a.RFU.add(why);});
       });
+      let cSet=0,cMixed=0;
+      byCust.forEach((a,c)=>['CUS','CRM','RFU'].forEach(p=>{
+        if(a[p].size===1){set[(p==='CUS'?'CUS::':p+'::C::')+c]=[...a[p]][0];cSet++;}
+        else if(a[p].size>1)cMixed++;}));
       if(!nR&&!nD&&!nF&&!nW){alert('Nothing to import for '+who+' from this file.');return;}
       if(!confirm('Importing for '+who+': '+rows+' invoices in the file ('+miss+' not on the dashboard).\nThis will set '+nR+' remarks, '+nD+' expected dates, '+nF+' follow-up stages and '+nW+' follow-up reasons, replacing what is there for those invoices. Blank cells in the file leave the dashboard as it is.\n\nContinue?'))return;
       Object.assign(NOTES,set);notesSave();renderNoteBar();
       if(SHARED)pushNotes({set});
       renderAll();
-      alert('Done. Imported '+nR+' remarks, '+nD+' expected dates, '+nF+' follow-up stages and '+nW+' follow-up reasons for '+who+'.'+(skipped?'\n'+skipped+' remark(s) were not one of the allowed choices and were skipped.':'')+(badStage?'\n'+badStage+' follow-up stage(s) were not one of the two allowed choices and were skipped.':''));
+      alert('Done. Imported '+nR+' remarks, '+nD+' expected dates, '+nF+' follow-up stages and '+nW+' follow-up reasons for '+who+'.\nCustomer level: '+cSet+' values set'+(cMixed?' ('+cMixed+' left blank because that customer\'s invoices have different values)':'')+'.'+(skipped?'\n'+skipped+' remark(s) were not one of the allowed choices and were skipped.':'')+(badStage?'\n'+badStage+' follow-up stage(s) were not one of the two allowed choices and were skipped.':''));
     }catch(err){alert(String(err&&err.message||err));}};
     isX?fr.readAsArrayBuffer(f):fr.readAsText(f);e.target.value='';
   });
