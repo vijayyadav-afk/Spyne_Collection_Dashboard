@@ -487,7 +487,7 @@
   <div class="card">
     <header><h2>Invoice line detail</h2><span class="cap gone" id="cap-pend"></span>
       <div class="vwrap"><div class="seg" id="segView" role="group" aria-label="Table level"><button type="button" data-v="customer" aria-pressed="false">Customer level</button><button type="button" data-v="invoice" aria-pressed="false">Invoice level</button><button type="button" data-v="item" aria-pressed="true">Item level</button></div>
-      <button class="btn" id="btnImportInv" title="Owner only: import remarks and expected dates for one SPOC from an exported invoice-level CSV, matched by invoice number">Import remarks from file…</button><input type="file" id="fileImportInv" accept=".csv,text/csv" hidden>
+      <button class="btn" id="btnImportInv" title="Owner only: import remarks and expected dates for one SPOC from an exported invoice-level CSV, matched by invoice number">Import remarks from file…</button><input type="file" id="fileImportInv" accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
       <button class="btn" data-export="pend">Export CSV</button></div></header>
     <div class="scroll"><table id="t-pend"><thead><tr></tr></thead><tbody></tbody><tfoot></tfoot></table></div>
   </div>
@@ -1626,6 +1626,36 @@ async function autoCopyOnce(){
   noteMsg('good','Copied '+nR+' remarks and '+nD+' expected dates from Item level to Invoice level for Anuj.');
 }
 
+/* reads the first sheet of an .xlsx in the browser (no library): unzip, shared strings, cells -> rows of text */
+async function xlsxGrid(buf){
+  const u8=new Uint8Array(buf),dv=new DataView(buf),dec=new TextDecoder();
+  let e=u8.length-22;while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--;
+  if(e<0)throw new Error('This is not a valid .xlsx file.');
+  const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const files={};
+  for(let i=0;i<n;i++){
+    const nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true);
+    files[dec.decode(u8.subarray(p+46,p+46+nl))]={method:dv.getUint16(p+10,true),csz:dv.getUint32(p+20,true),off:dv.getUint32(p+42,true)};
+    p+=46+nl+xl+cl;}
+  const read=async nm=>{const f=files[nm];if(!f)return null;
+    const s=f.off+30+dv.getUint16(f.off+26,true)+dv.getUint16(f.off+28,true),raw=u8.subarray(s,s+f.csz);
+    if(f.method===0)return dec.decode(raw);
+    return await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();};
+  const xml=t=>new DOMParser().parseFromString(t,'application/xml');
+  const ssx=await read('xl/sharedStrings.xml');
+  const ss=ssx?Array.from(xml(ssx).getElementsByTagName('si')).map(si=>Array.from(si.getElementsByTagName('t')).filter(t=>t.parentNode.nodeName!=='rPh').map(t=>t.textContent).join('')):[];
+  const sheetName=Object.keys(files).filter(k=>/^xl\/worksheets\/sheet\d+\.xml$/.test(k)).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))[0];
+  if(!sheetName)throw new Error('No worksheet found in this .xlsx file.');
+  const grid=[];
+  Array.from(xml(await read(sheetName)).getElementsByTagName('row')).forEach(r=>{
+    const row=[];
+    Array.from(r.getElementsByTagName('c')).forEach(c=>{
+      const col=(c.getAttribute('r')||'').replace(/\d+/g,'');let ix=0;for(const ch of col)ix=ix*26+ch.charCodeAt(0)-64;ix--;
+      const t=c.getAttribute('t'),v=c.getElementsByTagName('v')[0],is=c.getElementsByTagName('is')[0];
+      row[ix]=t==='s'?(ss[+v.textContent]||''):t==='inlineStr'?(is?is.textContent:''):(v?v.textContent:'');});
+    for(let i=0;i<row.length;i++)if(row[i]===undefined)row[i]='';
+    grid.push(row);});
+  return grid;
+}
 /* owner tool: import remarks and expected dates for one SPOC from an exported invoice-level CSV, matched by invoice number.
    The file is read in the browser only; nothing from it is stored in the code. */
 (function(){
@@ -1635,6 +1665,7 @@ async function autoCopyOnce(){
   const MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
   const iso=(y,m,d)=>y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
   const toDate=s=>{s=cln(s);if(!s)return '';
+    if(/^\d{5}$/.test(s))return new Date(Date.UTC(1899,11,30)+(+s)*864e5).toISOString().slice(0,10);   /* Excel date serial */
     let m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s);if(m)return s;
     m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s);          /* slashes: month/day/year, unless the first number can only be a day */
     if(m){const a=+m[1],b=+m[2];return a>12?iso(m[3],b,a):iso(m[3],a,b);}
@@ -1644,34 +1675,40 @@ async function autoCopyOnce(){
   inp.addEventListener('change',e=>{
     const f=e.target.files[0];if(!f)return;
     const fr=new FileReader();
-    fr.onload=()=>{try{
-      const g=parseCSV(String(fr.result).replace(/^﻿/,''));
+    const isX=/\.xlsx$/i.test(f.name);
+    fr.onload=async()=>{try{
+      const g=isX?await xlsxGrid(fr.result):parseCSV(String(fr.result).replace(/^﻿/,''));
       const low=(g[0]||[]).map(c=>cln(c).toLowerCase());
-      const iI=low.indexOf('invoice'),iS=low.indexOf('spoc'),iR=low.indexOf('manual remark'),iD=low.indexOf('expected date');
-      if(iI<0||iR<0)throw new Error('This does not look like an invoice-level export (Invoice and Manual remark columns are needed).');
-      const spocs=[...new Set(g.slice(1).map(r=>cln(r[iS]||'')).filter(Boolean))];
-      const who=(spocs.length===1?spocs[0]:(prompt('Which SPOC should be imported? File has: '+spocs.join(', '),spocs[0]||'')||'')).trim();
-      if(!who)return;
+      const iI=low.indexOf('invoice'),iS=low.indexOf('spoc'),iR=low.indexOf('manual remark'),iD=low.indexOf('expected date'),iF=low.indexOf('follow-up stage'),iW=low.indexOf('reason for follow-up');
+      if(iI<0||(iR<0&&iF<0&&iW<0))throw new Error('This does not look like an invoice-level export (an Invoice column and at least one of Manual remark, Follow-up Stage or Reason for Follow-up are needed).');
+      const spocs=iS>-1?[...new Set(g.slice(1).map(r=>cln(r[iS]||'')).filter(Boolean))]:[];
+      const ans=(spocs.length<=1?(spocs[0]||'ALL'):(prompt('Which SPOC should be imported? Type a name, or ALL for every SPOC in the file. File has: '+spocs.join(', '),'ALL')||'')).trim();
+      if(!ans)return;
+      const everyone=ans.toUpperCase()==='ALL',who=everyone?'all SPOCs':ans;
       const byInv=new Map();ALL.forEach(x=>{let s=byInv.get(x.invNo);if(!s)byInv.set(x.invNo,s=new Set());s.add(x.cust);});
-      const set={};let nR=0,nD=0,rows=0,miss=0,skipped=0;
+      const set={};let nR=0,nD=0,nF=0,nW=0,rows=0,miss=0,skipped=0,badStage=0;
       g.slice(1).forEach(r=>{
-        if(iS>-1&&cln(r[iS]||'').toLowerCase()!==who.toLowerCase())return;
+        if(!everyone&&iS>-1&&cln(r[iS]||'').toLowerCase()!==who.toLowerCase())return;
         const inv=cln(r[iI]||'');if(!inv)return;rows++;
         const custs=byInv.get(inv);if(!custs){miss++;return;}
-        const rem=cln(r[iR]||''),dt=iD>-1?toDate(r[iD]||''):'';
+        const rem=iR>-1?cln(r[iR]||''):'',dt=iD>-1?toDate(r[iD]||''):'';
+        const stg=iF>-1?cln(r[iF]||''):'',why=iW>-1?cln(r[iW]||'').slice(0,300):'';
         if(rem&&!REMARK_OPTS.includes(rem))skipped++;
+        if(stg&&!STAGE_OPTS.includes(stg))badStage++;
         custs.forEach(c=>{
           if(REMARK_OPTS.includes(rem)){set['INV::'+inv+'|'+c]=rem;nR++;}
-          if(dt){set['EXP::INV::'+inv+'|'+c]=dt;nD++;}});
+          if(dt){set['EXP::INV::'+inv+'|'+c]=dt;nD++;}
+          if(STAGE_OPTS.includes(stg)){set['CRM::INV::'+inv+'|'+c]=stg;nF++;}
+          if(why){set['RFU::INV::'+inv+'|'+c]=why;nW++;}});
       });
-      if(!nR&&!nD){alert('Nothing to import for SPOC "'+who+'" from this file.');return;}
-      if(!confirm('SPOC '+who+': '+rows+' invoices in the file ('+miss+' not on the dashboard).\nThis will set '+nR+' remarks and '+nD+' expected dates, replacing what is there for those invoices. Blank cells in the file leave the dashboard as it is.\n\nContinue?'))return;
+      if(!nR&&!nD&&!nF&&!nW){alert('Nothing to import for '+who+' from this file.');return;}
+      if(!confirm('Importing for '+who+': '+rows+' invoices in the file ('+miss+' not on the dashboard).\nThis will set '+nR+' remarks, '+nD+' expected dates, '+nF+' follow-up stages and '+nW+' follow-up reasons, replacing what is there for those invoices. Blank cells in the file leave the dashboard as it is.\n\nContinue?'))return;
       Object.assign(NOTES,set);notesSave();renderNoteBar();
       if(SHARED)pushNotes({set});
       renderAll();
-      alert('Done. Imported '+nR+' remarks and '+nD+' expected dates for '+who+'.'+(skipped?'\n'+skipped+' remark(s) were not one of the four allowed choices and were skipped.':''));
+      alert('Done. Imported '+nR+' remarks, '+nD+' expected dates, '+nF+' follow-up stages and '+nW+' follow-up reasons for '+who+'.'+(skipped?'\n'+skipped+' remark(s) were not one of the allowed choices and were skipped.':'')+(badStage?'\n'+badStage+' follow-up stage(s) were not one of the two allowed choices and were skipped.':''));
     }catch(err){alert(String(err&&err.message||err));}};
-    fr.readAsText(f);e.target.value='';
+    isX?fr.readAsArrayBuffer(f):fr.readAsText(f);e.target.value='';
   });
 })();
 /* ---------------- go ---------------- */
