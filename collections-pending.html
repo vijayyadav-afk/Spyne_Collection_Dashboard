@@ -276,6 +276,7 @@
     border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ink)}
   input.noteIn::placeholder{color:var(--ink3);opacity:.7}
   input.crmIn{min-width:190px;max-width:260px}
+  select.crmIn{min-width:150px;max-width:190px}
   input.noteIn:hover,select.noteIn:hover{border-color:var(--line)}
   input.noteIn:focus,select.noteIn:focus{outline:none;border-color:var(--b1);background:var(--bg);width:250px}
   input.noteIn.filled,select.noteIn.filled{background:color-mix(in srgb,var(--b2) 13%,transparent);
@@ -750,6 +751,7 @@ function renderNoteBar(){const el=document.getElementById('noteCount');if(!el)re
 const REMARK_OPTS=['Invoice Write Off','Need To Send Legal','Payment Will Receive','Invoice Need To Be Change','Invoice on hold'];
 /* an invoice's remark bucket: blank = '__none'; free text that is not one of the four choices = '__other' */
 function remKey(r){const v=NOTES['INV::'+r.invNo+'|'+r.cust];return !v?'__none':REMARK_OPTS.includes(v)?v:'__other';}
+const STAGE_OPTS=['Send Reminder','Do not Send Reminder'];
 const NOTE_COL={k:'note',txt:1,cls:'notecell',
   f:r=>{const v=r.note||'';
     /* a remark typed before the list existed stays visible until someone picks from the list */
@@ -1172,7 +1174,7 @@ function renderPend(){
 }
 /* Three views of the same lines: Item level (every invoice line), Invoice level (one row per invoice),
    Customer level (one row per customer). Amounts add up; aging shows the oldest line. */
-const TH={crm:'Follow-up remarks',rfu:'Reason follow-up',svcTs:'Service month',ae:'AE name',payLbl:'Payment mode',cust:'Customer',entId:'Enterprise ID',invNo:'Invoice no.',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Acct mgr',
+const TH={crm:'Follow-up Stage',rfu:'Reason for Follow-up',svcTs:'Service month',ae:'AE name',payLbl:'Payment mode',cust:'Customer',entId:'Enterprise ID',invNo:'Invoice no.',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Acct mgr',
   acctStatus:'Account status',aging:'Aging days',invCount:'Invoices',usd:'Due USD',inr:'Outstanding',exp:'Expected Date',note:'Manual remark'};
 const COLDEF={
   cust:{k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
@@ -1191,8 +1193,8 @@ const COLDEF={
   usd:{k:'usd',f:r=>r.usd?usd(r.usd):'—',cls:'muted'},
   inr:{k:'inr',sorted:1,f:r=>'<b>'+money(r.inr)+'</b>'},
   exp:{k:'exp',txt:1,cls:'notecell',f:r=>`<input type="date" class="noteIn dateIn${r.exp?' filled':''}" data-c="${esc(r.expKey)}" value="${esc(r.exp||'')}" aria-label="Expected date">`},
-  crm:{k:'crm',txt:1,cls:'notecell',f:r=>`<input type="text" maxlength="300" class="noteIn crmIn${r.crm?' filled':''}" data-c="${esc(r.crmKey)}" value="${esc(r.crm||'')}" placeholder="Add remark…" aria-label="Follow-up remarks">`},
-  rfu:{k:'rfu',txt:1,cls:'notecell',f:r=>`<input type="text" maxlength="300" class="noteIn crmIn${r.rfu?' filled':''}" data-c="${esc(r.rfuKey)}" value="${esc(r.rfu||'')}" placeholder="Add reason…" aria-label="Reason follow-up">`},
+  crm:{k:'crm',txt:1,cls:'notecell',f:r=>{const v=r.crm||'',o=(v&&!STAGE_OPTS.includes(v)?[v]:[]).concat(STAGE_OPTS);return `<select class="noteIn crmIn${v?' filled':''}" data-c="${esc(r.crmKey)}" aria-label="Follow-up Stage"><option value="">Select stage…</option>`+o.map(x=>`<option value="${esc(x)}"${x===v?' selected':''}>${esc(x)}</option>`).join('')+'</select>';}},
+  rfu:{k:'rfu',txt:1,cls:'notecell',f:r=>`<input type="text" maxlength="300" class="noteIn crmIn${r.rfu?' filled':''}" data-c="${esc(r.rfuKey)}" value="${esc(r.rfu||'')}" placeholder="Add reason…" aria-label="Reason for Follow-up">`},
   note:NOTE_COL};
 const LEVELS={
   item:['cust','entId','invNo','callType','product','spoc','am','acctStatus','payLbl','aging','usd','inr','exp','note','crm','rfu'],
@@ -1418,7 +1420,7 @@ const EXPORT={
   pend:()=>{
     const hd={payLbl:'Payment mode',entId:'Enterprise ID',invCount:'Invoices',cust:'Customer',invNo:'Invoice',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Account manager',acctStatus:'Account status',aging:'Aging days',invCount:'Invoices',usd:'Due USD',inr:'Outstanding INR',exp:'Expected Date',note:'Manual remark'};
     const keys=LEVEL==='item'?['cust','entId','invNo','invDate','item','callType','product','spoc','am','acctStatus','payLbl','aging','usd','inr','exp','note','crm','rfu']:LEVELS[LEVEL];
-    return [keys.map(k=>k==='invDate'?'Invoice date':k==='item'?'Item':k==='svcTs'?'Service month':k==='ae'?'AE name':k==='crm'?'Follow-up remarks':k==='rfu'?'Reason follow-up':hd[k]),ROWS[LEVEL]().map(r=>keys.map(k=>k==='svcTs'?(r.svcTs?svcLbl(r.svcTs):''):r[k])),
+    return [keys.map(k=>k==='invDate'?'Invoice date':k==='item'?'Item':k==='svcTs'?'Service month':k==='ae'?'AE name':k==='crm'?'Follow-up Stage':k==='rfu'?'Reason for Follow-up':hd[k]),ROWS[LEVEL]().map(r=>keys.map(k=>k==='svcTs'?(r.svcTs?svcLbl(r.svcTs):''):r[k])),
     LEVEL==='item'?'invoice-lines':LEVEL==='invoice'?'invoice-level':'customer-level'];},
 };
 document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>{
