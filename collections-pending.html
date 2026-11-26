@@ -998,6 +998,7 @@ function cfVal(c,r){
   if(c.k==='exp')v=r.exp?r.exp.split('-').reverse().join('-'):'';
   else if(c.k==='note')v=r.note||'';
   else if(c.k==='crm')v=r.crm||'';
+  else if(c.k==='rfu')v=r.rfu||'';
   else if(c.k==='svcTs')v=r.svcTs?svcLbl(r.svcTs):'';
   else v=cfPlain(c.f(r));
   return (v===''||v==='—')?'(Blank)':v;
@@ -1171,7 +1172,7 @@ function renderPend(){
 }
 /* Three views of the same lines: Item level (every invoice line), Invoice level (one row per invoice),
    Customer level (one row per customer). Amounts add up; aging shows the oldest line. */
-const TH={crm:'Follow-up remarks',svcTs:'Service month',ae:'AE name',payLbl:'Payment mode',cust:'Customer',entId:'Enterprise ID',invNo:'Invoice no.',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Acct mgr',
+const TH={crm:'Follow-up remarks',rfu:'Reason follow-up',svcTs:'Service month',ae:'AE name',payLbl:'Payment mode',cust:'Customer',entId:'Enterprise ID',invNo:'Invoice no.',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Acct mgr',
   acctStatus:'Account status',aging:'Aging days',invCount:'Invoices',usd:'Due USD',inr:'Outstanding',exp:'Expected Date',note:'Manual remark'};
 const COLDEF={
   cust:{k:'cust',f:r=>esc(r.cust),cls:'name',title:1,txt:1},
@@ -1191,11 +1192,12 @@ const COLDEF={
   inr:{k:'inr',sorted:1,f:r=>'<b>'+money(r.inr)+'</b>'},
   exp:{k:'exp',txt:1,cls:'notecell',f:r=>`<input type="date" class="noteIn dateIn${r.exp?' filled':''}" data-c="${esc(r.expKey)}" value="${esc(r.exp||'')}" aria-label="Expected date">`},
   crm:{k:'crm',txt:1,cls:'notecell',f:r=>`<input type="text" maxlength="300" class="noteIn crmIn${r.crm?' filled':''}" data-c="${esc(r.crmKey)}" value="${esc(r.crm||'')}" placeholder="Add remark…" aria-label="Follow-up remarks">`},
+  rfu:{k:'rfu',txt:1,cls:'notecell',f:r=>`<input type="text" maxlength="300" class="noteIn crmIn${r.rfu?' filled':''}" data-c="${esc(r.rfuKey)}" value="${esc(r.rfu||'')}" placeholder="Add reason…" aria-label="Reason follow-up">`},
   note:NOTE_COL};
 const LEVELS={
-  item:['cust','entId','invNo','callType','product','spoc','am','acctStatus','payLbl','aging','usd','inr','exp','note','crm'],
-  invoice:['cust','entId','invNo','svcTs','ae','spoc','am','acctStatus','payLbl','aging','usd','inr','exp','note','crm'],
-  customer:['cust','entId','spoc','am','acctStatus','payLbl','aging','invCount','usd','inr','exp','note','crm']};
+  item:['cust','entId','invNo','callType','product','spoc','am','acctStatus','payLbl','aging','usd','inr','exp','note','crm','rfu'],
+  invoice:['cust','entId','invNo','svcTs','ae','spoc','am','acctStatus','payLbl','aging','usd','inr','exp','note','crm','rfu'],
+  customer:['cust','entId','spoc','am','acctStatus','payLbl','aging','invCount','usd','inr','exp','note','crm','rfu']};
 const groupRows=(rows,keyOf)=>{const m=new Map();
   rows.forEach(r=>{const k=keyOf(r);let g=m.get(k);
     if(!g){g=Object.assign({},r,{usd:0,inr:0,apN:0,n:0});m.set(k,g);}
@@ -1205,12 +1207,12 @@ const groupRows=(rows,keyOf)=>{const m=new Map();
     if(r.svcTs&&(!g.svcTs||r.svcTs<g.svcTs))g.svcTs=r.svcTs;
     if(!g.ae&&r.ae)g.ae=r.ae;});
   return [...m.values()];};
-const withExp=(rows,pre,keyOf)=>rows.map(r=>{r.expKey='EXP::'+pre+'::'+keyOf(r);r.exp=NOTES[r.expKey]||'';r.crmKey='CRM::'+pre+'::'+keyOf(r);r.crm=NOTES[r.crmKey]||'';return r;});
+const withExp=(rows,pre,keyOf)=>rows.map(r=>{r.expKey='EXP::'+pre+'::'+keyOf(r);r.exp=NOTES[r.expKey]||'';r.crmKey='CRM::'+pre+'::'+keyOf(r);r.crm=NOTES[r.crmKey]||'';r.rfuKey='RFU::'+pre+'::'+keyOf(r);r.rfu=NOTES[r.rfuKey]||'';return r;});
 const ROWS={item:()=>withExp(view(),'I',r=>r.cust),
   /* invoice-level remarks are kept per invoice and shown only in this view */
   invoice:()=>withExp(groupRows(view(),r=>r.invNo+'|'+r.cust).map(g=>{g.noteKey='INV::'+g.invNo+'|'+g.cust;g.note=NOTES[g.noteKey]||'';return g;}),'INV',g=>g.invNo+'|'+g.cust),
   customer:()=>{const rs=view(),inv=new Map();rs.forEach(r=>{let s=inv.get(r.cust);if(!s)inv.set(r.cust,s=new Set());s.add(r.invNo);});
-    return groupRows(rs,r=>r.cust).map(g=>{g.invCount=inv.get(g.cust).size;g.noteKey='CUS::'+g.cust;g.note=NOTES[g.noteKey]||'';return g;}).map(g=>{g.expKey='EXP::C::'+g.cust;g.exp=NOTES[g.expKey]||'';g.crmKey='CRM::C::'+g.cust;g.crm=NOTES[g.crmKey]||'';return g;});}};
+    return groupRows(rs,r=>r.cust).map(g=>{g.invCount=inv.get(g.cust).size;g.noteKey='CUS::'+g.cust;g.note=NOTES[g.noteKey]||'';return g;}).map(g=>{g.expKey='EXP::C::'+g.cust;g.exp=NOTES[g.expKey]||'';g.crmKey='CRM::C::'+g.cust;g.crm=NOTES[g.crmKey]||'';g.rfuKey='RFU::C::'+g.cust;g.rfu=NOTES[g.rfuKey]||'';return g;});}};
 let LEVEL='invoice', drawPend=()=>{};
 
 /* ---------------- adjustable column widths for the invoice detail table ---------------- */
@@ -1415,8 +1417,8 @@ document.getElementById('fReset').onclick=()=>{
 const EXPORT={
   pend:()=>{
     const hd={payLbl:'Payment mode',entId:'Enterprise ID',invCount:'Invoices',cust:'Customer',invNo:'Invoice',callType:'Product Type',product:'Product',spoc:'SPOC',am:'Account manager',acctStatus:'Account status',aging:'Aging days',invCount:'Invoices',usd:'Due USD',inr:'Outstanding INR',exp:'Expected Date',note:'Manual remark'};
-    const keys=LEVEL==='item'?['cust','entId','invNo','invDate','item','callType','product','spoc','am','acctStatus','payLbl','aging','usd','inr','exp','note','crm']:LEVELS[LEVEL];
-    return [keys.map(k=>k==='invDate'?'Invoice date':k==='item'?'Item':k==='svcTs'?'Service month':k==='ae'?'AE name':k==='crm'?'Follow-up remarks':hd[k]),ROWS[LEVEL]().map(r=>keys.map(k=>k==='svcTs'?(r.svcTs?svcLbl(r.svcTs):''):r[k])),
+    const keys=LEVEL==='item'?['cust','entId','invNo','invDate','item','callType','product','spoc','am','acctStatus','payLbl','aging','usd','inr','exp','note','crm','rfu']:LEVELS[LEVEL];
+    return [keys.map(k=>k==='invDate'?'Invoice date':k==='item'?'Item':k==='svcTs'?'Service month':k==='ae'?'AE name':k==='crm'?'Follow-up remarks':k==='rfu'?'Reason follow-up':hd[k]),ROWS[LEVEL]().map(r=>keys.map(k=>k==='svcTs'?(r.svcTs?svcLbl(r.svcTs):''):r[k])),
     LEVEL==='item'?'invoice-lines':LEVEL==='invoice'?'invoice-level':'customer-level'];},
 };
 document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>{

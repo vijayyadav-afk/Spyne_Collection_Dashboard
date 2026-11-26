@@ -243,7 +243,7 @@ export default async function handler(request) {
         continue;
       }
       if (!owner) {
-        const isDate = String(k).startsWith('EXP::'), isText = String(k).startsWith('CRM::');
+        const isDate = String(k).startsWith('EXP::'), isText = String(k).startsWith('CRM::') || String(k).startsWith('RFU::');
         if (!isText && (isDate ? !/^\d{4}-\d{2}-\d{2}$/.test(v) : !ALLOWED.includes(v))) continue;
       }
       args.push(String(k), JSON.stringify({ v, by: email, at: now }));
