@@ -1214,7 +1214,10 @@ const ROWS={item:()=>withExp(view(),'I',r=>r.cust),
   /* invoice-level remarks are kept per invoice and shown only in this view */
   invoice:()=>withExp(groupRows(view(),r=>r.invNo+'|'+r.cust).map(g=>{g.noteKey='INV::'+g.invNo+'|'+g.cust;g.note=NOTES[g.noteKey]||'';return g;}),'INV',g=>g.invNo+'|'+g.cust),
   customer:()=>{const rs=view(),inv=new Map();rs.forEach(r=>{let s=inv.get(r.cust);if(!s)inv.set(r.cust,s=new Set());s.add(r.invNo);});
-    return groupRows(rs,r=>r.cust).map(g=>{g.invCount=inv.get(g.cust).size;g.noteKey='CUS::'+g.cust;g.note=NOTES[g.noteKey]||'';return g;}).map(g=>{g.expKey='EXP::C::'+g.cust;g.exp=NOTES[g.expKey]||'';g.crmKey='CRM::C::'+g.cust;g.crm=NOTES[g.crmKey]||'';g.rfuKey='RFU::C::'+g.cust;g.rfu=NOTES[g.rfuKey]||'';return g;});}};
+    /* a customer with no value of its own shows the value its invoices share (when they all agree) */
+    const all=new Map();ALL.forEach(r=>{let s=all.get(r.cust);if(!s)all.set(r.cust,s=new Set());s.add(r.invNo);});
+    const shared=(pre,c)=>{const v=new Set();(all.get(c)||[]).forEach(i=>{const x=NOTES[pre+i+'|'+c];if(x)v.add(x);});return v.size===1?[...v][0]:'';};
+    return groupRows(rs,r=>r.cust).map(g=>{g.invCount=inv.get(g.cust).size;g.noteKey='CUS::'+g.cust;g.note=NOTES[g.noteKey]||shared('INV::',g.cust);return g;}).map(g=>{g.expKey='EXP::C::'+g.cust;g.exp=NOTES[g.expKey]||'';g.crmKey='CRM::C::'+g.cust;g.crm=NOTES[g.crmKey]||shared('CRM::INV::',g.cust);g.rfuKey='RFU::C::'+g.cust;g.rfu=NOTES[g.rfuKey]||shared('RFU::INV::',g.cust);return g;});}};
 let LEVEL='invoice', drawPend=()=>{};
 
 /* ---------------- adjustable column widths for the invoice detail table ---------------- */
