@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Send Reminders</title>
+<style>
+  :root{color-scheme:light;--bg:#edf1f7;--card:#fff;--ink:#0f1d33;--ink2:#586a84;--line:#d9e1ec;--b1:#5566c9;--ok:#1a9a6c;--bad:#c63b50;--warn:#b57e00}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#14181f;--card:#1d232c;--ink:#e6edf8;--ink2:#93a4bf;--line:#2c3440;--b1:#8fa8f5;--ok:#7be88a;--bad:#ff7a90;--warn:#f2d45c}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:1200px;margin:0 auto;padding:16px}
+  h1{font-size:20px;margin:0 0 4px} .sub{color:var(--ink2);margin:0 0 14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px}
+  .row{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+  label{display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+  input[type=text],select,textarea{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font:inherit}
+  textarea{width:100%;min-height:54px}
+  button{background:var(--b1);color:#fff;border:0;border-radius:6px;padding:8px 14px;font:inherit;cursor:pointer}
+  button.sec{background:transparent;color:var(--b1);border:1px solid var(--b1)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .tw{overflow:auto;max-height:520px;border:1px solid var(--line);border-radius:8px}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+  th{position:sticky;top:0;background:var(--card);z-index:1;cursor:pointer} td.n,th.n{text-align:right}
+  tr.dim{opacity:.55}
+  .pill{font-size:11px;padding:2px 7px;border-radius:10px;border:1px solid var(--line)}
+  .bad{color:var(--bad)} .ok{color:var(--ok)} .warn{color:var(--warn)} .muted{color:var(--ink2)}
+  #gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9} #gate[hidden]{display:none}
+  .gate-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:28px;text-align:center;max-width:340px}
+  .pv{border:1px solid var(--line);border-radius:8px;margin:8px 0;padding:10px;background:#fff;color:#1b2430}
+  .pvh{font-size:12px;color:#586a84;margin-bottom:6px}
+</style>
+</head>
+<body>
+<div id="gate" hidden><div class="gate-card"><b>Send Reminders</b><p id="gateMsg" class="muted">Sign in with your Spyne Google account to continue.</p><div id="gBtn"></div></div></div>
+<div class="wrap">
+  <h1>Send Reminders</h1>
+  <p class="sub" id="sub">One consolidated email per customer with every outstanding invoice. Pick a template; Subscription Invoice is for auto-pay customers, the other three skip them.</p>
+
+  <div id="warn" class="card" hidden></div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:10px">
+      <b>Email Template</b>
+      <select id="tpl">
+        <option value="friendly">Friendly Reminder</option>
+        <option value="urgent">Urgent Reminder</option>
+        <option value="final">Final Reminder</option>
+        <option value="subscription">Subscription Invoice</option>
+      </select>
+      <span class="muted" id="tplHint"></span>
+    </div>
+    <div class="row">
+      <b>Recipients</b>
+      <label><input type="checkbox" id="rCust" checked> Customer</label>
+      <label><input type="checkbox" id="rCsm" checked> CSM</label>
+      <label><input type="checkbox" id="rFin" checked> <span id="finLbl">finance@spyne.ai</span></label>
+      <label>Other <input type="text" id="rOther" placeholder="a@x.com, b@y.com" size="26"></label>
+      <span class="muted">Customer CC (from sheet) is always included.</span>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label><input type="checkbox" id="oPdf" checked> Attach invoice PDFs</label>
+      <label><input type="checkbox" id="oLink" checked> Add payment links (Pay now)</label>
+      <label><input type="checkbox" id="oForce"> Send again even if reminded in the last <span id="bd">3</span> days</label>
+    </div>
+    <div style="margin-top:10px"><textarea id="note" placeholder="Additional note (optional)"></textarea></div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:10px">
+      <input type="text" id="q" placeholder="Search customer / invoice / CSM" size="30">
+      <select id="fCsm"><option value="">All CSMs</option></select>
+      <select id="fBucket"><option value="">All buckets</option></select>
+      <select id="fCur"><option value="">All currencies</option></select>
+      <label><input type="checkbox" id="fHide" checked> Hide customers with no email</label>
+      <button class="sec" id="selVis">Select visible</button>
+      <button class="sec" id="selNone">Clear</button>
+      <span class="muted" id="count"></span>
+    </div>
+    <div class="tw"><table><thead><tr id="thead"></tr></thead><tbody id="tb"></tbody></table></div>
+    <div class="row" style="margin-top:12px">
+      <button id="bPrev" disabled>Preview emails</button>
+      <button id="bSend" disabled>Send</button>
+      <span id="msg" class="muted"></span>
+    </div>
+  </div>
+
+  <div id="out"></div>
+</div>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+/* Auth: same Google sign-in and signed session cookie as the other dashboards. */
+const CLIENT_ID='706399438904-1ijn6ih2tq6svot6iguosob7nf68no5o.apps.googleusercontent.com';
+let token=null,gsiInit=false,me='';
+(function(){const f0=window.fetch;window.fetch=function(u,o){try{const s=localStorage.getItem('spyneSess');if(s&&String(u).indexOf('/api/')===0){o=Object.assign({},o);o.headers=Object.assign({},o.headers,{'X-Session':s});}}catch(e){}return f0.call(this,u,o);};})();
+try{token=localStorage.getItem('spyneTok');}catch(e){}
+const tokExp=t=>{try{return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).exp*1000;}catch(e){return 0;}};
+if(token&&tokExp(token)<Date.now()+30000)token=null;
+const $=id=>document.getElementById(id);
+const showGate=m=>{$('gate').hidden=false;if(m)$('gateMsg').textContent=m;};
+const mkSession=t=>fetch('/api/session',{method:'POST',headers:{Authorization:'Bearer '+t}}).then(r=>r.json()).then(j=>{if(j&&j.token){try{localStorage.setItem('spyneSess',j.token);}catch(e){}}}).catch(()=>{});
+function initGoogle(){
+  if(gsiInit||!(window.google&&google.accounts&&google.accounts.id))return;gsiInit=true;
+  google.accounts.id.initialize({client_id:CLIENT_ID,hd:'spyne.ai',auto_select:true,callback:r=>{token=r.credential;try{localStorage.setItem('spyneTok',token);}catch(e){}mkSession(token).then(load);}});
+  google.accounts.id.renderButton($('gBtn'),{theme:'outline',size:'large',width:260});
+}
+async function api(method,body){
+  const h={'content-type':'application/json'};if(token&&tokExp(token)>Date.now()+30000)h.Authorization='Bearer '+token;
+  const r=await fetch('/api/reminders',{method,cache:'no-store',headers:h,body:body?JSON.stringify(body):undefined});
+  if(r.status===401){showGate();const t=setInterval(()=>{if(window.google&&google.accounts){clearInterval(t);initGoogle();}},200);throw new Error('sign-in');}
+  $('gate').hidden=true;return r;
+}
+
+/* ---------------- data ---------------- */
+let DATA=null,CUST=[],SEL=new Set(),sortK='aging',sortD=-1;
+const fmt=(v,c)=>(c?c+' ':'')+Number(v).toLocaleString('en-US',{maximumFractionDigits:0});
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function load(){
+  $('msg').textContent='Loading from the sheet…';
+  try{
+    const r=await api('GET');const j=await r.json();
+    if(!r.ok){$('msg').textContent='Could not load: '+(j.message||j.error);return;}
+    DATA=j;me=j.me;build();$('msg').textContent='';
+  }catch(e){if(e.message!=='sign-in')$('msg').textContent='Could not load: '+e.message;}
+}
+function build(){
+  const m=new Map();
+  DATA.rows.forEach(r=>{let c=m.get(r.ent);if(!c){c={ent:r.ent,customer:r.customer,csm:r.csm,invoices:[],to:new Set(),autopay:r.autopay,totals:{},aging:0};m.set(r.ent,c);}
+    c.invoices.push(r);r.to.forEach(e=>c.to.add(e));c.totals[r.currency]=(c.totals[r.currency]||0)+r.balance;c.aging=Math.max(c.aging,r.daysOver);});
+  CUST=[...m.values()];
+  const fill=(id,vals)=>{const s=$(id),first=s.options[0].outerHTML;s.innerHTML=first+[...new Set(vals)].filter(Boolean).sort().map(v=>'<option>'+esc(v)+'</option>').join('');};
+  fill('fCsm',CUST.map(c=>c.csm));fill('fBucket',DATA.rows.map(r=>r.bucket));fill('fCur',DATA.rows.map(r=>r.currency));
+  $('bd').textContent=DATA.blockDays;$('finLbl').textContent=DATA.from;
+  const w=[];
+  if(!DATA.canSend)w.push('You have read-only access. Only executors can send reminders.');
+  if(!DATA.ready.gmail)w.push('Gmail is not configured on the server, so previews work but sending is off.');
+  if(!DATA.ready.zoho)w.push('Zoho Books is not configured, so invoice PDFs and payment links are unavailable.');
+  if(!DATA.ready.log)w.push('No Redis store connected: sends will not be logged, so the repeat-send guard is off.');
+  $('warn').hidden=!w.length;$('warn').innerHTML=w.map(x=>'<div class="warn">'+esc(x)+'</div>').join('');
+  render();
+}
+const COLS=[['','sel'],['Customer','customer'],['Email','email'],['CSM','csm'],['# Inv','n'],['Outstanding','bal'],['Max aging (d)','aging'],['Last reminder','last']];
+const isSub=()=>$('tpl').value==='subscription';
+function lastOf(c){const l=DATA.log['ent:'+c.ent+':'+$('tpl').value];return l&&l.ok?l:null;}
+/* Friendly / Urgent / Final go to customers who are NOT on auto-pay; Subscription Invoice goes only to auto-pay customers. */
+const wrongKind=c=>isSub()?!c.autopay:c.autopay;
+function visible(){
+  const q=$('q').value.toLowerCase(),csm=$('fCsm').value,bk=$('fBucket').value,cu=$('fCur').value,hide=$('fHide').checked;
+  let v=CUST.filter(c=>{
+    if(wrongKind(c))return false;
+    if(hide&&!c.to.size)return false;
+    if(csm&&c.csm!==csm)return false;
+    if(bk&&!c.invoices.some(i=>i.bucket===bk))return false;
+    if(cu&&!c.invoices.some(i=>i.currency===cu))return false;
+    if(q&&!(c.customer.toLowerCase().includes(q)||(c.csm||'').toLowerCase().includes(q)||c.invoices.some(i=>i.invoice.toLowerCase().includes(q))))return false;
+    return true;});
+  const key={customer:c=>c.customer.toLowerCase(),csm:c=>(c.csm||'').toLowerCase(),n:c=>c.invoices.length,bal:c=>Object.values(c.totals).reduce((a,b)=>a+b,0),aging:c=>c.aging,last:c=>{const l=lastOf(c);return l?l.at:'';},email:c=>[...c.to][0]||''}[sortK]||(c=>c.aging);
+  return v.sort((a,b)=>(key(a)>key(b)?1:key(a)<key(b)?-1:0)*sortD);
+}
+function render(){
+  $('thead').innerHTML=COLS.map(([t,k])=>'<th data-k="'+k+'" class="'+(k==='n'||k==='bal'||k==='aging'?'n':'')+'">'+t+(sortK===k?(sortD>0?' ▲':' ▼'):'')+'</th>').join('');
+  const v=visible();
+  $('tb').innerHTML=v.map(c=>{
+    const l=lastOf(c),tot=Object.keys(c.totals).map(k=>fmt(c.totals[k],k)).join(' + ');
+    const flag=c.autopay?'<span class="pill">auto-pay</span> ':!c.to.size?'<span class="pill bad">no email</span> ':'';
+    return '<tr class="'+(!c.to.size?'dim':'')+'"><td><input type="checkbox" data-e="'+esc(c.ent)+'" '+(SEL.has(c.ent)?'checked':'')+(!c.to.size?' disabled':'')+'></td>'
+      +'<td>'+flag+esc(c.customer)+'</td><td>'+esc([...c.to].join(', '))+'</td><td>'+esc(c.csm||'')+'</td><td class="n">'+c.invoices.length+'</td><td class="n">'+esc(tot)+'</td><td class="n '+(c.aging>60?'bad':'')+'">'+c.aging+'</td>'
+      +'<td>'+(l?'<span class="ok">'+l.at.slice(0,10)+'</span> <span class="muted">'+esc((l.by||'').split('@')[0])+'</span>':'<span class="muted">never</span>')+'</td></tr>';}).join('');
+  $('count').textContent=v.length+' customers shown · '+SEL.size+' selected';
+  const can=DATA&&SEL.size>0;$('bPrev').disabled=!can;$('bSend').disabled=!(can&&DATA.canSend&&DATA.ready.gmail&&PREVIEWED);
+}
+let PREVIEWED=false;
+const invalidate=()=>{PREVIEWED=false;};
+$('thead').onclick=e=>{const k=e.target.closest('th')&&e.target.closest('th').dataset.k;if(!k||k==='sel')return;if(sortK===k)sortD=-sortD;else{sortK=k;sortD=-1;}render();};
+$('tb').onchange=e=>{const t=e.target;if(t.dataset.e){t.checked?SEL.add(t.dataset.e):SEL.delete(t.dataset.e);invalidate();render();}};
+['q','fCsm','fBucket','fCur','fHide'].forEach(id=>$(id).addEventListener('input',render));
+$('selVis').onclick=()=>{visible().forEach(c=>{if(c.to.size)SEL.add(c.ent);});invalidate();render();};
+const HINT={friendly:'Polite nudge. Skips auto-pay customers.',urgent:'Firm, overdue wording. Skips auto-pay customers.',final:'Last notice before escalation. Skips auto-pay customers.',subscription:'Invoice notice for auto-pay customers only.'};
+$('tpl').onchange=()=>{SEL.clear();invalidate();$('out').innerHTML='';$('tplHint').textContent=HINT[$('tpl').value];if(DATA)render();};
+$('tplHint').textContent=HINT.friendly;
+$('selNone').onclick=()=>{SEL.clear();invalidate();render();};
+['rCust','rCsm','rFin','rOther','oPdf','oLink','oForce','note'].forEach(id=>$(id).addEventListener('input',()=>{invalidate();render();}));
+
+function payload(confirm){
+  return{template:$('tpl').value,customers:[...SEL],recipients:{customer:$('rCust').checked,csm:$('rCsm').checked,finance:$('rFin').checked,other:$('rOther').value},
+    attachPdf:$('oPdf').checked,paymentLinks:$('oLink').checked,force:$('oForce').checked,note:$('note').value,confirm:!!confirm};
+}
+async function run(confirm){
+  $('msg').textContent=confirm?'Sending…':'Building previews…';$('bPrev').disabled=$('bSend').disabled=true;
+  try{
+    const r=await api('POST',payload(confirm));const j=await r.json();
+    if(!r.ok){$('msg').textContent=(j.message||j.error);render();return;}
+    if(!confirm){
+      PREVIEWED=true;
+      $('out').innerHTML='<div class="card"><b>Preview: nothing has been sent</b>'+j.items.map(i=>i.ok
+        ?'<div class="pv"><div class="pvh"><b>'+esc(i.customer)+'</b> · '+i.invoices+' invoice(s)<br>To: '+esc(i.to.join(', '))+'<br>Cc: '+esc(i.cc.join(', ')||'—')+'<br>Subject: '+esc(i.subject)+'</div>'+i.html+'</div>'
+        :'<div class="pv"><b>'+esc(i.customer)+'</b> <span class="bad">will be skipped: '+esc(i.error)+'</span></div>').join('')+'</div>';
+      const okN=j.items.filter(i=>i.ok).length;
+      $('msg').textContent=okN+' ready to send, '+(j.items.length-okN)+' skipped. Review above, then click Send.';
+    }else{
+      PREVIEWED=false;
+      $('out').innerHTML='<div class="card"><b>Result</b>'+j.results.map(i=>'<div>'+(i.ok?'<span class="ok">Sent</span> ':'<span class="bad">Failed</span> ')+esc(i.customer)+' · '+(i.ok?esc(i.to.join(', ')):esc(i.error))+'</div>').join('')+'</div>';
+      $('msg').textContent='';SEL.clear();await load();return;
+    }
+  }catch(e){if(e.message!=='sign-in')$('msg').textContent='Failed: '+e.message;}
+  render();
+}
+$('bPrev').onclick=()=>run(false);
+$('bSend').onclick=()=>{const n=SEL.size;if(confirm('Send '+n+' reminder email(s) to customers now? This cannot be undone.'))run(true);};
+
+const gt=setInterval(()=>{if(window.google&&google.accounts&&google.accounts.id){clearInterval(gt);initGoogle();}},200);
+load();
+</script>
+</body>
+</html>

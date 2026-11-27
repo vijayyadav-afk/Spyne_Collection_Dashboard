@@ -3,11 +3,12 @@
   "rewrites": [
     { "source": "/", "destination": "/spoc-collections-dashboard.html" },
     { "source": "/collections-pending", "destination": "/collections-pending.html" },
-    { "source": "/collections", "destination": "/collections.html" }
+    { "source": "/collections", "destination": "/collections.html" },
+    { "source": "/send-reminders", "destination": "/send-reminders.html" }
   ],
   "headers": [
     {
-      "source": "/(spoc-collections-dashboard.html|collections-pending|collections-pending.html|collections|collections.html)",
+      "source": "/(spoc-collections-dashboard.html|collections-pending|collections-pending.html|collections|collections.html|send-reminders|send-reminders.html)",
       "headers": [
         { "key": "Cache-Control", "value": "no-store, max-age=0, must-revalidate" },
         { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" },
